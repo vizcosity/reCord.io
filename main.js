@@ -57,9 +57,6 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
         setprefixCmd(user, userID, channelID, message);
       }
 
-
-      var help = "This will be filled soon.";
-
       //basic responses;
         switch (message) {
           case prefix + 'ping':
@@ -67,7 +64,11 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
             break;
 
           case prefix + 'help':
-            bot.sendMessage({to: userID, message: help});
+          //<prefix>help command;
+            bot.sendMessage({
+              to: userID,
+              message: generateHelp()
+            });
             break;
 
           case prefix + 'channelid':
@@ -90,7 +91,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       }//end restart bot method
 
       //set username method;
-      if (cmdIs('setusername', message) && getArg(prefix + 'setusername').length > 0){
+      if (cmdIs('setusername', message) && getArg(prefix + 'setusername', message, channelID).length > 0){
         var newUsername = getArg(prefix + 'setusername', message);
         config.name = newUsername;
         console.log('Bot Username changing to: ' + newUsername + '.')
@@ -99,6 +100,15 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
           console.log('File write completed Successfully. New username: ' + newUsername + ' now applied.');
           respond('New username: ' + newUsername + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
         });
+      }
+
+      //debug console method;
+      if (cmdIs('dc', message)){
+        var command = getArg(prefix + 'dc', message, channelID);
+        console.log(command);
+        (function() {
+            command;
+        })();
       }
 
 
@@ -212,6 +222,8 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
   })
   }
 
+
+//grabs arguments for input command.
   function getArg(cmd, msg, channelID){
     var args = msg.substring(cmd.length + 1, msg.length);
     if (args.length > 0){//arguments exist;
@@ -224,6 +236,8 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
     }
   }
 
+
+//function to check if command is contained within input string / message.
   function cmdIs(cmdName, message){
     if (message.substring(0 + prefix.length, cmdName.length + 1) === cmdName) {
 
@@ -231,3 +245,29 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
     } else {return false};
   }
+
+
+//generates help command info:
+
+
+function generateHelp(){
+
+  var fullHelp = '```';
+  for (var i = 0; i < help.commands.length; i++){
+    var commandName = help.commands[i];
+    var commandNameFull = prefix + help.commands[i];
+    var info = help[commandName].desc;
+    var usage = 'Usage: ' + help[commandName].usage;
+
+    var outputString = commandNameFull + ' - ' + info + '\n';
+    if (i === help.commands.length - 1){
+    fullHelp += outputString + '```';
+  } else {
+    fullHelp += outputString;
+  }
+
+  }
+
+  return fullHelp;
+
+}
