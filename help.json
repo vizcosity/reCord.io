@@ -1,0 +1,6 @@
+{
+  "usage": {
+    "purge": "```Usage: <prefix>purge <amount of messages to remove>. Keep in mind this happens instantly.```",
+    "setprefix": "```Usage: <prefix>setprefix <new prefix name>. ```"
+  }
+}
