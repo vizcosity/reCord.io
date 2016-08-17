@@ -1,4 +1,5 @@
 var forever = require('forever-monitor');
+var config = require('./help.json');
 
 var child = new (forever.Monitor)('main.js', {
   max: 3,
@@ -7,7 +8,7 @@ var child = new (forever.Monitor)('main.js', {
 });
 
 child.on('start', function(){
-  console.log('Llanibot instance Successfully started. Loading main.js program now.')
+  console.log(config.name + ' instance Successfully started. Loading main.js program now.')
 });
 
 child.on('exit', function(){
@@ -15,7 +16,6 @@ child.on('exit', function(){
 });
 
 child.on('stdout', function(data){
-  console.log(data.toString().substring(0,13))
   if (data.toString().substring(0,13) === '/restartChild'){
     console.log('restarting child proces...')
     child.restart();
