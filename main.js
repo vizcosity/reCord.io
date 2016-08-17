@@ -36,7 +36,7 @@ bot.on('ready',function(){
 
 bot.on('message', function(user, userID, channelID, message, event){
 
-
+var channelMsg = message;
 
 
 if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to cmd methods;
@@ -51,24 +51,119 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
         purgeCmd(message, channelID, user, userID);
       };//end conditional to check for '!purge';
 
+      //help method
+
+      if(cmdIs('help', message)){
+        var cmd = help;
+        if ( hasArgs('help', message) === false ) {
+          //no arguments so generate normal help and send to DM for user;
+          bot.sendMessage({
+            to: userID,
+            message: generateHelp()
+          })
+        } else {//command has arguments
+        //  console.log(getArg(prefix + 'help', message))
+          var helpItem = help[getArg(prefix + 'help', message, channelID)];
+          var outputHelpCmdText = "```" + "Description: " + helpItem.desc + '\n \n' + "Usage: " + prefix + helpItem.usage + "```";
+            respond(outputHelpCmdText, channelID);
+        }
+
+      }
+
       //set global cmd prefix;
 
       if (message.substring(0,10) === prefix + 'setprefix'){
         setprefixCmd(user, userID, channelID, message);
+      }//end set global cmd prefix
+
+      //change status
+      if (cmdIs('status', message)){
+        var newStatus = getArg(prefix + 'status', message);
+        bot.setPresence({
+          game: newStatus
+        });
+
+        console.log('Status changed to: ' + newStatus);
       }
+
+      //get msg (DEBUG)
+      if (cmdIs('getmsg', message)){
+        bot.getMessages({
+          channelID: channelID,
+          limit: 1
+        }, function callback(err, array){
+          console.log(array);
+        })
+      }
+
+      //anonmsg
+      if (cmdIs('anonmsg', message)){
+        if (hasArgs('anonmsg', message)){
+          var messageToSendArray = message.split(' ');
+          var messageToSend = '';
+
+          for (var i = 2; i < messageToSendArray.length; i++){
+            if (i < messageToSendArray.length - 1){ messageToSend += messageToSendArray[i] + ' ';} else {
+              messageToSend += messageToSendArray[i]; //dont add a space after last array item
+            }
+          }
+          //grab id for user to send to, and send message on callback
+            bot.getMessages({
+              channelID: channelID,
+              limit: 1
+              }, function callback(err, array){
+                if (err !== null){ console.log(err)};
+                var userToSendMsgTo = array[0].mentions[0].id;
+
+                bot.sendMessage({
+                  to: userToSendMsgTo,
+                  message: messageToSend
+                }, function callback(err){//logging for sneaky means
+                  bot.deleteMessage({
+                    channelID: channelID,
+                    messageID: array[0].id
+                  });
+                  if (err !== null){console.log(err)};
+                   console.log(array[0].author.username + ' send a secret message to ' + array[0].mentions[0].username + ' with msg: ' + messageToSend)
+                })
+            })
+
+        } else {
+          respond(help.anonmsg.usage, channelID);
+        }
+      }//end anonmsg
+
+      //play audio file;
+      newCommand('audio', message, function audio(arg){
+
+        var serverID = bot.channels[channelID].guild_id;
+      //  var voiceChannelID = bot.servers[serverID].members[userID]
+        var voiceChannelID = '128319522443624448'; //temp default for now.
+        //get msg
+
+        bot.joinVoiceChannel(voiceChannelID, function callback(){
+          bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(stream){//send audio
+              console.log(arg);
+              stream.playAudioFile(arg);
+              stream.once('fileEnd', function(){
+                bot.leaveVoiceChannel(voiceChannelID);
+              })
+            });//end get audio context
+        })//end join voice method
+
+
+        });//end audio command.
+
+      //leaveVoiceChannel
+      newCommand('leave-voice', message, function(){
+        var voiceChannelID = '128319522443624448';
+        bot.leaveVoiceChannel(voiceChannelID);
+      });
 
       //basic responses;
         switch (message) {
           case prefix + 'ping':
             respond('pong',channelID);
-            break;
-
-          case prefix + 'help':
-          //<prefix>help command;
-            bot.sendMessage({
-              to: userID,
-              message: generateHelp()
-            });
             break;
 
           case prefix + 'channelid':
@@ -103,13 +198,53 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       }
 
       //debug console method;
-      if (cmdIs('dc', message)){
-        var command = getArg(prefix + 'dc', message, channelID);
-        console.log(command);
-        (function() {
-            command;
-        })();
+      newCommand('dc', message, function dc(arg){
+        eval(arg);
+      }, 'yes');
+
+
+      //get info
+      newCommand('getserverinf', message, function callback(cmdArg){
+        console.log(bot)
+      }, 'yes');
+
+      //quote method;
+      if (cmdIs('quote', message, channelID)){
+      if (message !== prefix + 'quote'){
+      var msgArray = [];
+      var username;
+
+        bot.getMessages({
+          channelID: channelID,
+          limit: 50
+        }, function callback(error, array){
+          if (error !== null){console.log(error)};
+          userQuoteID = array[0].mentions[0].id;
+          for (var i = 0; i < array.length; i++){
+            if (array[i].author.id === userQuoteID && array[i].content.substring(0,1) !== prefix){
+              msgArray.push(array[i].content);
+            };
+          };
+
+          if (msgArray.length > 0){
+            var randomNumber = randomIntFromInterval(0, msgArray.length - 1);
+            var randomQuote = msgArray[randomNumber];
+
+            bot.sendMessage({
+              to: channelID,
+              message: "_'" + randomQuote + "'_"
+            })
+
+          } else {
+            respond('No quotes found. \n _I cannot retrieve a random user quote if it is more than 50 messages away._', channelID);
+          }
+
+        });
+      } else {//end check for args conditional
+        respond('Please mention a user to quote from.', channelID)
       }
+
+    }
 
 
     }//end conditional for checking command prefix, other messages ignored.
@@ -155,15 +290,21 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
         // start purge method
           var purgeArg = parseInt(getArg(prefix + 'purge', message, channelID));
           var amtToDelete;
+
           if (isNaN(purgeArg) !== true){
 
-              amtToDelete = purgeArg;
+                if (purgeArg <= 100 && purgeArg >= 2){
+                    amtToDelete = purgeArg;
+                } else {
+                  amtToDelete = 'Invalid';
+                }
+
             } else {
               amtToDelete = 'Not Number'
             }
   //proceed to purge method;
 
-          if (amtToDelete !== 'Not Number'){
+          if (amtToDelete !== 'Not Number' || amtToDelete !== 'Invalid'){
 
             bot.getMessages({
               channelID: channelID,
@@ -198,10 +339,11 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
             }//end callback;
           )//end getMessages func;
         } else {
-            bot.sendMessage({
-              to: channelID,
-              message: '```Please ensure that you have entered a number for the amount of messages to purge.```'
-            })
+            if (amtToDelete === 'Not Number'){
+              respond('```Please ensure that you have entered a number for the amount of messages to purge.```', channelID);
+            } else if (amtToDelete === 'Invalid'){
+              respond('```Please enter a number between 2 and 100. Entries greater than 100 are not supported by the Discord BOT Api (Too resource intensive). emplan sorry guys.```', channelID);
+            }
           };
           //finish purge method
       }
@@ -261,13 +403,64 @@ function generateHelp(){
 
     var outputString = commandNameFull + ' - ' + info + '\n';
     if (i === help.commands.length - 1){
-    fullHelp += outputString + '```';
-  } else {
-    fullHelp += outputString;
-  }
+      fullHelp += outputString + '```';
+    } else {
+      fullHelp += outputString;
+    }
 
   }
 
   return fullHelp;
 
+}
+
+//find random number;
+
+function randomIntFromInterval(min, max){
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+//checks if command has arguments;
+
+function hasArgs(cmd, message, type){
+    //assumes that correct command is input;
+    var calc1 = prefix + cmd + ' ';
+  if (message.substring(0, prefix.length + cmd.length + 1) === calc1 && message.length > calc1.length){
+    //command has arguments
+    if (type === undefined){
+      return true;
+    } else {
+      if (typeof getArg(cmd, message) === type){ return true} else {console.log(cmd + ' has args ' + getArg(cmd, message) + ' but not correct type'); return false};
+    }
+  } else {
+    console.log(cmd + ' has no arguments. Returning false');
+    return false
+  }
+
+}
+
+//function to automate adding new commands
+function newCommand(commandName, message, func, arg){
+    if (cmdIs(commandName, message)){//checks to see if cmd contained within received message.
+      //proceed with command method;
+      if (arg === 'yes'){// requires arguments;
+        if (hasArgs(commandName, message)){//command has arguments, proceed to method;
+          var commandArgs = getArg(prefix + commandName, message);
+                      func(commandArgs);
+        }  else {//no arguments, return usage if no arguments required.
+          respond('Usage: ' + prefix + help.commandName.usage, channelID)
+        }
+      } else {//command doesn't require arguments
+        func();
+      }
+    }
+}
+
+//print whole object
+function printObject(o) {
+  var out = '';
+  for (var p in o) {
+    out += p + ': ' + o[p] + '\n';
+  }
+  return(out);
 }

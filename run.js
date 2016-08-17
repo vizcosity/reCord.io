@@ -2,7 +2,7 @@ var forever = require('forever-monitor');
 var config = require('./help.json');
 
 var child = new (forever.Monitor)('main.js', {
-  max: 3,
+  max: 100,
   silent: false,
   args: []
 });
