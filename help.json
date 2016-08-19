@@ -1,5 +1,5 @@
 {
-  "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio"],
+  "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio", "shortcut"],
 
   "purge" : {
     "desc": "Removes a specified amount of messages from the chat.",
@@ -44,5 +44,10 @@
   "audio": {
     "desc": "Joins the voice channel and plays an audio file. Useful for giggles and soundboard stuffs. \n Might be useful to set an alias with this command for quicker access.",
     "usage": "audio <audiofilename>"
+  },
+
+  "shortcut": {
+    "desc": "Create shortcut commands / aliases. E.g. you can do !audio tuturu.mp3 with !tuturu. This is useful for soundboard-like functionality or quick access to those critical sounds.",
+    "usage": "shortcut <shortcut name> <command to execute>"
   }
 }

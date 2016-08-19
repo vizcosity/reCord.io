@@ -6,6 +6,8 @@ var fs = require('fs');
 
 var config = require('./config.json');
 var help = require('./help.json');
+var alias = require('./alias.json');
+var soundlog = require('./soundlog.json');
 
 var prefix = config.prefix;
 
@@ -36,26 +38,60 @@ bot.on('ready',function(){
 
 bot.on('message', function(user, userID, channelID, message, event){
 
-var channelMsg = message;
-
-
+//prefix & alias check:
 if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to cmd methods;
+  //aliascheck
+  var aliasCheck = message.substring(prefix.length, message.length);
+  console.log(aliasCheck);
+  //check for alias and apply msg swap.
+  if (typeof alias[aliasCheck] !== 'undefined'){
+    console.log(alias[aliasCheck]);
+    channelMsg = prefix + alias[aliasCheck];
+    console.log(channelMsg);
+  } else {//no alias
+    var channelMsg = message;
+  }
+
 //main command list methods;
 
-/* if (channelID !== '151051305295675395'){
-  respond("Oi, hop on over to #bot-chat to use the bot. Let's keep the rest of the chats tidy.", channelID)
-} else { */
+      //setAlias method:
+      newCommand('shortcut', message, function setAlias(arg){
 
-      if (message.substring(0,6) === prefix + 'purge'){ //purge cmd;
-        //if message contains '!purge', proceed to purgeCmd method;
-        purgeCmd(message, channelID, user, userID);
-      };//end conditional to check for '!purge';
+          var shortcutName = arg.split(' ')[0];
+          var aliasCmdName = arg.split(' ')[1];
+          console.log(arg);
+
+          if (typeof help[shortcutName] == 'undefined'){//command does not already exist.
+            console.log(shortcutName);
+            //console.log(aliasCmdName);
+            console.log(arg.substring(shortcutName.length + 1, arg.length));
+
+            alias[shortcutName] = arg.substring(shortcutName.length + 1, arg.length);
+
+            fs.writeFile('./alias.json', JSON.stringify(alias, null, 2), function callback(err){
+              if (err !== null){console.log(err)};
+              console.log('File write completed Successfully. New Alias: ' + shortcutName + " added which runs: " + alias.shortcutName);
+              respond('New Alias: ' + shortcutName + ' now added. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
+            });
+          } else {
+            respond('Command: ' + prefix + shortcutName + ' already exists. Please choose another shortcut name.', channelID);
+          }
+
+
+
+      }, 'yes');
+      //end shortcut method.
+
+      //purge method:
+      newCommand('purge', message, function doPurge(arg){
+        purgeCmd(channelMsg, channelID, user, userID);
+      }, 'yes');
+      //end purge execute command.
 
       //help method
-
-      if(cmdIs('help', message)){
+      if(cmdIs('help', channelMsg)){
         var cmd = help;
-        if ( hasArgs('help', message) === false ) {
+        if ( hasArgs('help', channelMsg) === false ) {
           //no arguments so generate normal help and send to DM for user;
           bot.sendMessage({
             to: userID,
@@ -63,18 +99,19 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
           })
         } else {//command has arguments
         //  console.log(getArg(prefix + 'help', message))
-          var helpItem = help[getArg(prefix + 'help', message, channelID)];
+          var helpItem = help[getArg(prefix + 'help', channelMsg, channelID)];
           var outputHelpCmdText = "```" + "Description: " + helpItem.desc + '\n \n' + "Usage: " + prefix + helpItem.usage + "```";
             respond(outputHelpCmdText, channelID);
         }
 
       }
+      //end help
 
       //set global cmd prefix;
-
       if (message.substring(0,10) === prefix + 'setprefix'){
         setprefixCmd(user, userID, channelID, message);
-      }//end set global cmd prefix
+      }
+      //end set global cmd prefix
 
       //change status
       if (cmdIs('status', message)){
@@ -85,6 +122,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
         console.log('Status changed to: ' + newStatus);
       }
+      //end change status
 
       //get msg (DEBUG)
       if (cmdIs('getmsg', message)){
@@ -95,6 +133,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
           console.log(array);
         })
       }
+      //end get msg (Debug)
 
       //anonmsg
       if (cmdIs('anonmsg', message)){
@@ -131,37 +170,52 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
         } else {
           respond(help.anonmsg.usage, channelID);
         }
-      }//end anonmsg
+      }
+      //end anonmsg
 
-      //play audio file;
-      newCommand('audio', message, function audio(arg){
+      //(TEMPORARY) set voice channel ID;
+      newCommand('setVoiceID', channelMsg, function newVoiceChannelID(Arg){
+        voiceChannelID = Arg;
+      }, 'yes');
+      //end set voice channel ID;
 
-        var serverID = bot.channels[channelID].guild_id;
-      //  var voiceChannelID = bot.servers[serverID].members[userID]
-        var voiceChannelID = '128319522443624448'; //temp default for now.
-        //get msg
+      //play RAW audio file (MP3 or PCM etc.);
+      newCommand('audio', channelMsg, function audioPlay(arg){
+        audio(arg);
+      }, 'yes');
+      //end audio command.
 
-        bot.joinVoiceChannel(voiceChannelID, function callback(){
-          bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(stream){//send audio
-              console.log(arg);
-              stream.playAudioFile(arg);
-              stream.once('fileEnd', function(){
-                bot.leaveVoiceChannel(voiceChannelID);
-              })
-            });//end get audio context
-        })//end join voice method
+      //play web streaming link (not raw MP3) command:
+      newCommand('play', channelMsg, function playWeb(link){
+        //check to see if site is supported;
+        var baseUrl = link.split('/')[1];
+        var supportedSites = {
+          "www.youtube.com": "yes"
+        };
 
+        if (typeof supportedSites[baseUrl] === 'undefined'){//site not supported.
+          respond('Sorry! This site is currently not supported. Pester Aaron if you care about it.', channelID);
+        } else {//site is supported, continue with method.
+          
+        }//end supported site check
+      })
+      //end web streaming command function.
 
-        });//end audio command.
+      //randomsound command;
+      newCommand('randomsound', channelMsg, function playRandomSound(){
+        audio(soundlog['audio'][randomIntFromInterval(0, soundlog['audio'].length - 1)]);
+      });
+      //end randomsound method
 
       //leaveVoiceChannel
-      newCommand('leave-voice', message, function(){
+      newCommand('leave-voice', channelMsg, function(){
         var voiceChannelID = '128319522443624448';
         bot.leaveVoiceChannel(voiceChannelID);
       });
+      //end leave voice method
 
       //basic responses;
-        switch (message) {
+        switch (channelMsg) {
           case prefix + 'ping':
             respond('pong',channelID);
             break;
@@ -174,8 +228,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       }//end basic responses
 
       //restart bot method / command;
-
-      if (message.substring(0, message.length) === prefix + 'restart'){
+      if (channelMsg.substring(0, message.length) === prefix + 'restart'){
           bot.sendMessage({
             to: channelID,
             message: 'Bot restarting now.'
@@ -183,11 +236,12 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
             if (err !== null){console.log(err)};
               console.log('/restartChild');
           });
-      }//end restart bot method
+      }
+      //end restart bot method
 
       //set username method;
-      if (cmdIs('setusername', message) && getArg(prefix + 'setusername', message, channelID).length > 0){
-        var newUsername = getArg(prefix + 'setusername', message);
+      if (cmdIs('setusername', channelMsg) && getArg(prefix + 'setusername', channelMsg, channelID).length > 0){
+        var newUsername = getArg(prefix + 'setusername', channelMsg);
         config.name = newUsername;
         console.log('Bot Username changing to: ' + newUsername + '.')
         fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
@@ -196,74 +250,97 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
           respond('New username: ' + newUsername + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
         });
       }
+      //end set username method;
 
       //debug console method;
-      newCommand('dc', message, function dc(arg){
+      newCommand('dc', channelMsg, function dc(arg){
         eval(arg);
       }, 'yes');
+      //end debug method
 
 
       //get info
-      newCommand('getserverinf', message, function callback(cmdArg){
+      newCommand('getserverinf', channelMsg, function callback(cmdArg){
         console.log(bot)
       }, 'yes');
+      //end get info method
 
       //quote method;
-      if (cmdIs('quote', message, channelID)){
-      if (message !== prefix + 'quote'){
-      var msgArray = [];
-      var username;
+      if (cmdIs('quote', channelMsg, channelID)){
 
-        bot.getMessages({
-          channelID: channelID,
-          limit: 50
-        }, function callback(error, array){
-          if (error !== null){console.log(error)};
-          userQuoteID = array[0].mentions[0].id;
-          for (var i = 0; i < array.length; i++){
-            if (array[i].author.id === userQuoteID && array[i].content.substring(0,1) !== prefix){
-              msgArray.push(array[i].content);
+        if (channelMsg !== prefix + 'quote'){
+        var msgArray = [];
+        var username;
+
+          bot.getMessages({
+            channelID: channelID,
+            limit: 50
+          }, function callback(error, array){
+            if (error !== null){console.log(error)};
+            userQuoteID = array[0].mentions[0].id;
+            for (var i = 0; i < array.length; i++){
+              if (array[i].author.id === userQuoteID && array[i].content.substring(0,1) !== prefix){
+                msgArray.push(array[i].content);
+              };
             };
-          };
 
-          if (msgArray.length > 0){
-            var randomNumber = randomIntFromInterval(0, msgArray.length - 1);
-            var randomQuote = msgArray[randomNumber];
+            if (msgArray.length > 0){
+              var randomNumber = randomIntFromInterval(0, msgArray.length - 1);
+              var randomQuote = msgArray[randomNumber];
 
-            bot.sendMessage({
-              to: channelID,
-              message: "_'" + randomQuote + "'_"
-            })
+              bot.sendMessage({
+                to: channelID,
+                message: "_'" + randomQuote + "'_"
+              })
 
-          } else {
-            respond('No quotes found. \n _I cannot retrieve a random user quote if it is more than 50 messages away._', channelID);
-          }
+            } else {
+              respond('No quotes found. \n _I cannot retrieve a random user quote if it is more than 50 messages away._', channelID);
+            }
 
-        });
-      } else {//end check for args conditional
-        respond('Please mention a user to quote from.', channelID)
+          });
+        } else {//end check for args conditional
+          respond('Please mention a user to quote from.', channelID)
+        }
+
       }
-
-    }
+      //end quote method;
 
 
     }//end conditional for checking command prefix, other messages ignored.
-  //}//end check channel conditional.
+
+
+//functions that require on message scope:
+
+//joins voice channel and plays audio file;
+function audio(arg){
+
+      var serverID = bot.channels[channelID].guild_id;
+    //  var voiceChannelID = bot.servers[serverID].members[userID]
+      var voiceChannelID = '128319522443624448'; //temp default for now.
+      //get msg
+
+      bot.joinVoiceChannel(voiceChannelID, function callback(){
+        bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
+            console.log(arg);
+            stream.playAudioFile(arg);
+            stream.once('fileEnd', function(){
+              bot.leaveVoiceChannel(voiceChannelID);
+              soundlog['audio'].push(arg);
+              fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
+                if (err !== null){console.log(err)};
+              });//end update soundlog file.
+            })
+          });//end get audio context
+      })//end join voice method
+}
+//end play audio command method logic.
+
 }); // end on 'message' event.
-
-
-
-
-
-
-
-
-
 
 //FUNCTIONS;
 
 //respond function:
-      function respond(msg, channelID, user, userID){
+function respond(msg, channelID, user, userID){
 
         bot.sendMessage({
           to: channelID,
@@ -274,10 +351,11 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
           }
         })
 
-      }
+}
+//end respond logic
 
 //purge function logic
-      function purgeCmd(message, channelID, user, userID){
+function purgeCmd(message, channelID, user, userID){
 
 
         if (message === prefix + 'purge'){
@@ -286,12 +364,12 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
               message:  help.usage['purge']
             });
 
-    }
+        }
         // start purge method
-          var purgeArg = parseInt(getArg(prefix + 'purge', message, channelID));
-          var amtToDelete;
+        var purgeArg = parseInt(getArg(prefix + 'purge', message, channelID));
+        var amtToDelete;
 
-          if (isNaN(purgeArg) !== true){
+        if (isNaN(purgeArg) !== true){
 
                 if (purgeArg <= 100 && purgeArg >= 2){
                     amtToDelete = purgeArg;
@@ -299,10 +377,10 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
                   amtToDelete = 'Invalid';
                 }
 
-            } else {
-              amtToDelete = 'Not Number'
-            }
-  //proceed to purge method;
+        } else {
+          amtToDelete = 'Not Number'
+        }
+        //proceed to purge method;
 
           if (amtToDelete !== 'Not Number' || amtToDelete !== 'Invalid'){
 
@@ -345,28 +423,30 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
               respond('```Please enter a number between 2 and 100. Entries greater than 100 are not supported by the Discord BOT Api (Too resource intensive). emplan sorry guys.```', channelID);
             }
           };
-          //finish purge method
+
       }
+//finish purge method
 
 //setglobal prefix method;
-  function setprefixCmd(user, userID, channelID, message){
+function setprefixCmd(user, userID, channelID, message){
 
     var newPrefix = getArg(prefix + 'setprefix', message);
     console.log(newPrefix);
     bot.sendMessage({to: channelID, message: 'Setting new command prefix: ' + newPrefix + '. This will be ready after restart.'},
-  function callback(err){
-    config.prefix = newPrefix;
-    console.log('Prefix changed to ' + newPrefix + '. Applying change to JSON file now.');
-    fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
-      console.log('File write completed Successfully. New prefix: ' + newPrefix + ' now applied.');
-      respond('New prefix: ' + newPrefix + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
-    });
-  })
+    function callback(err){
+      config.prefix = newPrefix;
+      console.log('Prefix changed to ' + newPrefix + '. Applying change to JSON file now.');
+      fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+        console.log('File write completed Successfully. New prefix: ' + newPrefix + ' now applied.');
+        respond('New prefix: ' + newPrefix + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
+      });
+    })
   }
+//end set prefix method;
 
 
 //grabs arguments for input command.
-  function getArg(cmd, msg, channelID){
+function getArg(cmd, msg, channelID){
     var args = msg.substring(cmd.length + 1, msg.length);
     if (args.length > 0){//arguments exist;
       return args;
@@ -376,7 +456,8 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
         message: help.usage[cmd]
       })
     }
-  }
+}
+//end get command arguments function
 
 
 //function to check if command is contained within input string / message.
@@ -387,11 +468,10 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
     } else {return false};
   }
+//end check if command function;
 
 
-//generates help command info:
-
-
+//generates help command info;
 function generateHelp(){
 
   var fullHelp = '```';
@@ -413,15 +493,15 @@ function generateHelp(){
   return fullHelp;
 
 }
+//end generate help function;
 
 //find random number;
-
 function randomIntFromInterval(min, max){
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+//end random number function
 
 //checks if command has arguments;
-
 function hasArgs(cmd, message, type){
     //assumes that correct command is input;
     var calc1 = prefix + cmd + ' ';
@@ -438,6 +518,7 @@ function hasArgs(cmd, message, type){
   }
 
 }
+//end check to see if cmd has arguments function
 
 //function to automate adding new commands
 function newCommand(commandName, message, func, arg){
@@ -455,6 +536,7 @@ function newCommand(commandName, message, func, arg){
       }
     }
 }
+//end new command function;
 
 //print whole object
 function printObject(o) {

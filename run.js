@@ -1,5 +1,5 @@
 var forever = require('forever-monitor');
-var config = require('./help.json');
+var config = require('./config.json');
 
 var child = new (forever.Monitor)('main.js', {
   max: 100,
