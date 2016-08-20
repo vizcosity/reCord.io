@@ -3,11 +3,15 @@ var http = require('http');
 var b64encode = require('base64-stream').Encode;
 
 var fs = require('fs');
+var ytStream = require('youtube-audio-stream');
 
 var config = require('./config.json');
 var help = require('./help.json');
 var alias = require('./alias.json');
 var soundlog = require('./soundlog.json');
+var Lame = require('lame');
+var spawn = require('child_process').spawn;
+
 
 var prefix = config.prefix;
 
@@ -15,6 +19,8 @@ var bot = new Discord.Client({
   token: "MjA1MzkxMTI2MjkzNzc0MzM2.CpJbog.TH8o86o4pIoHghC6_U2H3xQwJKg",
   autorun: true
 });
+
+var voiceChannelID = '128319522443624448'; //temp default for now.
 
 bot.on('ready',function(){
   console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
@@ -42,15 +48,17 @@ bot.on('message', function(user, userID, channelID, message, event){
 if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to cmd methods;
   //aliascheck
   var aliasCheck = message.substring(prefix.length, message.length);
-  console.log(aliasCheck);
   //check for alias and apply msg swap.
   if (typeof alias[aliasCheck] !== 'undefined'){
-    console.log(alias[aliasCheck]);
     channelMsg = prefix + alias[aliasCheck];
-    console.log(channelMsg);
   } else {//no alias
     var channelMsg = message;
   }
+  //end prefix & alias check;
+
+  //log command and user:
+  console.log(user + " tried to execute: " + message);
+  //end log command.
 
 //main command list methods;
 
@@ -188,17 +196,35 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       //play web streaming link (not raw MP3) command:
       newCommand('play', channelMsg, function playWeb(link){
         //check to see if site is supported;
-        var baseUrl = link.split('/')[1];
+        var baseUrl = link.split('/')[2];
+        var extraArgs = link.split(' ')[1];
         var supportedSites = {
           "www.youtube.com": "yes"
         };
+        var requestURL = link.split(' ')[0];
 
         if (typeof supportedSites[baseUrl] === 'undefined'){//site not supported.
           respond('Sorry! This site is currently not supported. Pester Aaron if you care about it.', channelID);
         } else {//site is supported, continue with method.
-          
+          bot.joinVoiceChannel(voiceChannelID, function(){
+            bot.getAudioContext({channel: voiceChannelID, stereo: true}, function handleStream(error, stream){
+              if (error !== null){console.log(error)};
+              //getYoutubeStream(requestURL, stream);
+              outputYTAudio(stream, requestURL, function(){//executes after file finishes playing.
+                soundlog.link.push(link); //adds link to soundlog
+                //update soundlog file;
+                fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
+                  if (err !== null){console.log(err)};
+                });//end update soundlog file.
+
+                if (extraArgs === 'thenleave'){
+                  bot.leaveVoiceChannel(voiceChannelID);
+                } else {};
+              });
+            });//end get audio context method.
+          });//end join voice channel
         }//end supported site check
-      })
+      }, 'yes');
       //end web streaming command function.
 
       //randomsound command;
@@ -316,7 +342,6 @@ function audio(arg){
 
       var serverID = bot.channels[channelID].guild_id;
     //  var voiceChannelID = bot.servers[serverID].members[userID]
-      var voiceChannelID = '128319522443624448'; //temp default for now.
       //get msg
 
       bot.joinVoiceChannel(voiceChannelID, function callback(){
@@ -334,6 +359,24 @@ function audio(arg){
       })//end join voice method
 }
 //end play audio command method logic.
+
+//function to automate adding new commands
+function newCommand(commandName, message, func, arg){
+    if (cmdIs(commandName, message)){//checks to see if cmd contained within received message.
+      //proceed with command method;
+      if (arg === 'yes'){// requires arguments;
+        if (hasArgs(commandName, message)){//command has arguments, proceed to method;
+          var commandArgs = getArg(prefix + commandName, message);
+                      func(commandArgs);
+        }  else {//no arguments, return usage if no arguments required.
+          respond('```Usage: ' + prefix + help[commandName].usage + '```', channelID)
+        }
+      } else {//command doesn't require arguments
+        func();
+      }
+    }
+}
+//end new command function;
 
 }); // end on 'message' event.
 
@@ -520,23 +563,7 @@ function hasArgs(cmd, message, type){
 }
 //end check to see if cmd has arguments function
 
-//function to automate adding new commands
-function newCommand(commandName, message, func, arg){
-    if (cmdIs(commandName, message)){//checks to see if cmd contained within received message.
-      //proceed with command method;
-      if (arg === 'yes'){// requires arguments;
-        if (hasArgs(commandName, message)){//command has arguments, proceed to method;
-          var commandArgs = getArg(prefix + commandName, message);
-                      func(commandArgs);
-        }  else {//no arguments, return usage if no arguments required.
-          respond('Usage: ' + prefix + help.commandName.usage, channelID)
-        }
-      } else {//command doesn't require arguments
-        func();
-      }
-    }
-}
-//end new command function;
+
 
 //print whole object
 function printObject(o) {
@@ -546,3 +573,19 @@ function printObject(o) {
   }
   return(out);
 }
+//end print obj Array
+
+function outputYTAudio(stream, url, callback){
+
+    var lame = new Lame.Decoder();
+    var input = ytStream(url);
+
+    lame.once('readable', function(){
+        stream.send(lame);
+    });
+
+    input.pipe(lame);
+
+    lame.once('end', callback);
+}
+//end get yt stream function

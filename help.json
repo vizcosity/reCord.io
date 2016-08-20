@@ -1,5 +1,5 @@
 {
-  "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio", "shortcut"],
+  "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio", "shortcut", "play"],
 
   "purge" : {
     "desc": "Removes a specified amount of messages from the chat.",
@@ -49,5 +49,10 @@
   "shortcut": {
     "desc": "Create shortcut commands / aliases. E.g. you can do !audio tuturu.mp3 with !tuturu. This is useful for soundboard-like functionality or quick access to those critical sounds.",
     "usage": "shortcut <shortcut name> <command to execute>"
+  },
+
+  "play": {
+    "desc": "Streams audio from supported streaming sites. (Currently only YouTube.)",
+    "usage": "play <link> \n \nIf you would like bot to leave immediately after playing, add <thenleave> after the streaming link."
   }
 }
