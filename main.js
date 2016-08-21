@@ -4,6 +4,11 @@ var b64encode = require('base64-stream').Encode;
 
 var fs = require('fs');
 var ytStream = require('youtube-audio-stream');
+var ytdl = require('ytdl-core');
+var YouTube = require('youtube-node');
+var youTube = new YouTube();
+
+youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU');
 
 var config = require('./config.json');
 var help = require('./help.json');
@@ -11,6 +16,8 @@ var alias = require('./alias.json');
 var soundlog = require('./soundlog.json');
 var Lame = require('lame');
 var spawn = require('child_process').spawn;
+var player = require('./Player.js');
+var Player = '';
 
 
 var prefix = config.prefix;
@@ -21,6 +28,10 @@ var bot = new Discord.Client({
 });
 
 var voiceChannelID = '128319522443624448'; //temp default for now.
+var currentStatus = config.status;
+
+var randomSoundboard = config.randomSoundboard;
+
 
 bot.on('ready',function(){
   console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
@@ -34,12 +45,71 @@ bot.on('ready',function(){
     })
     console.log('Bot name changed to: ' + config.name );
 
-  }
+  };
+
   bot.sendMessage({
     to: '151051305295675395',
     message: config.name + ' Successfully loaded.'
-  })
+  });
 
+  bot.setPresence({
+    game: {
+      name: currentStatus
+    }
+  });
+
+  if (randomSoundboard === 'true'){
+      console.log('Random sounds is running.');
+      callFunctionEvery(playRandomSoundFromSoundboard, 1020000);
+  }
+
+  //play audio requires scope of on ready
+  function audioRANDOM(arg){
+        var extraArguments = arg.split(' ')[1];
+        var serverID = bot.channels['151051305295675395'].guild_id;
+      //  var voiceChannelID = bot.servers[serverID].members[userID]
+        //get msg
+        bot.joinVoiceChannel(voiceChannelID, function callback(){
+          bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
+              console.log(arg);
+              stream.playAudioFile(arg);
+              bot.setPresence({game: {name: arg}});//setting playing to audiofilename
+              stream.once('fileEnd', function(){
+                bot.setPresence({//reverting status
+                  game: {
+                    name: 'Surprise dank'
+                  }
+                })
+
+                bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
+
+                soundlog['audio'].push(arg);
+                fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
+                  if (err !== null){console.log(err)};
+                });//end update soundlog file.
+              })
+            });//end get audio context
+        })//end join voice method
+
+  }
+  //end play audio command method logic.
+
+  //play random soundboard
+  function playRandomSoundFromSoundboard(){
+    if (randomIntFromInterval(0,1) === 1){
+      if (Player == ''){
+        audioRANDOM('./audio/' + soundlog.soundboard[randomIntFromInterval(0,soundlog.soundboard.length)]);
+        console.log('Randomly played ' + soundlog.audio[soundlog.audio.length]);
+      }
+    }
+  }
+  //end random soundboard play
+
+  //repeat function
+  function callFunctionEvery(func, delay) {
+    setInterval(func, delay);
+  }
+  //end repeat
 });
 
 bot.on('message', function(user, userID, channelID, message, event){
@@ -124,8 +194,11 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       //change status
       if (cmdIs('status', message)){
         var newStatus = getArg(prefix + 'status', message);
+        currentStatus = newStatus;
         bot.setPresence({
-          game: newStatus
+          game: {
+            name: newStatus
+          }
         });
 
         console.log('Status changed to: ' + newStatus);
@@ -189,12 +262,15 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
       //play RAW audio file (MP3 or PCM etc.);
       newCommand('audio', channelMsg, function audioPlay(arg){
-        audio(arg);
+        if (isPlayerLoaded() === false){
+        audio(arg);} else {
+          respond('Curently playing from playlist. Cannot play sound yet because it will override music and reset playlist. Please wait till playlist finishes and leave voice.', channelID);
+        }
       }, 'yes');
       //end audio command.
 
       //play web streaming link (not raw MP3) command:
-      newCommand('play', channelMsg, function playWeb(link){
+      newCommand('playsong', channelMsg, function playWeb(link){
         //check to see if site is supported;
         var baseUrl = link.split('/')[2];
         var extraArgs = link.split(' ')[1];
@@ -202,30 +278,134 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
           "www.youtube.com": "yes"
         };
         var requestURL = link.split(' ')[0];
+        var videoID = link.split('=')[1];
+        Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+        Player.setAnnouncementChannel(channelID);
+        Player.enqueue(user, userID, link);
 
-        if (typeof supportedSites[baseUrl] === 'undefined'){//site not supported.
-          respond('Sorry! This site is currently not supported. Pester Aaron if you care about it.', channelID);
-        } else {//site is supported, continue with method.
-          bot.joinVoiceChannel(voiceChannelID, function(){
-            bot.getAudioContext({channel: voiceChannelID, stereo: true}, function handleStream(error, stream){
-              if (error !== null){console.log(error)};
-              //getYoutubeStream(requestURL, stream);
-              outputYTAudio(stream, requestURL, function(){//executes after file finishes playing.
-                soundlog.link.push(link); //adds link to soundlog
-                //update soundlog file;
-                fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
-                  if (err !== null){console.log(err)};
-                });//end update soundlog file.
-
-                if (extraArgs === 'thenleave'){
-                  bot.leaveVoiceChannel(voiceChannelID);
-                } else {};
-              });
-            });//end get audio context method.
-          });//end join voice channel
-        }//end supported site check
       }, 'yes');
       //end web streaming command function.
+
+      //skip
+      newCommand('wrongsong', channelMsg, function(){
+        if (Player !== ''){//channel is joined;
+          Player.wrongSong(user, userID);
+        } else {
+          respond('Error, no song is playing or bot not in channel. Please use '+ prefix +'joinvoice or '+ prefix +'play <song> to initiate.', channelID);
+        }
+      });
+
+      //view playlist
+      newCommand('playlist', channelMsg, function(arg){
+        if (isPlayerLoaded()){
+          var firstArg = arg.split(' ')[0];
+          if (firstArg === 'info'){
+            Player.printPlaylist();
+          } else if (firstArg === 'remove') {
+            var secondArg = arg.split(' ')[1];
+            secondArg = parseInt(secondArg);
+
+            Player.deleteSong(user, userID, secondArg);
+          }
+        } else {//player not loaded
+          respond('No playlist currently set up.', channelID);
+        }
+      }, 'yes');//end view playlist
+
+      //skip function
+      newCommand('skip', channelMsg, function(){
+        if (isPlayerLoaded()){
+          Player.skip();
+        } else {//player not loaded.
+          respond('No song / playlist currently playing.', channelID);
+        }
+      });
+
+      //test cmd setplaylist interruption
+      newCommand('setpi', channelMsg, function(arg){
+        Player.setPlaylistInterruption(arg);
+      }, 'yes');
+      //end setplaylist interruption command test
+
+      //addmods player
+      newCommand('addmods', channelMsg, function(arg){
+        if(isPlayerLoaded()){
+          Player.addMods(arg);
+        } else {
+          respond('No song / playlist currently playing.', channelID);
+        }
+      },'yes');
+      //end addmods
+
+      //removemods
+      newCommand('removemods', channelMsg, function(arg){
+        if (isPlayerLoaded()){
+          Player.removeMods(arg);
+        } else {
+          respond('No song / playlist currently playing.', channelID);
+        }
+      }, 'yes');
+      //end remove mods
+
+      //request song
+      newCommand('request', channelMsg, function(link){
+        if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
+          var requestURL = link.split(' ')[0];
+          console.log(requestURL.split('/')[0]);
+          if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
+          Player.setAnnouncementChannel(channelID);
+          Player.enqueue(user, userID, requestURL);
+        } else {//no link, search instead
+          var query = link;
+          console.log(query);
+          youTube.search(query, 2, function(error, results){
+            var videoSearchQueryID = results.items[0].id.videoId;
+            var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
+            Player.setAnnouncementChannel(channelID);
+            Player.enqueue(user, userID, requestURLFromQuery);
+          });//end yt search query.
+        }
+
+      }, 'yes');//end request command function
+
+      //request song
+      newCommand('queue', channelMsg, function(link){
+        if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
+          var requestURL = link.split(' ')[0];
+          console.log(requestURL.split('/')[0]);
+          if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
+          Player.setAnnouncementChannel(channelID);
+          Player.enqueue(user, userID, requestURL);
+        } else {//no link, search instead
+          var query = link;
+          console.log(query);
+          youTube.search(query, 5, function(error, results){
+            var videoSearchQueryID;
+            for (var i = 0; i <= 5; i ++){
+              if (results.items[i].id.kind === 'youtube#video'){
+                videoSearchQueryID = results.items[i].id.videoId;
+                i = 10;
+                break;
+              }
+            }
+
+            var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
+            Player.setAnnouncementChannel(channelID);
+            Player.enqueue(user, userID, requestURLFromQuery);
+          });//end yt search query.
+        }
+
+      }, 'yes');//end request command function
+
+      //setplaylist command
+      newCommand('setplaylist', channelMsg, function(arg){
+        if (isPlayerLoaded()){
+          Player.setDefaultPlaylist(arg);
+        } else {
+          respond("Can't set playlist until bot joins voice. Queue a random song and try again or use " + prefix + "joinvoice");
+        }
+      }, 'yes');
+      //end setplaylist
 
       //randomsound command;
       newCommand('randomsound', channelMsg, function playRandomSound(){
@@ -233,10 +413,51 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       });
       //end randomsound method
 
+      //set annoyance
+      newCommand('setsurprise', channelMsg, function(){
+        if (config.randomSoundboard === 'true'){
+
+          config.randomSoundboard = 'false';
+
+          fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+            if (err !== null){console.log(err)};
+            console.log('Surprise sounds set to ' + config.randomSoundboard);
+            respond('Surprise sounds set to ' + config.randomSoundboard + '. I will no longer surprise you with some sounds fam.', channelID);
+
+          });
+        } else {//turn on
+          config.randomSoundboard = 'true';
+          fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+            if (err !== null){console.log(err)};
+            console.log('Surprise sounds set to ' + config.randomSoundboard);
+            respond('Surprise sounds set to ' + config.randomSoundboard + '. The best thing about surprises is regret.', channelID);
+
+          });
+        }
+      });
+      //end annoyance command
+
+      //soundboard
+      newCommand('soundboard', channelMsg, function(){
+        audio('./audio/' + soundlog.soundboard[randomIntFromInterval(0,soundlog.soundboard.length)]);
+      });
+      //end soundboard command
+
+      //joinvoice:
+      newCommand('joinvoice', channelMsg, function(){
+        Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+      })//end join voice method
+
       //leaveVoiceChannel
-      newCommand('leave-voice', channelMsg, function(){
+      newCommand('leavevoice', channelMsg, function(){
         var voiceChannelID = '128319522443624448';
         bot.leaveVoiceChannel(voiceChannelID);
+        bot.setPresence({
+          game: {
+            name: currentStatus
+          }
+        })
+        Player = '';
       });
       //end leave voice method
 
@@ -339,17 +560,24 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
 //joins voice channel and plays audio file;
 function audio(arg){
-
+      var extraArguments = arg.split(' ')[1];
       var serverID = bot.channels[channelID].guild_id;
     //  var voiceChannelID = bot.servers[serverID].members[userID]
       //get msg
-
       bot.joinVoiceChannel(voiceChannelID, function callback(){
         bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
             console.log(arg);
             stream.playAudioFile(arg);
+            bot.setPresence({game: {name: arg}});//setting playing to audiofilename
             stream.once('fileEnd', function(){
-              bot.leaveVoiceChannel(voiceChannelID);
+              bot.setPresence({//reverting status
+                game: {
+                  name: currentStatus
+                }
+              })
+
+              bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
+
               soundlog['audio'].push(arg);
               fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
                 if (err !== null){console.log(err)};
@@ -357,6 +585,7 @@ function audio(arg){
             })
           });//end get audio context
       })//end join voice method
+
 }
 //end play audio command method logic.
 
@@ -369,7 +598,9 @@ function newCommand(commandName, message, func, arg){
           var commandArgs = getArg(prefix + commandName, message);
                       func(commandArgs);
         }  else {//no arguments, return usage if no arguments required.
-          respond('```Usage: ' + prefix + help[commandName].usage + '```', channelID)
+          if (typeof help[commandName] !== 'undefined'){
+            respond('```Usage: ' + prefix + help[commandName].usage + '```', channelID)
+          }
         }
       } else {//command doesn't require arguments
         func();
@@ -381,6 +612,11 @@ function newCommand(commandName, message, func, arg){
 }); // end on 'message' event.
 
 //FUNCTIONS;
+
+//is player loaded check;
+function isPlayerLoaded(){
+  if (Player !== ''){return true} else {return false};
+};
 
 //respond function:
 function respond(msg, channelID, user, userID){

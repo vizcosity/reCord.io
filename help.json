@@ -1,5 +1,5 @@
 {
-  "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio", "shortcut", "play"],
+  "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio", "shortcut", "playsong", "request", "setsurprise", "skip"],
 
   "purge" : {
     "desc": "Removes a specified amount of messages from the chat.",
@@ -51,8 +51,28 @@
     "usage": "shortcut <shortcut name> <command to execute>"
   },
 
-  "play": {
-    "desc": "Streams audio from supported streaming sites. (Currently only YouTube.)",
-    "usage": "play <link> \n \nIf you would like bot to leave immediately after playing, add <thenleave> after the streaming link."
+  "playsong": {
+    "desc": "Streams audio from supported streaming sites. (Currently only YouTube.) and overrides playlist.",
+    "usage": "playsong <link> \n \nIf you would like bot to leave immediately after playing, add <thenleave> after the streaming link."
+  },
+
+  "request": {
+    "desc": "Adds item to queue. (can also use queue command as an alias.) Use this instead of play command to not override playlist.",
+    "usage": "request <link>"
+  },
+
+  "playlist": {
+    "desc": "Can be used to view playlist info or remove songs from playlist.",
+    "usage": "playlist <info / remove> <song position>"
+  },
+
+  "setsurprise": {
+    "desc": "Joins the voice channel every now and then to play some dank sounds.",
+    "usage": "setsurprise"
+  },
+
+  "skip": {
+    "desc": "skips the currently playing song. (Requires that audio is streaming to voice channel.)",
+    "usage": "skip"
   }
 }

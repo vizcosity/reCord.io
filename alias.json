@@ -6,7 +6,10 @@
   "test2": "audio sample.mp3",
   "testing123": "owbubwahtb awitbnawkfjnakjwnakjwfnjkawnfjkawnfawnfjkawnfjkawnfj",
   "test3": "hello but why is this not working right?!?!",
-  "xfiles": "audio http://srv116.clipconverter.cc/download/4pSZamxmmWVoZ7Wr2NmUaW%2BsmWZrZG9rmZqZbLVz1Jukdqim3MjVrJ6i/Illuminati%2FX-Files%20sound%20effect.mp3",
-  "lv": "leave-voice",
-  "boss": "play https://www.youtube.com/watch?v=YqcwnYBaH3Y thenleave"
+  "xfiles": "playsong https://www.youtube.com/watch?v=NqNqnJhRAuk",
+  "lv": "leavevoice",
+  "boss": "play https://www.youtube.com/watch?v=YqcwnYBaH3Y thenleave",
+  "jv": "joinvoice",
+  "fuckyouleroy": "request https://www.youtube.com/watch?v=q2WS65T7Vuc",
+  "allahu": "audio ./audio/allahu akbar.mp3"
 }
