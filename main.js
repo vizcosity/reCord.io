@@ -54,9 +54,19 @@ bot.on('ready',function(){
 
   bot.setPresence({
     game: {
-      name: currentStatus
+      name: 'Loaded!'
     }
   });
+
+  setTimeout(setCurrentStatus, 5000);
+
+  function setCurrentStatus(){
+    bot.setPresence({
+      game: {
+        name: currentStatus
+      }
+    });
+  };
 
   if (randomSoundboard === 'true'){
       console.log('Random sounds is running.');
@@ -476,13 +486,36 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
       //restart bot method / command;
       if (channelMsg.substring(0, message.length) === prefix + 'restart'){
-          bot.sendMessage({
-            to: channelID,
-            message: 'Bot restarting now.'
-          }, function callback(err){
-            if (err !== null){console.log(err)};
-              console.log('/restartChild');
-          });
+
+        if (isPlayerLoaded()){
+          respond("I'm currently playing music. Would you like me to interrupt and force restart?");
+          bot.on('message', user, userID, channelID, message, event){
+
+            if (message.toLowerCase() === 'yes' || message.toLowerCase() === 'y'){
+              bot.setPresence({game: {name: 'Restarting...'}});
+              bot.sendMessage({channelID: channelID, message: "Ok fam. Restarting."}, function (err){
+                if (err !== null){console.log(err)};
+                console.log(user + ' requested a hard restart.');
+                console.log('/restartChild');
+              });
+            } else if (message.toLowerCase() === 'no' || message.toLowerCase() === 'n'){
+              respond("Alright. I'll wait till I leave voice then restart. If I don't leave automatically, use " + prefix + "lv or " + prefix + "leavevoice", channelID);
+              setInterval(checkIfPlayerLoadedAndRestart, 60000);
+              function checkIfPlayerLoadedAndRestart(){
+                if (isPlayerLoaded()){
+                  respond("Finished playing through voice. Restarting now.", channelID);
+                  bot.setPresence({game: {name: 'Restarting...'}});
+                  console.log('/restartChild');
+                }
+              }
+            }//end check to force restart
+          }//end on message event.
+        } else {
+
+          bot.setPresence({game: {name: 'Restarting...'}});
+
+          console.log('/restartChild');
+        }
       }
       //end restart bot method
 

@@ -3,5 +3,6 @@
   "name": "reCord",
   "prefix": "!",
   "status": "Waiting",
-  "randomSoundboard": "true"
+  "randomSoundboard": "true",
+  "defaultMusicChannel": "151051305295675395"
 }

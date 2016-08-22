@@ -11,6 +11,11 @@ function Player(Bot, YTKey, SCInfo, channel) {
 		SC = require('node-soundcloud');
 
 	var enc;
+	var configFile = require('./config.json');
+	var currentStatus = configFile.status;
+	var defaultMusicChannel = configFile.defaultMusicChannel;
+
+	if (channel !== defaultMusicChannel){notify("I'll take your request fam but please hop on over to #bot-chat so that generalchat doesn't get congested with music requests.")};
 
 	var API = {
 		Youtube: {
@@ -365,6 +370,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 	function play(currentSong) {
 		var requester = queue[0].requester;
 		var currentPlayingSong = queue[0].title;
+
 		if (!plInterruption && playingPlaylist) return;
 		if (!ready) return log('warn', "Not ready to play audio");
 		if (playingPlaylist) plRef.kill();
@@ -390,6 +396,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 			delete currentSong.id;
 			current = currentSong;
 			next = queue[0];
+			bot.setPresence({game: {name: currentPlayingSong}});
 			notify('**Now playing:** ' + currentPlayingSong + ' _requested by ' + requester + '_');
 		});
 
@@ -399,6 +406,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 			current = undefined;
 			enc.kill();
 			check();
+			bot.setPresence({game: {name: currentStatus}});
 		});
 	}
 
