@@ -378,6 +378,8 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
       }, 'yes');//end request command function
 
+
+
       //request song
       newCommand('queue', channelMsg, function(link){
         if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
@@ -389,51 +391,76 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
         } else {//no link, search instead
           var query = link;
           console.log(query);
-          youTube.search(query, 5, function(error, results){
-            if (error !== null){respond('YT Search responded with error ' + error)};
-            var allowedResults = [];
-            var videoSearchQueryID;
+          var respondChannel = channelID;
 
-            for (var i = 0; i <= 5; i ++){
-              if (results.items[i].id.kind === 'youtube#video'){
-                allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
-              }
-            };
-            var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 4 seconds: + \n";
+          function ytSearchPlayerInterface(query, amtOfResults){
+            var fallbackQuery = query;
+            youTube.search(query, amtOfResults, function(error, results){
+              if (error !== null){respond('YT Search responded with error ' + error)};
+              var allowedResults = [];
+              var videoSearchQueryID;
 
-            for (var i = 0; i < allowedResults.length; i++){
-              if (i !== allowedResults.length - 1){
-                stringedResults += '*' + i + '.* ' + allowedResults[i].title + '\n';
-              } else {//finish output
-                stringedResults += '*' + i + '.* ' + allowedResults[i].title;
+              for (var i = 0; i < amtOfResults; i++){
+                if (results.items[i].id.kind === 'youtube#video'){
+                  allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
+                }
               };
-            };
-            respond(stringedResults, channelID);
-            bot.on('message', function(user, userID, channelID, message, event){
-              var index = parseInt(message);
-              if (typeof allowedResults[index] !== 'undefined'){
-                videoSearchQueryID = allowedResults[index].id;
-                respond('Queueing ' + allowedResults[index].title, channelID);
-                var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
-                Player.setAnnouncementChannel(channelID);
-                Player.enqueue(user, userID, requestURLFromQuery);
-              }//if id of user msg response is valid check end.
+              var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 4 seconds: \n";
 
-            });//end on message event listener user response for search query.
+              for (var i = 0; i < allowedResults.length; i++){
+                if (i !== allowedResults.length - 1){
+                  stringedResults += '**' + i + '.** ' + allowedResults[i].title + '\n';
+                } else {//finish output
+                  stringedResults += '**' + i + '.** ' + allowedResults[i].title + "\n\n **More** | **None / Cancel**";
+                };
+              };
+              var requestUser = userID;
+              respond(stringedResults, respondChannel);
+              setTimeout(hasUserRespondedToYTSearchQuery, 4000);//wait 4 seconds for user response.
+              bot.on('message', function(userR, userIDR, channelIDR, messageR, eventR){
+                if (userIDR === requestUser){
 
-            setTimeout(hasUserRespondedToYTSearchQuery, 4000);//wait 4 seconds for user response.
+                if (typeof videoSearchQueryID === 'undefined'){
+                  if (messageR.toLowerCase() === 'none' || messageR.toLowerCase() === 'cancel') {//extra options.
+                    respond('Cancelled search query.', respondChannel);
+                    videoSearchQueryID = 'null';
+                    return;
+                  }
+                  if (messageR.toLowerCase() === 'more'){
+                    videoSearchQueryID = 'null';
+                    ytSearchPlayerInterface(query, amtOfResults + 5);
+                    return;
+                  }
+                  var index = parseInt(messageR);
+                  if (typeof allowedResults[index] !== 'undefined'){//check if number entered.
+                    videoSearchQueryID = allowedResults[index].id;
+                    respond('Queueing ' + allowedResults[index].title, respondChannel);
+                    var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
+                    Player.setAnnouncementChannel(respondChannel);
+                    Player.enqueue(user, userID, requestURLFromQuery);
+                    return;
+                  }//if id of user msg response is valid check end.
+              } else {//request done, return nothing.
+                return;
+              }}//check if should listen to original requester user.
 
-            function hasUserRespondedToYTSearchQuery(){
-              if (videoSearchQueryID === ''){//no input from user.
-                respond('Queueing first result, ' + allowedResults[0].title, channelID);
-                videoSearchQueryID = allowedResults[0].id;
-                var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
-                Player.setAnnouncementChannel(channelID);
-                Player.enqueue(user, userID, requestURLFromQuery);
-              }
-            }//end define check user response method and queue song.
-            
-          });//end yt search query.
+              });//end on message event listener user response for search query.
+
+
+              function hasUserRespondedToYTSearchQuery(){
+                if (typeof videoSearchQueryID === 'undefined'){//no input from user.
+                  respond('Queueing first result, ' + allowedResults[0].title, respondChannel);
+                  videoSearchQueryID = allowedResults[0].id;
+                  var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
+                  Player.setAnnouncementChannel(respondChannel);
+                  Player.enqueue(user, userID, requestURLFromQuery);
+                }
+              }//end define check user response method and queue song.
+
+            });//end yt search query.
+          };
+
+          ytSearchPlayerInterface(query, 5);
         }
 
       }, 'yes');//end request command function
