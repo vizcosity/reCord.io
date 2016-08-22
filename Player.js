@@ -173,18 +173,25 @@ function Player(Bot, YTKey, SCInfo, channel) {
 	}
 
 	this.printPlaylist = function(){
+		if (typeof queue[0] !== 'undefined'){
 		var currentPlayingSong = queue[0].title;
 		var output = '**Current Song: ' + currentPlayingSong + '**\n \n' + queue.length + ' Songs in playlist: \n';
 		for (var i = 0; i < queue.length; i++){
-			if (i !== queue.length - 1 ){
-				var position = i + 1;
-			output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**' + '\n';} else {//dont add new line
-				output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**';
+			if (typeof queue[i] === 'undefined'){notify("Can't retrieve playlist right now.");} else {
+			
+				if (i !== queue.length - 1 ){
+					var position = i + 1;
+				output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**' + '\n';} else {//dont add new line
+					output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**';
+				}
 			}
 
 		}
 
 		return notify(output);
+		} else {//prevent crash if item is not defined.
+			notify("Can't retrieve playlist right now.");
+		}
 	}
 
 	this.setDefaultPlaylist = function(ID) {
