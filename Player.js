@@ -396,7 +396,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 			delete currentSong.id;
 			current = currentSong;
 			next = queue[0];
-			bot.setPresence({game: {name: currentPlayingSong}});
+			Bot.setPresence({game: {name: currentPlayingSong}});
 			notify('**Now playing:** ' + currentPlayingSong + ' _requested by ' + requester + '_');
 		});
 
@@ -406,7 +406,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 			current = undefined;
 			enc.kill();
 			check();
-			bot.setPresence({game: {name: currentStatus}});
+			Bot.setPresence({game: {name: currentStatus}});
 		});
 	}
 
