@@ -405,8 +405,10 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
                   allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
                 }
               };
-              var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 4 seconds: \n";
+
               if (allowedResults > 0){ // results obtained.
+              var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
+
               for (var i = 0; i < allowedResults.length; i++){
                 if (i !== allowedResults.length - 1){
                   stringedResults += '**' + i + '.** ' + allowedResults[i].title + '\n';
@@ -416,8 +418,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
               };
               var requestUser = userID;
               respond(stringedResults, respondChannel);
-              setTimeout(hasUserRespondedToYTSearchQuery, 4000);//wait 4 seconds for user response.
-
+              setTimeout(hasUserRespondedToYTSearchQuery, 8000);//wait 4 seconds for user response.
               bot.on('message', function(userR, userIDR, channelIDR, messageR, eventR){
                 if (userIDR === requestUser){
 
