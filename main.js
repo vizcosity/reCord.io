@@ -11,6 +11,7 @@ var youTube = new YouTube();
 youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU');
 
 var config = require('./config.json');
+var toWav = require('audiobuffer-to-wav')
 var help = require('./help.json');
 var alias = require('./alias.json');
 var soundlog = require('./soundlog.json');
@@ -18,6 +19,7 @@ var Lame = require('lame');
 var spawn = require('child_process').spawn;
 var player = require('./Player.js');
 var Player = '';
+var editLooper;
 
 
 var prefix = config.prefix;
@@ -396,7 +398,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
           function ytSearchPlayerInterface(query, amtOfResults){
             var fallbackQuery = query;
             youTube.search(query, amtOfResults, function(error, results){
-              if (error !== null){respond('YT Search responded with error ' + error)};
+              if (error !== null){respond('YT Search responded with error ' + error, respondChannel)};
               var allowedResults = [];
               var videoSearchQueryID;
 
@@ -406,7 +408,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
                 }
               };
 
-              if (allowedResults > 0){ // results obtained.
+              if (allowedResults.length > 0){ // results obtained.
               var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
 
               for (var i = 0; i < allowedResults.length; i++){
@@ -460,7 +462,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
               }//end define check user response method and queue song.
 
             } else {// no results obtained.
-              respond("No results found. Either search query was invalid or it turned up no video results.");
+              respond("No results found. Either search query was invalid or it turned up no video results.", respondChannel);
             }
 
             });//end yt search query.
@@ -535,6 +537,25 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
         Player = '';
       });
       //end leave voice method
+
+      //record from voice channel.
+      newCommand('rec', channelMsg, function(name){
+        respond('Command disabled. Currenlty in development.', channelID);
+
+      /*  bot.joinVoiceChannel(voiceChannelID, function callback(){
+          bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
+
+              stream.on('incoming', function(ssrc){
+
+              });
+
+            }); //end get audio context
+          }); //end join voice */
+
+        }, 'yes');//end join voice method
+
+
+      //stop record method.
 
       //basic responses;
         switch (channelMsg) {
@@ -650,6 +671,37 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       }
       //end quote method;
 
+      //test BUDI
+      newCommand('testbudi', channelMsg, function(){
+        var testArray = [];
+        var incrementalLoadArray = ["", "────────────", "─", "───────────", "──", "──────────", "───", "─────────", "────", "────────", "─────", "───────", "──────", "──────", "───────", "─────", "────────", "────", "─────────", "───", "─────────", "──", "──────────", "─", "───────────", "", "────────────"];
+        var incrementer = 0;
+        var currentPlaceMarker = "🔘";
+        for (var i = 0; i < 60; i++){
+          var incrementFactor = 60 / 12;
+
+            var second;
+            if (i.toString().length === 1){
+              second = '0' + i.toString();
+            } else {
+              second = i.toString();
+            }
+            if (i !== 0 && i % incrementFactor === 0){incrementer += 2};
+            console.log(incrementer);
+            testArray.push("▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + ' 00:' + second);
+
+        }
+        editLooper = new BUDI(channelID);
+        editLooper.start(testArray);
+      });
+
+
+      //end test BUDI
+
+      newCommand('budistop', channelMsg, function(){
+        editLooper.stop();
+      });
+
 
     }//end conditional for checking command prefix, other messages ignored.
 
@@ -710,6 +762,128 @@ function newCommand(commandName, message, func, arg){
 }); // end on 'message' event.
 
 //FUNCTIONS;
+
+function nowPlayingProgressBar(duration){
+
+  //convert duration to seconds left;
+  var secondsLeft = duration;
+  var timeLeft;
+
+  function updateTimeLeft(){
+      if (playing && secondsLeft > 0){
+
+        secondsLeft--;
+        var minutesCalc = Math.floor(secondsLeft / 60);
+        var secondsCALC = time - minutes * 60;
+        var minutesDISPLAY;
+        var secondsDISPLAY;
+        if (minutesCalc.toString().length === 1){
+          minutesDISPLAY = '0' + minutesCalc.toString();
+        } else {minutesDISPLAY = minutesCalc.toString()};
+
+        if (secondsCALC.toString().length === 1){
+          secondsDISPLAY = '0' + secondsCALC.toString();
+        } else {
+          secondsDISPLAY = secondsCALC.toString();
+        }
+
+        timeLeft = minutesDISPLAY + ':' + secondsDISPLAY;
+      }
+    }
+  //update time every second;
+  setInterval(updateTimeLeft, 1000);
+  //convert seconds to minutes and seconds format;
+
+  //BUDI pre-requisites
+  function BUDI(channel){
+    var loaded;
+    this.start = function(changingMessage){
+      var msgID;
+      loaded = true;
+      bot.sendMessage({
+        to: channel,
+        message: changingMessage
+      }, function(err, response){
+        if (err !== null){console.log(err)};
+        if (response !== 'undefined'){
+          msgID = response.id;
+        } else {console.log('No response.')};
+              editMsgLoop(changingMessage)
+              function editMsgLoop(changingMessage){
+                if (continueLoop){
+
+                if (loaded !== true){loaded = true};
+                if (i < msgArray.length){
+
+                bot.editMessage({
+                  channelID: channel,
+                  messageID: msgID,
+                  message: changingMessage
+                }, function(error, response){
+                  if (error !== null){console.log(error)};
+                  if (typeof response !== 'undefined'){//response recieved
+                    if (response.content === changingMessage){//edited Successfully
+
+                      i++;
+                      setTimeout(carryOnLoopingEditMsg, 1000);
+
+                      function carryOnLoopingEditMsg(){
+                          editMsgLoop(changingMessage);
+                      }
+                    }
+                  } else {//no response.
+                    console.log('No response frome edit Msg.')
+                  }
+
+                });
+              } //checks if index is within array
+            } else {
+              console.log('Loop cancelled or finished')
+            }
+
+            }//end define editmsg loop
+      }//end sendmsg callback
+      )
+
+    }//end this.start msg loop
+
+    this.stop = function(){
+      if (loaded){
+        continueLoop = false;
+      } else {
+        console.log('no loop running');
+      }
+    }
+  };
+  //end define budi
+
+  //start budi
+  var budi = new BUDI(announcementChannel);
+
+  //build the progress bar;
+  for (var i = 0; i < duration; i++){
+  var incrementFactor = 5;
+
+      if (i !== 0 && i % incrementFactor === 0){incrementer += 2};
+      outputArray.push("▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + timeLeft);
+
+  }
+
+  var incrementer = 0;
+  function buildProgressBar(){
+    var outputArray = [];
+    var incrementalLoadArray = ["", "────────────", "─", "───────────", "──", "──────────", "───", "─────────", "────", "────────", "─────", "───────", "──────", "──────", "───────", "─────", "────────", "────", "─────────", "───", "─────────", "──", "──────────", "─", "───────────", "", "────────────"];
+    var currentPlaceMarker = "🔘";
+
+    if (timeLeft !== 0 && timeLeft % incrementFactor === 0){incrementer += 2};
+
+    return "▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + timeLeft;
+  }
+
+  editLooper = new BUDI(channel);
+  editLooper.start(buildProgressBar());
+}
+//end define progress bar func
 
 //is player loaded check;
 function isPlayerLoaded(){
@@ -909,6 +1083,7 @@ function printObject(o) {
 }
 //end print obj Array
 
+
 function outputYTAudio(stream, url, callback){
 
     var lame = new Lame.Decoder();
@@ -923,3 +1098,132 @@ function outputYTAudio(stream, url, callback){
     lame.once('end', callback);
 }
 //end get yt stream function
+
+
+//BUDI
+function BUDI(channel){
+  var loaded, continueLoop,
+  loopArray = true;
+  //initiate BUDI by sending msg to channel.
+  /* bot.sendMessage({
+    to: channel,
+    message: msgArray[0]
+  }, function(error, response){
+    if (error !== null){console.log(error)};
+    var msgID = response.id;
+    var i = 0;
+    bot.editMessage({
+      channelID: channel,
+      messageID: msgID,
+      message: msgArray[i]
+    }, function(err, response){
+      if (err !== null){console.log(err)};
+      i++;
+      editMsgLoop(msgArray[i]);
+    });
+
+    function alternateMsgArray(arr, outputVar){
+
+    }
+
+
+
+
+  }); */
+
+  continueLoop = true;
+  this.start = function(msgArray){
+    var msgID;
+    loaded = true;
+    var i = 1;
+    bot.sendMessage({
+      to: channel,
+      message: msgArray[0]
+    }, function(err, response){
+      if (err !== null){console.log(err)};
+      if (response !== 'undefined'){
+        msgID = response.id
+      } else {console.log('No response.')};
+
+
+            editMsgLoop(msgArray[i])
+            function editMsgLoop(editedMsg){
+              if (continueLoop){
+
+              if (loaded !== true){loaded = true};
+              if (i < msgArray.length){
+                //check to see if BUDI is in right place.
+                if (isLastMessage(msgID, channel) === false ){
+                  bot.deleteMessage({
+                    channelID: channel,
+                    messageID: msgID
+                  }, function(err){
+                    if (err !== null){console.log(err)};
+                    bot.sendMessage({
+                      to: channel,
+                      message: editedMsg
+                    }, function(err, response){
+                      if (err !== null){console.log(error)};
+                      if (typeof response !== 'undefined'){
+                      msgID = response.id;
+                    console.log('message id changed to ' + msgID);} else {console.log('could not get new msg ID for keep at bot method.')}
+                    })
+                  });
+                }// end keep at bottom.
+              bot.editMessage({
+                channelID: channel,
+                messageID: msgID,
+                message: editedMsg
+              }, function(error, response){
+                if (error !== null){console.log(error)};
+                if (typeof response !== 'undefined'){//response recieved
+                  if (response.content === msgArray[i]){//edited Successfully
+
+                    i++;
+                    setTimeout(carryOnLoopingEditMsg, 1000);
+
+                    function carryOnLoopingEditMsg(){
+                      if (loopArray && i === msgArray.length){
+                        //reset i;
+                        i = 0;
+                        editMsgLoop(msgArray[i]);
+                      } else {//no loop, continue normally till end of array.
+                      editMsgLoop(msgArray[i]);}
+                    }
+                  }
+                } else {//no response.
+                  console.log('No response frome edit Msg.')
+                }
+
+              });
+            } //checks if index is within array
+          } else {
+            console.log('Loop cancelled or finished')
+          }
+
+          }//end define editmsg loop
+    }//end sendmsg callback
+    )
+
+  }//end this.start msg loop
+
+  this.stop = function(){
+    if (loaded){
+    continueLoop = false;} else {
+      console.log('no loop running');
+    }
+  }
+};
+//end define budi
+
+//define is last message
+function isLastMessage(msgID, channelIDCODE){
+  bot.getMessages({
+    channelID: channelIDCODE,
+    limit: 1
+  }, function(error, messageArr){
+    if (error !== null){console.log(error)};
+    if (messageArr[0].id === msgID){ return true } else {return false}
+  });
+}
+//end is last message

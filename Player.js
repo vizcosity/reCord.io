@@ -10,12 +10,13 @@ function Player(Bot, YTKey, SCInfo, channel) {
 		childProc = require('child_process'),
 		SC = require('node-soundcloud');
 
+	var editLooper;
 	var enc;
 	var configFile = require('./config.json');
 	var currentStatus = configFile.status;
 	var defaultMusicChannel = configFile.defaultMusicChannel;
 
-	if (channel !== defaultMusicChannel){notify("I'll take your request fam but please hop on over to #bot-chat so that generalchat doesn't get congested with music requests.")};
+	if (announcementChannel !== defaultMusicChannel){notify("I'll take your request fam but please hop on over to #bot-chat so that generalchat doesn't get congested with music requests.")};
 
 	var API = {
 		Youtube: {
@@ -51,6 +52,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 		});
 	});
 
+var duration;
 	this.enqueue = function(user, userID, link) {
 		var data = parseInput(link);
 		var type = data.type,
@@ -70,7 +72,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 				body = JSON.parse(body);
 				if (body.items.length === 0) { return log('warn', data.location + " is not a valid YouTube video ID."); }
 
-				var duration = turnStupidAssYoutubeShitIntoActualSeconds(body.items[0].contentDetails.duration);
+				duration = turnStupidAssYoutubeShitIntoActualSeconds(body.items[0].contentDetails.duration);
 				if (duration > 480) return notify("The item provided has a duration of over 8 minutes. Ignoring.");
 
 				request( API.Youtube.Snippet(data.location) , function(err, res, body) {
@@ -178,7 +180,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 		var output = '**Current Song: ' + currentPlayingSong + '**\n \n' + queue.length + ' Songs in playlist: \n';
 		for (var i = 0; i < queue.length; i++){
 			if (typeof queue[i] === 'undefined'){notify("Can't retrieve playlist right now.");} else {
-			
+
 				if (i !== queue.length - 1 ){
 					var position = i + 1;
 				output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**' + '\n';} else {//dont add new line
@@ -399,12 +401,16 @@ function Player(Bot, YTKey, SCInfo, channel) {
 		], {stdio: ['pipe', 'pipe', 'ignore']});
 
 		enc.stdout.once('readable', function() {
+			secondsLeft = duration;
 			streamReference.send(enc.stdout);
 			delete currentSong.id;
 			current = currentSong;
 			next = queue[0];
 			Bot.setPresence({game: {name: currentPlayingSong}});
 			notify('**Now playing:** ' + currentPlayingSong + ' _requested by ' + requester + '_');
+
+			nowPlayingProgressBar(duration);
+
 		});
 
 		enc.stdout.once('end', function() {
@@ -414,10 +420,120 @@ function Player(Bot, YTKey, SCInfo, channel) {
 			enc.kill();
 			check();
 			Bot.setPresence({game: {name: currentStatus}});
+			editLooper.stop();
 		});
 	}
 
+	var timeLeft;
+	function nowPlayingProgressBar(duration){
+		var channel = announcementChannel;
+		//convert duration to seconds left;
+		var secondsLeft = duration;
 
+		function updateTimeLeft(){
+				if (playing && secondsLeft > 0){
+
+					secondsLeft--;
+					var minutesCalc = Math.floor(secondsLeft / 60);
+					var secondsCALC = secondsLeft - minutesCalc * 60;
+					var minutesDISPLAY;
+					var secondsDISPLAY;
+					if (minutesCalc.toString().length === 1){
+						minutesDISPLAY = '0' + minutesCalc.toString();
+					} else {minutesDISPLAY = minutesCalc.toString()};
+
+					if (secondsCALC.toString().length === 1){
+						secondsDISPLAY = '0' + secondsCALC.toString();
+					} else {
+						secondsDISPLAY = secondsCALC.toString();
+					}
+
+					timeLeft = minutesDISPLAY + ':' + secondsDISPLAY;
+				}
+			}
+		//update time every second;
+		setInterval(updateTimeLeft, 1000);
+		//convert seconds to minutes and seconds format;
+		var continueLoop = true;
+		//BUDI pre-requisites
+		function BUDI(channel){
+			var loaded;
+			this.start = function(changingMessage){
+				var msgID;
+				loaded = true;
+				Bot.sendMessage({
+					to: channel,
+					message: changingMessage()
+				}, function(err, response){
+					if (err !== null){console.log(err)};
+					if (response !== 'undefined'){
+						msgID = response.id;
+					} else {console.log('No response.')};
+
+								editMsgLoop(buildProgressBar)
+
+								function editMsgLoop(buildMSG){
+									var editMsgToSend = buildProgressBar();
+									if (continueLoop){
+
+									if (loaded !== true){loaded = true};
+									Bot.editMessage({
+										channelID: channel,
+										messageID: msgID,
+										message: editMsgToSend
+									}, function(error, response){
+										if (error !== null){console.log(error)};
+										if (typeof response !== 'undefined'){//response recieved
+											if (response.content === editMsgToSend){//edited Successfully
+
+												setTimeout(carryOnLoopingEditMsg, 1000);
+
+												function carryOnLoopingEditMsg(){
+														editMsgLoop(changingMessage);
+												}
+											}
+										} else {//no response.
+											console.log('No response frome edit Msg.')
+										}
+
+									});
+							} else {
+								console.log('Loop cancelled or finished')
+							}
+
+							}//end define editmsg loop
+				}//end sendmsg callback
+				)
+
+			}//end this.start msg loop
+
+			this.stop = function(){
+				if (loaded){
+					continueLoop = false;
+				} else {
+					console.log('no loop running');
+				}
+			}
+		};
+		//end define budi
+
+		//build the progress bar;
+		var incrementer = 0;
+		function buildProgressBar(){
+			var outputArray = [];
+			var incrementalLoadArray = ["", "────────────", "─", "───────────", "──", "──────────", "───", "─────────", "────", "────────", "─────", "───────", "──────", "──────", "───────", "─────", "────────", "────", "─────────", "───", "─────────", "──", "──────────", "─", "───────────", "", "────────────"];
+			var currentPlaceMarker = "🔘";
+			var incrementFactor = Math.floor(duration / 12);
+
+			if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
+
+			return "▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + timeLeft;
+		}
+
+		editLooper = new BUDI(channel);
+		editLooper.start(buildProgressBar);
+	}
+	//end define progress bar func
 	function playPlaylist(currentSong) {
 		var selection; //removed enc from here.
 		if (playing) return log('warn', "Requested song already playing");
@@ -502,5 +618,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 		this.url = url;
 	}
 }
+
+
 
 module.exports = Player;
