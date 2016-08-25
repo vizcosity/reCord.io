@@ -569,8 +569,8 @@ var duration;
 			var arrayLength = incrementalLoadArray.length - 1;
 			var iTPBI = Math.floor(percentageOfSongPlayed * arrayLength);
 			//if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
-
 			return "▶ " + incrementalLoadArray[iTPBI][0] + currentPlaceMarker + incrementalLoadArray[iTPBI][1] + ' [' + timeLeft + ']';
+			
 		}
 
 		editLooper = new BUDI(channel);
