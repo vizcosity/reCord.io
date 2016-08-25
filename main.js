@@ -461,11 +461,13 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
               var allowedResults = [];
               var videoSearchQueryID;
 
-              for (var i = 0; i < amtOfResults; i++){
-                if (results.items[i].id.kind === 'youtube#video'){
-                  allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
-                }
-              };
+              if (results.items.length > 0){//results obtained Successfully;
+                for (var i = 0; i < amtOfResults; i++){
+                  if (results.items[i].id.kind === 'youtube#video'){
+                    allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
+                  }
+                };
+              } else { respond("Search results could not be obtained.", respondChannel); };
 
               if (allowedResults.length > 0){ // results obtained.
               var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
@@ -478,7 +480,14 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
                 };
               };
               var requestUser = userID;
-              respond(stringedResults, respondChannel);
+              var searchQueryMsgID;
+              bot.sendMessage({
+                to: respondChannel,
+                message: stringedResults
+              }, function(err, response){
+                searchQueryMsgID = response.id;
+                console.log(searchQueryMsgID);
+              });
               setTimeout(hasUserRespondedToYTSearchQuery, 8000);//wait 4 seconds for user response.
               bot.on('message', function(userR, userIDR, channelIDR, messageR, eventR){
                 if (userIDR === requestUser){
@@ -497,7 +506,26 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
                   var index = parseInt(messageR);
                   if (typeof allowedResults[index] !== 'undefined'){//check if number entered.
                     videoSearchQueryID = allowedResults[index].id;
-                    respond('Queueing ' + allowedResults[index].title, respondChannel);
+                    bot.deleteMessage({
+                      channelID: respondChannel,
+                      messageID: searchQueryMsgID
+                    });
+                    //respond('Queueing ' + allowedResults[index].title, respondChannel);
+                    bot.sendMessage({
+                      to: respondChannel,
+                      message: '**Queueing** ' + allowedResults[index].title
+                    }, function (error, response){
+                      if (error !== null){console.log(error)};
+                      if (response !== 'undefined'){
+                        var deleteMsgAfterAWhileID = response.id;
+                        setTimeout(function(){
+                          bot.deleteMessage({
+                            channelID: respondChannel,
+                            messageID: deleteMsgAfterAWhileID
+                          });
+                        }, 3000);
+                      }
+                    });
                     var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
                     Player.setAnnouncementChannel(respondChannel);
                     Player.enqueue(user, userID, requestURLFromQuery);
@@ -512,6 +540,10 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
               function hasUserRespondedToYTSearchQuery(){
                 if (typeof videoSearchQueryID === 'undefined'){//no input from user.
+                  bot.deleteMessage({
+                    channelID: respondChannel,
+                    messageID: searchQueryMsgID
+                  });
                   respond('Queueing first result, ' + allowedResults[0].title, respondChannel);
                   videoSearchQueryID = allowedResults[0].id;
                   var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
@@ -586,6 +618,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
       //leaveVoiceChannel
       newCommand('leavevoice', channelMsg, function(){
+        if (isPlayerLoaded()){Player.kill()};
         var voiceChannelID = '128319522443624448';
         bot.leaveVoiceChannel(voiceChannelID);
         bot.setPresence({

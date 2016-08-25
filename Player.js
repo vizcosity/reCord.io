@@ -103,7 +103,21 @@ var duration;
 						queue.push( new MusicItem(type, title, url, id, userID, user, uID) );
 						check();
 
-						notify(user + " has requested " + title);
+					//	notify(user + " has requested " + title);
+						Bot.sendMessage({
+							to: announcementChannel,
+							message: '**' + user + ' Successfully Queued:** ' + title
+						}, function(error, response){
+							if (error !== null){console.log(error)};
+							if (response !== 'undefined'){
+								setTimeout(function(){
+									Bot.deleteMessage({
+										channelID: announcementChannel,
+										messageID: response.id
+									});
+								}, 3000); //delete notification message.
+							}
+						});
 					});
 				});
 			});
@@ -297,7 +311,17 @@ var duration;
 
 	this.skip = function(){
 		enc.kill();
+
 	};
+
+	this.kill = function(){
+		playing = false;
+		queue = [];
+		enc.kill();
+		playing = false;
+		resetStatus();
+
+	}
 
 	function parseInput(input) {
 		var ret = {
@@ -400,6 +424,7 @@ var duration;
 			'pipe:1'
 		], {stdio: ['pipe', 'pipe', 'ignore']});
 
+		var notificationMsgId;
 		enc.stdout.once('readable', function() {
 			secondsLeft = duration;
 			streamReference.send(enc.stdout);
@@ -407,7 +432,14 @@ var duration;
 			current = currentSong;
 			next = queue[0];
 			Bot.setPresence({game: {name: currentPlayingSong}});
-			notify('**Now playing:** ' + currentPlayingSong + ' _requested by ' + requester + '_');
+			Bot.sendMessage({
+				to: announcementChannel,
+				message: '**Now playing:** ' + currentPlayingSong + ' _requested by ' + requester + '_'
+			}, function(error, response){
+				if (error !== null){console.log(error)};
+				if (response !== 'undefined' || response !== undefined){
+				notificationMsgId = response.id;}
+			});
 
 			nowPlayingProgressBar(duration);
 
@@ -420,6 +452,10 @@ var duration;
 			enc.kill();
 			check();
 			Bot.setPresence({game: {name: currentStatus}});
+			Bot.deleteMessage({
+				channelID: announcementChannel,
+				messageID: notificationMsgId
+			});
 			editLooper.stop();
 		});
 	}
@@ -510,7 +546,7 @@ var duration;
 			this.stop = function(){
 				if (loaded){
 					continueLoop = false;
-					bot.deleteMessage({
+					Bot.deleteMessage({
 						channelID: announcementChannel,
 						messageID: msgID
 					})
@@ -522,16 +558,19 @@ var duration;
 		//end define budi
 
 		//build the progress bar;
-		var incrementer = 0;
+		//var incrementer = 0;
 		function buildProgressBar(){
 			var outputArray = [];
-			var incrementalLoadArray = ["", "────────────", "─", "───────────", "──", "──────────", "───", "─────────", "────", "────────", "─────", "───────", "──────", "──────", "───────", "─────", "────────", "────", "─────────", "───", "─────────", "──", "──────────", "─", "───────────", "", "────────────"];
+			var incrementalLoadArray = [["", "────────────"], ["─", "───────────"], ["──", "──────────"], ["───", "─────────"], ["────", "────────"], ["─────", "───────"], ["──────", "──────"], ["───────", "─────"], ["────────", "────"], ["─────────", "───"], ["─────────", "───"], ["──────────", "──"], ["───────────", "─"], ["────────────", ""]];
 			var currentPlaceMarker = "🔘";
 			var incrementFactor = Math.floor(duration / 12);
+			var percentageOfSongPlayedCALC = secondsLeft / duration;
+			var percentageOfSongPlayed = 1 - percentageOfSongPlayedCALC;
+			var arrayLength = incrementalLoadArray.length - 1;
+			var iTPBI = Math.floor(percentageOfSongPlayed * arrayLength);
+			//if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
 
-			if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
-
-			return "▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + ' [' timeLeft + ']';
+			return "▶ " + incrementalLoadArray[iTPBI][0] + currentPlaceMarker + incrementalLoadArray[iTPBI][1] + ' [' + timeLeft + ']';
 		}
 
 		editLooper = new BUDI(channel);
@@ -594,6 +633,13 @@ var duration;
 			message: message
 		});
 		return log("Sent: " + message);
+	}
+	function resetStatus(){
+		Bot.setPresence({
+			game: {
+				name: currentStatus
+			}
+		});
 	}
 	function qResponse(title, ID, requesterID, requester) {
 		var m = "``\n" +
