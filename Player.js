@@ -531,7 +531,7 @@ var duration;
 
 			if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
 
-			return "▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + ' [' timeLeft + ']';
+			return "▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + ' [' + timeLeft + ']';
 		}
 
 		editLooper = new BUDI(channel);
