@@ -522,7 +522,7 @@ var duration;
 										if (typeof response !== 'undefined'){//response recieved
 											if (response.content === editMsgToSend){//edited Successfully
 
-												setTimeout(carryOnLoopingEditMsg, 1000);
+												setTimeout(carryOnLoopingEditMsg, 2000);
 
 												function carryOnLoopingEditMsg(){
 														editMsgLoop(changingMessage);
