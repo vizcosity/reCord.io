@@ -11,5 +11,6 @@
   "boss": "play https://www.youtube.com/watch?v=YqcwnYBaH3Y thenleave",
   "jv": "joinvoice",
   "fuckyouleroy": "request https://www.youtube.com/watch?v=q2WS65T7Vuc",
-  "allahu": "audio ./audio/allahu akbar.mp3"
+  "allahu": "audio ./audio/allahu akbar.mp3",
+  "test": "request porter robinson language"
 }

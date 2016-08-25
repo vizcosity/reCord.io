@@ -400,6 +400,8 @@ var duration;
 		if (!playing && queue[0]) return play(queue[0]);
 		if (!playing && plQueue[0]) return playPlaylist(plQueue[0]);
 	}
+	var currentSongTitle;
+	var requesterName;
 	function play(currentSong) {
 		var requester = queue[0].requester;
 		var currentPlayingSong = queue[0].title;
@@ -431,15 +433,18 @@ var duration;
 			delete currentSong.id;
 			current = currentSong;
 			next = queue[0];
+			currentSongTitle = currentPlayingSong;
+			requesterName = requester;
 			Bot.setPresence({game: {name: currentPlayingSong}});
-			Bot.sendMessage({
+
+		/*	Bot.sendMessage({
 				to: announcementChannel,
 				message: '**Now playing:** ' + currentPlayingSong + ' _requested by ' + requester + '_'
 			}, function(error, response){
 				if (error !== null){console.log(error)};
 				if (response !== 'undefined' || response !== undefined){
 				notificationMsgId = response.id;}
-			});
+			}); */
 
 			nowPlayingProgressBar(duration);
 
@@ -511,6 +516,7 @@ var duration;
 								function editMsgLoop(buildMSG){
 									var editMsgToSend = buildProgressBar();
 									if (continueLoop){
+									isBUDItheLatestMsg();
 
 									if (loaded !== true){loaded = true};
 									Bot.editMessage({
@@ -554,6 +560,74 @@ var duration;
 					console.log('no loop running');
 				}
 			}
+
+			function isBUDItheLatestMsg(){
+				if (loaded){
+					//console.log('BUDI Loaded, proceeding to get msg.');
+				Bot.getMessages({
+					channelID: channel,
+					limit: 1
+				}, function(error, results){
+					var output;
+					//console.log(results[0].id);
+					if (error !== null){console.log(error)};
+					if (results !== 'undefined'){
+						if (results[0] !== 'undefined'){
+							if(results[0].id === msgID){//id's match, it is latest msg
+								return makeBUDILatestMsg(true);
+							} else {
+								return makeBUDILatestMsg(false);
+							}
+						} else {console.log('first result item not defined')}
+					} else {console.log('results not defined')}
+					//console.log(output);
+				});} else {
+					//not loaded
+					console.log('BUDI not loaded. Cannot check if it is latest msg.');
+				}
+
+			}
+			//end define is latest msg BUDI function
+
+			function makeBUDILatestMsg(trueOrFalse){
+				//  while (isBUDItheLatestMsg() === 'undefined'){console.log('waiting for output');/*wait*/}
+				//console.log('BUDI result is ' + trueOrFalse);
+				if (loaded && trueOrFalse === false){//loaded and budi not latest msg.
+					//delete msgID
+					Bot.deleteMessage({
+						channelID: channel,
+						messageID: msgID
+					}, function(error){
+						if (error !== null){
+							console.log(error);
+						} else {
+						//after message deleted, send new message.
+						Bot.sendMessage({
+							to: channel,
+							message: buildProgressBar()
+						}, function(error, response){
+							if (error !== null){console.log(error)};
+							if (response !== 'undefined'){
+								if (response.id !== 'undefined'){
+									msgID = response.id;
+								}
+							}
+						});
+						}
+					});
+					//end delete method
+					} else {
+						var errorMsg = '';
+						if (loaded !== true){errorMsg = 'BUDI not loaded\n';};
+						if (trueOrFalse){errorMsg = 'BUDI already latest message'}
+						//console.log(errorMsg);
+						//console.log(loaded);
+						//console.log('BUDI:' + trueOrFalse);
+					}
+			}
+			//end reshift BUDI to latest msg method.
+		//  makeBUDILatestMsg();
+
 		};
 		//end define budi
 
@@ -569,12 +643,14 @@ var duration;
 			var arrayLength = incrementalLoadArray.length - 1;
 			var iTPBI = Math.floor(percentageOfSongPlayed * arrayLength);
 			//if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
-			return "▶ " + incrementalLoadArray[iTPBI][0] + currentPlaceMarker + incrementalLoadArray[iTPBI][1] + ' [' + timeLeft + ']';
-			
+			return '**Now playing:** ' + currentSongTitle + ' _requested by ' + requesterName + '_' + '\n\n' + "▶ " + incrementalLoadArray[iTPBI][0] + currentPlaceMarker + incrementalLoadArray[iTPBI][1] + ' [' + timeLeft + ']' ;
+
 		}
 
 		editLooper = new BUDI(channel);
 		editLooper.start(buildProgressBar);
+
+
 	}
 	//end define progress bar func
 	function playPlaylist(currentSong) {

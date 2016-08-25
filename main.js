@@ -1195,7 +1195,7 @@ function outputYTAudio(stream, url, callback){
 //BUDI
 function BUDI(channel){
   var loaded, continueLoop,
-  loopArray = true;
+  loopArray = true, stayAsLatestMsg = true;
   //initiate BUDI by sending msg to channel.
   /* bot.sendMessage({
     to: channel,
@@ -1238,62 +1238,118 @@ function BUDI(channel){
       } else {console.log('No response.')};
 
 
-            editMsgLoop(msgArray[i])
+            editMsgLoop(msgArray[i]);//start msg loop
+
             function editMsgLoop(editedMsg){
+
               if (continueLoop){
 
               if (loaded !== true){loaded = true};
               if (i < msgArray.length){
-                //check to see if BUDI is in right place.
-                if (isLastMessage(msgID, channel) === false ){
-                  bot.deleteMessage({
+
+                  bot.editMessage({
                     channelID: channel,
-                    messageID: msgID
-                  }, function(err){
-                    if (err !== null){console.log(err)};
-                    bot.sendMessage({
-                      to: channel,
-                      message: editedMsg
-                    }, function(err, response){
-                      if (err !== null){console.log(error)};
-                      if (typeof response !== 'undefined'){
-                      msgID = response.id;
-                    console.log('message id changed to ' + msgID);} else {console.log('could not get new msg ID for keep at bot method.')}
-                    })
-                  });
-                }// end keep at bottom.
-              bot.editMessage({
-                channelID: channel,
-                messageID: msgID,
-                message: editedMsg
-              }, function(error, response){
-                if (error !== null){console.log(error)};
-                if (typeof response !== 'undefined'){//response recieved
-                  if (response.content === msgArray[i]){//edited Successfully
+                    messageID: msgID,
+                    message: editedMsg
+                  }, function(error, response){
+                    if (error !== null){console.log(error)};
+                    if (typeof response !== 'undefined'){//response recieved
+                      if (response.content === msgArray[i]){//edited Successfully
 
                     i++;
                     setTimeout(carryOnLoopingEditMsg, 1000);
 
                     function carryOnLoopingEditMsg(){
+                      isBUDItheLatestMsg();
                       if (loopArray && i === msgArray.length){
                         //reset i;
                         i = 0;
                         editMsgLoop(msgArray[i]);
-                      } else {//no loop, continue normally till end of array.
-                      editMsgLoop(msgArray[i]);}
+                        } else {//no loop, continue normally till end of array.
+                        editMsgLoop(msgArray[i]);}
+                      }
                     }
+                  } else {//no response.
+                    console.log('No response frome edit Msg.')
                   }
-                } else {//no response.
-                  console.log('No response frome edit Msg.')
+
+                });
+              } //checks if index is within array
+
+              } else {
+                console.log('Loop cancelled or finished')
+              }
+
+            }
+            //end define editmsg loop
+
+            function isBUDItheLatestMsg(){
+              if (loaded){
+                //console.log('BUDI Loaded, proceeding to get msg.');
+              bot.getMessages({
+                channelID: channel,
+                limit: 1
+              }, function(error, results){
+                var output;
+                //console.log(results[0].id);
+                if (error !== null){console.log(error)};
+                if (results !== 'undefined'){
+                  if (results[0] !== 'undefined'){
+                    if(results[0].id === msgID){//id's match, it is latest msg
+                      return makeBUDILatestMsg(true);
+                    } else {
+                      return makeBUDILatestMsg(false);
+                    }
+                  } else {console.log('first result item not defined')}
+                } else {console.log('results not defined')}
+                //console.log(output);
+              });} else {
+                //not loaded
+                console.log('BUDI not loaded. Cannot check if it is latest msg.');
+              }
+
+            }
+            //end define is latest msg BUDI function
+
+            function makeBUDILatestMsg(trueOrFalse){
+              //  while (isBUDItheLatestMsg() === 'undefined'){console.log('waiting for output');/*wait*/}
+              //console.log('BUDI result is ' + trueOrFalse);
+              if (loaded && trueOrFalse === false){//loaded and budi not latest msg.
+                //delete msgID
+                bot.deleteMessage({
+                  channelID: channel,
+                  messageID: msgID
+                }, function(error){
+                  if (error !== null){
+                    console.log(error);
+                  } else {
+                  //after message deleted, send new message.
+                  bot.sendMessage({
+                    to: channel,
+                    message: msgArray[i]
+                  }, function(error, response){
+                    if (error !== null){console.log(error)};
+                    if (response !== 'undefined'){
+                      if (response.id !== 'undefined'){
+                        msgID = response.id;
+                      }
+                    }
+                  });
+                  }
+                });
+                //end delete method
+                } else {
+                  var errorMsg = '';
+                  if (loaded !== true){errorMsg = 'BUDI not loaded\n';};
+                  if (trueOrFalse){errorMsg = 'BUDI already latest message'}
+                  //console.log(errorMsg);
+                  //console.log(loaded);
+                  //console.log('BUDI:' + trueOrFalse);
                 }
+            }
+            //end reshift BUDI to latest msg method.
+          //  makeBUDILatestMsg();
 
-              });
-            } //checks if index is within array
-          } else {
-            console.log('Loop cancelled or finished')
-          }
-
-          }//end define editmsg loop
     }//end sendmsg callback
     )
 
