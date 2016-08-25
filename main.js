@@ -11,7 +11,7 @@ var youTube = new YouTube();
 youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU');
 
 var config = require('./config.json');
-var toWav = require('audiobuffer-to-wav')
+//var toWav = require('audiobuffer-to-wav')
 var help = require('./help.json');
 var alias = require('./alias.json');
 var soundlog = require('./soundlog.json');
@@ -125,6 +125,65 @@ bot.on('ready',function(){
 });
 
 bot.on('message', function(user, userID, channelID, message, event){
+  //check if wildbot is being used
+  if (message.substring(0,2) === '++' && message !== '++leave-voice'){
+    if (message === '++'){
+      bot.sendMessage({
+        to: channelID,
+        message: 'nice try ' + user + ' im not gonna get pissed off that easily, but fuck u still',
+        typing: true
+      });
+    } else {
+    respond("Dude...", channelID);
+    setTimeout(function(){
+      bot.sendMessage({
+        to: channelID,
+        message: "seriously?",
+        typing: true
+      }, function(){
+      bot.sendMessage({
+        to: channelID,
+        message: "I'm like, right here",
+        typing: true
+      }, function(){
+        bot.sendMessage({
+          to: channelID,
+          message: "ouch",
+          typing: "true"
+        }, function(){
+          bot.sendMessage({
+            to: channelID,
+            message: 'wtf did i ever do to u ' + user,
+            typing: true
+          }, function(){
+            if (message === '++voice'){
+              bot.sendMessage({
+                to:channelID,
+                message: 'FUCK YOU WILDBOT',
+                typing: true
+              }, function(){
+                bot.sendMessage({
+                  to: channelID,
+                  message: '++leave-voice',
+                  typing: true
+                }, function(){
+                  bot.sendMessage({
+                    to: channelID,
+                    message: "there, that's better. try !queue next time fam. ;)",
+                    typing: true
+                  });
+                })
+              })
+            }
+          });
+        });
+      });
+    });
+  }, 1000);}
+
+
+  };
+  //end cheeky check for other bot.
 
 //prefix & alias check:
 if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to cmd methods;

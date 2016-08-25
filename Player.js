@@ -457,9 +457,9 @@ var duration;
 		var continueLoop = true;
 		//BUDI pre-requisites
 		function BUDI(channel){
+			var msgID;
 			var loaded;
 			this.start = function(changingMessage){
-				var msgID;
 				loaded = true;
 				Bot.sendMessage({
 					to: channel,
@@ -510,6 +510,10 @@ var duration;
 			this.stop = function(){
 				if (loaded){
 					continueLoop = false;
+					bot.deleteMessage({
+						channelID: announcementChannel,
+						messageID: msgID
+					})
 				} else {
 					console.log('no loop running');
 				}
@@ -527,7 +531,7 @@ var duration;
 
 			if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
 
-			return "▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + timeLeft;
+			return "▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + ' [' timeLeft + ']';
 		}
 
 		editLooper = new BUDI(channel);
