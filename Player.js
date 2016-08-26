@@ -60,7 +60,7 @@ var duration;
 		if (!data) return notify("Link refused, most likely on the blacklist.");
 		log("Queueing: " + data.location);
 
-		if (tooManyRequests(userID)) return notify(user + "(" + userID + ") has too many requests in queue.");
+		if (tooManyRequests(userID)) return Bot.fixMessage(notify(user + "(" + userID + ") has too many requests in queue."));
 
 		for (var i=0; i<queue.length; i++) {
 			if (queue[i].uID === data.location) return notify("This item is already in queue");
@@ -143,6 +143,10 @@ var duration;
 			});
 		}
 
+	};
+
+	this.printQueue = function(){
+		console.log(queue);
 	};
 
 	this.deleteSong = function(user, userID, songID) {
@@ -310,7 +314,10 @@ var duration;
 	};
 
 	this.skip = function(){
-		enc.kill();
+		if (typeof enc !== 'undefined'){
+		enc.kill();} else {
+			notify("I'm having a little trouble skipping. Might have to leave and rejoin voice. (Working on a fix)");
+		}
 
 	};
 
@@ -454,7 +461,10 @@ var duration;
 			playing = false;
 			last = current;
 			current = undefined;
-			enc.kill();
+			if (typeof enc !== 'undefined'){
+			enc.kill();} else {
+				notify("I'm having a little trouble changing to the next song. Might need to leave and rejoin (Working on a fix) sorry!");
+			}
 			check();
 			Bot.setPresence({game: {name: currentStatus}});
 			Bot.deleteMessage({
@@ -516,7 +526,7 @@ var duration;
 								function editMsgLoop(buildMSG){
 									var editMsgToSend = buildProgressBar();
 									if (continueLoop){
-									isBUDItheLatestMsg();
+									//isBUDItheLatestMsg();
 
 									if (loaded !== true){loaded = true};
 									Bot.editMessage({
@@ -528,7 +538,7 @@ var duration;
 										if (typeof response !== 'undefined'){//response recieved
 											if (response.content === editMsgToSend){//edited Successfully
 
-												setTimeout(carryOnLoopingEditMsg, 2000);
+												setTimeout(carryOnLoopingEditMsg, 5000);
 
 												function carryOnLoopingEditMsg(){
 														editMsgLoop(changingMessage);

@@ -21,11 +21,19 @@ var player = require('./Player.js');
 var Player = '';
 var editLooper;
 
+var CLIArguments = process.argv[2];
+var token = "MjE4NzcyNzg0MDU3Mjg2NjU2.CqID3A.jd-yHrkFntB0VLhmfnmy2ruh-D8";
+
+if (CLIArguments === 'dev'){
+  console.log('Starting Developer mode.')
+  token = "MjE4NzcyNzg0MDU3Mjg2NjU2.CqIH_w.pnZbF7HqN1-ciwO_5PD8S0Dz6pQ";
+};
 
 var prefix = config.prefix;
 
 var bot = new Discord.Client({
-  token: "MjA1MzkxMTI2MjkzNzc0MzM2.CpJbog.TH8o86o4pIoHghC6_U2H3xQwJKg",
+  //token: "MjA1MzkxMTI2MjkzNzc0MzM2.CpJbog.TH8o86o4pIoHghC6_U2H3xQwJKg",
+  token: token, //development mode
   autorun: true
 });
 
@@ -357,15 +365,6 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       }, 'yes');
       //end web streaming command function.
 
-      //skip
-      newCommand('wrongsong', channelMsg, function(){
-        if (Player !== ''){//channel is joined;
-          Player.wrongSong(user, userID);
-        } else {
-          respond('Error, no song is playing or bot not in channel. Please use '+ prefix +'joinvoice or '+ prefix +'play <song> to initiate.', channelID);
-        }
-      });
-
       //view playlist
       newCommand('playlist', channelMsg, function(arg){
         if (isPlayerLoaded()){
@@ -381,7 +380,8 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
         } else {//player not loaded
           respond('No playlist currently set up.', channelID);
         }
-      }, 'yes');//end view playlist
+      }, 'yes');
+      //end view playlist
 
       //skip function
       newCommand('skip', channelMsg, function(){
@@ -391,6 +391,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
           respond('No song / playlist currently playing.', channelID);
         }
       });
+      //end skip function
 
       //test cmd setplaylist interruption
       newCommand('setpi', channelMsg, function(arg){
@@ -437,9 +438,8 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
           });//end yt search query.
         }
 
-      }, 'yes');//end request command function
-
-
+      }, 'yes');
+      //end request command function
 
       //request song
       newCommand('queue', channelMsg, function(link){
@@ -716,7 +716,6 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       }, 'yes');
       //end debug method
 
-
       //get info
       newCommand('getserverinf', channelMsg, function callback(cmdArg){
         console.log(bot)
@@ -789,7 +788,6 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
 
       //end test BUDI
-
       newCommand('budistop', channelMsg, function(){
         editLooper.stop();
       });
@@ -1117,7 +1115,7 @@ function getArg(cmd, msg, channelID){
 //generates help command info;
 function generateHelp(){
 
-  var fullHelp = '```';
+  var fullHelp = '**reCord bot v' + config.ver + '** find on Github: https://github.com/Vizcosity/discord.gi \n\nif it doesnt work deal with it' + '```';
   for (var i = 0; i < help.commands.length; i++){
     var commandName = help.commands[i];
     var commandNameFull = prefix + help.commands[i];
