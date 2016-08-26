@@ -10,6 +10,7 @@ Interesting features:
 - Records voice [Upcoming]
 - Parrots other users [Upcoming]
 - Plays Google Feud [Upcoming]
+- Web control panel [Upcoming]
 
 Still early stages which is why code is so messy (I'm also a beginner), and unstable.
 
