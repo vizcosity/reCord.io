@@ -146,18 +146,34 @@ var duration;
 	};
 
 	this.printQueue = function(){
-		console.log(queue);
+		try {
+			console.log(queue);
+		} catch(e) {err(e); };
+	};
+
+	this.logger = function(){
+		try {
+			console.log(current);
+			console.log(last);
+		} catch(e) { err(e); };
 	};
 
 	this.deleteSong = function(user, userID, songID) {
-		for (var i=0; i<queue.length; i++) {
-			if (queue[i].id === Number(songID)) {
-				if (queue[i].requesterID === userID || mods.indexOf(userID) > -1 ) {
-					notify( user + " has removed the song " + queue[i].title );
-					return queue.splice(i, 1);
-				}
+		try {
+			for (var i=0; i<queue.length; i++) {
+				try{
+					if (queue[i].id === Number(songID)) {
+						try {
+							if (queue[i].requesterID === userID || mods.indexOf(userID) > -1 ) {
+								notify( user + " has removed the song " + queue[i].title );
+								return queue.splice(i, 1);
+							}
+						} catch(e) {err(e); };
+					}
+				} catch(e){err(e);};
+
 			}
-		}
+		} catch(e) {err(e); };
 	};
 
 	this.wrongSong = function(user, userID) {
@@ -193,25 +209,31 @@ var duration;
 	}
 
 	this.printPlaylist = function(){
-		if (typeof queue[0] !== 'undefined'){
-		var currentPlayingSong = queue[0].title;
-		var output = '**Current Song: ' + currentPlayingSong + '**\n \n' + queue.length + ' Songs in playlist: \n';
-		for (var i = 0; i < queue.length; i++){
-			if (typeof queue[i] === 'undefined'){notify("Can't retrieve playlist right now.");} else {
+		try {
+			if (typeof queue[0] !== 'undefined'){
+				try {
+					var currentPlayingSong = queue[0].title;
+					var output = '**Current Song: ' + current.title + '**\n \n' + queue.length + ' Songs in playlist: \n';
+				} catch(e) { err(e); };
+			for (var i = 0; i < queue.length; i++){
+				try {
+					if (typeof queue[i] === 'undefined'){notify("Can't retrieve playlist right now.");} else {
 
-				if (i !== queue.length - 1 ){
-					var position = i + 1;
-				output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**' + '\n';} else {//dont add new line
-					output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**';
-				}
+						if (i !== queue.length - 1 ){
+							var position = i + 1;
+						output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**' + '\n';} else {//dont add new line
+							output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**';
+						}
+					}
+				} catch(e) {err(e); };
 			}
 
-		}
+			return notify(output);
+			} else {//prevent crash if item is not defined.
+				notify("Can't retrieve playlist right now.");
+			}
+		} catch(e) {err(e); };
 
-		return notify(output);
-		} else {//prevent crash if item is not defined.
-			notify("Can't retrieve playlist right now.");
-		}
 	}
 
 	this.setDefaultPlaylist = function(ID) {
@@ -245,14 +267,17 @@ var duration;
 	};
 
 	this.setAnnouncementChannel = function(ID) {
-		var sID = Bot.channels[ID].guild_id;
-		if (!sID) return log('warn', "Cannot find server associated with: " + ID);
-		var cList = Bot.servers[sID].channels;
+		try {
+			var sID = Bot.channels[ID].guild_id;
+			if (!sID) return log('warn', "Cannot find server associated with: " + ID);
+			var cList = Bot.servers[sID].channels;
+		} catch(e) { err(e); };
 		for (var channel in cList) {
 			if (channel === ID && cList[channel].type === "text") {
 				return announcementChannel = ID;
 			}
 		}
+
 	};
 
 	this.setPlaylistInterruption = function(b) {
@@ -315,18 +340,28 @@ var duration;
 
 	this.skip = function(){
 		if (typeof enc !== 'undefined'){
-		enc.kill();} else {
+			try {
+				enc.kill();
+			} catch(e) {
+				err(e);
+			}
+		} else {
 			notify("I'm having a little trouble skipping. Might have to leave and rejoin voice. (Working on a fix)");
 		}
 
 	};
 
 	this.kill = function(){
-		playing = false;
-		queue = [];
-		enc.kill();
-		playing = false;
-		resetStatus();
+
+		try {
+			playing = false;
+			queue = [];
+			enc.kill();
+			playing = false;
+			resetStatus();
+		} catch(e){
+			err(e);
+		}
 
 	}
 
@@ -369,7 +404,7 @@ var duration;
 				a += 1;
 			}
 		}
-		return a >= 5;
+		return a >= 15;
 	}
 	function log() {
 		var types = {
@@ -410,12 +445,20 @@ var duration;
 	var currentSongTitle;
 	var requesterName;
 	function play(currentSong) {
-		var requester = queue[0].requester;
-		var currentPlayingSong = queue[0].title;
+		try {
+			var requester = queue[0].requester;
+			var currentPlayingSong = queue[0].title;
+		} catch(e) { err(e); };
 
 		if (!plInterruption && playingPlaylist) return;
 		if (!ready) return log('warn', "Not ready to play audio");
-		if (playingPlaylist) plRef.kill();
+
+		if (playingPlaylist) {
+			try {
+				plRef.kill();
+			} catch(e) {err(e); };
+
+		}
 
 		var selection; //removed enc from here
 
@@ -444,14 +487,14 @@ var duration;
 			requesterName = requester;
 			Bot.setPresence({game: {name: currentPlayingSong}});
 
-		/*	Bot.sendMessage({
-				to: announcementChannel,
-				message: '**Now playing:** ' + currentPlayingSong + ' _requested by ' + requester + '_'
-			}, function(error, response){
-				if (error !== null){console.log(error)};
-				if (response !== 'undefined' || response !== undefined){
-				notificationMsgId = response.id;}
-			}); */
+						/*	Bot.sendMessage({
+								to: announcementChannel,
+								message: '**Now playing:** ' + currentPlayingSong + ' _requested by ' + requester + '_'
+							}, function(error, response){
+								if (error !== null){console.log(error)};
+								if (response !== 'undefined' || response !== undefined){
+								notificationMsgId = response.id;}
+							}); */
 
 			nowPlayingProgressBar(duration);
 
@@ -462,7 +505,13 @@ var duration;
 			last = current;
 			current = undefined;
 			if (typeof enc !== 'undefined'){
-			enc.kill();} else {
+				try {
+					enc.kill();
+				} catch(e) {
+					err(e);
+				}
+
+			} else {
 				notify("I'm having a little trouble changing to the next song. Might need to leave and rejoin (Working on a fix) sorry!");
 			}
 			check();
@@ -550,7 +599,9 @@ var duration;
 
 									});
 							} else {
-								console.log('Loop cancelled or finished')
+								console.log('Loop cancelled or finished');
+								secondsLeft = 0;
+
 							}
 
 							}//end define editmsg loop
@@ -688,8 +739,10 @@ var duration;
 
 		enc.stdout.once('end', function() {
 			current = undefined;
-			enc.kill();
+			if (typeof enc !== 'undefined'){
+			enc.kill();}
 			playingPlaylist = false;
+			editLooper.stop();
 			check();
 		});
 
@@ -753,6 +806,35 @@ var duration;
 		this.title = title;
 		this.url = url;
 	}
+	function err(error){
+		//deals with error msg by logging it to console & responding to user.
+		try {
+			logE('Error: ' + error);
+			notify('Error: ' + error);
+		} catch (e){
+			console.log('Could not handle error: ' + e);
+		}
+
+	}
+	//end error handler
+
+	//logging:
+	function logE(Message){
+		try {
+			if (typeof serverID !== 'undefined'){
+				var logChannel = config.serverSpecific[serverID].logChannel;
+			} else { serverID = '128319520497598464'};
+			//log('`' + Message + '`', logChannel);
+			bot.sendMessage({
+				to: logChannel,
+				message: '`' + Message + '`'
+			})
+			console.log(Message);
+		} catch (e) {
+			console.log(e);
+		}
+	}
+	//end logging
 }
 
 

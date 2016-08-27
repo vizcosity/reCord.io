@@ -1,9 +1,14 @@
 {
-  "ver": 1,
+  "ver": 0.3,
   "name": "reCord",
   "prefix": "!",
   "status": "Waiting",
   "randomSoundboard": "false",
   "defaultMusicChannel": "151051305295675395",
-  "randomSoundDelay": "6000"
+  "randomSoundDelay": "6000",
+  "serverSpecific": {
+    "128319520497598464": {
+      "logChannel": "219147409094213634"
+    }
+  }
 }

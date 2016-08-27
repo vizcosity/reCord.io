@@ -19,10 +19,11 @@ var Lame = require('lame');
 var spawn = require('child_process').spawn;
 var player = require('./Player.js');
 var Player = '';
+var osmosis = require('osmosis');
 var editLooper;
 
 var CLIArguments = process.argv[2];
-var token = "MjE4NzcyNzg0MDU3Mjg2NjU2.CqID3A.jd-yHrkFntB0VLhmfnmy2ruh-D8";
+var token = "MjA1MzkxMTI2MjkzNzc0MzM2.CpJbog.TH8o86o4pIoHghC6_U2H3xQwJKg";
 
 if (CLIArguments === 'dev'){
   console.log('Starting Developer mode.')
@@ -42,6 +43,9 @@ var currentStatus = config.status;
 
 var randomSoundboard = config.randomSoundboard;
 var randomSoundDelay = parseInt(config.randomSoundDelay);
+var holdConversation = false;
+var desiredResponseChannel;
+var audioFilePlaying = false;
 
 bot.on('ready',function(){
   console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
@@ -58,7 +62,7 @@ bot.on('ready',function(){
   };
 
   bot.sendMessage({
-    to: '151051305295675395',
+    to: config.serverSpecific['128319520497598464'].logChannel,
     message: config.name + ' Successfully loaded.'
   });
 
@@ -71,11 +75,13 @@ bot.on('ready',function(){
   setTimeout(setCurrentStatus, 5000);
 
   function setCurrentStatus(){
+
     bot.setPresence({
       game: {
         name: currentStatus
       }
     });
+
   };
 
   if (randomSoundboard === 'true'){
@@ -91,7 +97,7 @@ bot.on('ready',function(){
         //get msg
         bot.joinVoiceChannel(voiceChannelID, function callback(){
           bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
-              console.log(arg);
+              //console.log(arg);
               stream.playAudioFile(arg);
               bot.setPresence({game: {name: arg}});//setting playing to audiofilename
               stream.once('fileEnd', function(){
@@ -105,7 +111,7 @@ bot.on('ready',function(){
 
                 soundlog['audio'].push(arg);
                 fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
-                  if (err !== null){console.log(err)};
+                  if (err !== null){log(err)};
                 });//end update soundlog file.
               })
             });//end get audio context
@@ -132,226 +138,260 @@ bot.on('ready',function(){
   //end repeat
 });
 
+var conversationHandlerLogic;
+
 bot.on('message', function(user, userID, channelID, message, event){
+
+  if (userID !== bot.id){
+
+  //try setting serverID
+  try {
+    var serverID = bot.channels[channelID].guild_id;
+  } catch(e) { error(e); };
+  //set serverID of message.
+
+  //pass messages to convo handler
+  messageHandler(channelID, message);
+  //end convo handler
+
   //check if wildbot is being used
   if (message.substring(0,2) === '++' && message !== '++leave-voice'){
-    if (message === '++'){
-      bot.sendMessage({
-        to: channelID,
-        message: 'nice try ' + user + ' im not gonna get pissed off that easily, but fuck u still',
-        typing: true
-      });
-    } else {
-    respond("Dude...", channelID);
-    setTimeout(function(){
-      bot.sendMessage({
-        to: channelID,
-        message: "seriously?",
-        typing: true
-      }, function(){
-      bot.sendMessage({
-        to: channelID,
-        message: "I'm like, right here",
-        typing: true
-      }, function(){
+      if (message === '++'){
         bot.sendMessage({
           to: channelID,
-          message: "ouch",
-          typing: "true"
+          message: 'nice try ' + user + ' im not gonna get pissed off that easily, but fuck u still',
+          typing: true
+        });
+      } else {
+      respond("Dude...", channelID);
+      setTimeout(function(){
+        bot.sendMessage({
+          to: channelID,
+          message: "seriously?",
+          typing: true
+        }, function(){
+        bot.sendMessage({
+          to: channelID,
+          message: "I'm like, right here",
+          typing: true
         }, function(){
           bot.sendMessage({
             to: channelID,
-            message: 'wtf did i ever do to u ' + user,
-            typing: true
+            message: "ouch",
+            typing: "true"
           }, function(){
-            if (message === '++voice'){
-              bot.sendMessage({
-                to:channelID,
-                message: 'FUCK YOU WILDBOT',
-                typing: true
-              }, function(){
+            bot.sendMessage({
+              to: channelID,
+              message: 'wtf did i ever do to u ' + user,
+              typing: true
+            }, function(){
+              if (message === '++voice'){
                 bot.sendMessage({
-                  to: channelID,
-                  message: '++leave-voice',
+                  to:channelID,
+                  message: 'FUCK YOU WILDBOT',
                   typing: true
                 }, function(){
                   bot.sendMessage({
                     to: channelID,
-                    message: "there, that's better. try !queue next time fam. ;)",
+                    message: '++leave-voice',
                     typing: true
-                  });
+                  }, function(){
+                    bot.sendMessage({
+                      to: channelID,
+                      message: "there, that's better. try !queue next time fam. ;)",
+                      typing: true
+                    });
+                  })
                 })
-              })
-            }
+              }
+            });
           });
         });
       });
-    });
-  }, 1000);}
+    }, 1000);}
 
 
   };
   //end cheeky check for other bot.
 
-//prefix & alias check:
-if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to cmd methods;
-  //aliascheck
-  var aliasCheck = message.substring(prefix.length, message.length);
-  //check for alias and apply msg swap.
-  if (typeof alias[aliasCheck] !== 'undefined'){
-    channelMsg = prefix + alias[aliasCheck];
-  } else {//no alias
-    var channelMsg = message;
-  }
+
+  //prefix & alias check:
+  if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to cmd methods;
+    //aliascheck
+    var aliasCheck = message.substring(prefix.length, message.length);
+    //check for alias and apply msg swap.
+    if (typeof alias[aliasCheck] !== 'undefined'){
+      channelMsg = prefix + alias[aliasCheck];
+    } else {//no alias
+      var channelMsg = message;
+    }
   //end prefix & alias check;
 
   //log command and user:
-  console.log(user + " tried to execute: " + message);
+  log(user + " tried to execute: " + message);
   //end log command.
 
-//main command list methods;
+  //main command list methods;
 
       //setAlias method:
       newCommand('shortcut', message, function setAlias(arg){
-
+        try {
           var shortcutName = arg.split(' ')[0];
           var aliasCmdName = arg.split(' ')[1];
-          console.log(arg);
+          log(arg);
 
           if (typeof help[shortcutName] == 'undefined'){//command does not already exist.
-            console.log(shortcutName);
+            //log(shortcutName);
             //console.log(aliasCmdName);
-            console.log(arg.substring(shortcutName.length + 1, arg.length));
+            //log(arg.substring(shortcutName.length + 1, arg.length));
 
             alias[shortcutName] = arg.substring(shortcutName.length + 1, arg.length);
 
             fs.writeFile('./alias.json', JSON.stringify(alias, null, 2), function callback(err){
               if (err !== null){console.log(err)};
-              console.log('File write completed Successfully. New Alias: ' + shortcutName + " added which runs: " + alias.shortcutName);
+              log('File write completed Successfully. New Alias: ' + shortcutName + " added which runs: " + alias.shortcutName);
               respond('New Alias: ' + shortcutName + ' now added. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
             });
           } else {
             respond('Command: ' + prefix + shortcutName + ' already exists. Please choose another shortcut name.', channelID);
           }
 
-
+        } catch (e){
+          log(e);
+          reply('Sorry! I encountered an error: ' + e);
+        }
 
       }, 'yes');
       //end shortcut method.
 
       //purge method:
       newCommand('purge', message, function doPurge(arg){
-        purgeCmd(channelMsg, channelID, user, userID);
+        try {
+          purgeCmd(channelMsg, channelID, user, userID);
+        } catch (e) {
+          error(e);
+        }
       }, 'yes');
       //end purge execute command.
 
       //help method
       if(cmdIs('help', channelMsg)){
-        var cmd = help;
-        if ( hasArgs('help', channelMsg) === false ) {
-          //no arguments so generate normal help and send to DM for user;
-          bot.sendMessage({
-            to: userID,
-            message: generateHelp()
-          })
-        } else {//command has arguments
-        //  console.log(getArg(prefix + 'help', message))
-          var helpItem = help[getArg(prefix + 'help', channelMsg, channelID)];
-          var outputHelpCmdText = "```" + "Description: " + helpItem.desc + '\n \n' + "Usage: " + prefix + helpItem.usage + "```";
-            respond(outputHelpCmdText, channelID);
+        try {
+          var cmd = help;
+          if ( hasArgs('help', channelMsg) === false ) {
+            //no arguments so generate normal help and send to DM for user;
+            bot.sendMessage({
+              to: userID,
+              message: generateHelp()
+            })
+          } else {//command has arguments
+          //  console.log(getArg(prefix + 'help', message))
+            var helpItem = help[getArg(prefix + 'help', channelMsg, channelID)];
+            var outputHelpCmdText = "```" + "Description: " + helpItem.desc + '\n \n' + "Usage: " + prefix + helpItem.usage + "```";
+              respond(outputHelpCmdText, channelID);
+          }
+        } catch(e) {
+          error(e);
         }
-
       }
       //end help
 
       //set global cmd prefix;
       if (message.substring(0,10) === prefix + 'setprefix'){
-        setprefixCmd(user, userID, channelID, message);
+        try {
+          setprefixCmd(user, userID, channelID, message);
+        } catch (e) {
+          error(e);
+        };
       }
       //end set global cmd prefix
 
       //change status
       if (cmdIs('status', message)){
-        var newStatus = getArg(prefix + 'status', message);
-        currentStatus = newStatus;
-        bot.setPresence({
-          game: {
-            name: newStatus
-          }
-        });
+        try {
+          var newStatus = getArg(prefix + 'status', message);
+          currentStatus = newStatus;
+          bot.setPresence({
+            game: {
+              name: newStatus
+            }
+          });
 
-        console.log('Status changed to: ' + newStatus);
+          log('Status changed to: ' + newStatus);
+        } catch (e) { error(e) };
       }
       //end change status
 
       //get msg (DEBUG)
       if (cmdIs('getmsg', message)){
-        bot.getMessages({
-          channelID: channelID,
-          limit: 1
-        }, function callback(err, array){
-          console.log(array);
-        })
+        try  {
+          bot.getMessages({
+            channelID: channelID,
+            limit: 1
+          }, function callback(err, array){
+            log(array);
+          })
+        } catch (e) { error(e) };
       }
       //end get msg (Debug)
 
       //anonmsg
       if (cmdIs('anonmsg', message)){
-        if (hasArgs('anonmsg', message)){
-          var messageToSendArray = message.split(' ');
-          var messageToSend = '';
+        try {
+          if (hasArgs('anonmsg', message)){
+            var messageToSendArray = message.split(' ');
+            var messageToSend = '';
 
-          for (var i = 2; i < messageToSendArray.length; i++){
-            if (i < messageToSendArray.length - 1){ messageToSend += messageToSendArray[i] + ' ';} else {
-              messageToSend += messageToSendArray[i]; //dont add a space after last array item
+            for (var i = 2; i < messageToSendArray.length; i++){
+              if (i < messageToSendArray.length - 1){ messageToSend += messageToSendArray[i] + ' ';} else {
+                messageToSend += messageToSendArray[i]; //dont add a space after last array item
+              }
             }
+            //grab id for user to send to, and send message on callback
+              bot.getMessages({
+                channelID: channelID,
+                limit: 1
+                }, function callback(err, array){
+                  if (err !== null){ log(err)};
+                  var userToSendMsgTo = array[0].mentions[0].id;
+
+                  bot.sendMessage({
+                    to: userToSendMsgTo,
+                    message: messageToSend
+                  }, function callback(err){//logging for sneaky means
+                    bot.deleteMessage({
+                      channelID: channelID,
+                      messageID: array[0].id
+                    });
+                    if (err !== null){log(err)};
+                     log(array[0].author.username + ' sent a secret message to ' + array[0].mentions[0].username + ' with msg: ' + messageToSend)
+                  })
+              })
+
+          } else {
+            respond(help.anonmsg.usage, channelID);
           }
-          //grab id for user to send to, and send message on callback
-            bot.getMessages({
-              channelID: channelID,
-              limit: 1
-              }, function callback(err, array){
-                if (err !== null){ console.log(err)};
-                var userToSendMsgTo = array[0].mentions[0].id;
-
-                bot.sendMessage({
-                  to: userToSendMsgTo,
-                  message: messageToSend
-                }, function callback(err){//logging for sneaky means
-                  bot.deleteMessage({
-                    channelID: channelID,
-                    messageID: array[0].id
-                  });
-                  if (err !== null){console.log(err)};
-                   console.log(array[0].author.username + ' send a secret message to ' + array[0].mentions[0].username + ' with msg: ' + messageToSend)
-                })
-            })
-
-        } else {
-          respond(help.anonmsg.usage, channelID);
-        }
+        } catch (e) { error(e); };
       }
       //end anonmsg
 
-      //(TEMPORARY) set voice channel ID;
-      newCommand('setVoiceID', channelMsg, function newVoiceChannelID(Arg){
-        voiceChannelID = Arg;
-      }, 'yes');
-      //end set voice channel ID;
-
       //play RAW audio file (MP3 or PCM etc.);
       newCommand('audio', channelMsg, function audioPlay(arg){
-        if (isPlayerLoaded() === false){
-        audio(arg);} else {
-          respond('Curently playing from playlist. Cannot play sound yet because it will override music and reset playlist. Please wait till playlist finishes and leave voice.', channelID);
-        }
+        try  {
+          if (isPlayerLoaded() === false){
+          audioFilePlaying = true;
+          audio(arg);} else {
+            respond('Curently playing from playlist. Cannot play sound yet because it will override music and reset playlist. Please wait till playlist finishes and leave voice.', channelID);
+          }
+        } catch (e) { error(e); };
+
       }, 'yes');
       //end audio command.
 
       //play web streaming link (not raw MP3) command:
       newCommand('playsong', channelMsg, function playWeb(link){
         //check to see if site is supported;
-        var baseUrl = link.split('/')[2];
+        /*var baseUrl = link.split('/')[2];
         var extraArgs = link.split(' ')[1];
         var supportedSites = {
           "www.youtube.com": "yes"
@@ -360,7 +400,10 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
         var videoID = link.split('=')[1];
         Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
         Player.setAnnouncementChannel(channelID);
-        Player.enqueue(user, userID, link);
+        Player.enqueue(user, userID, link); */
+
+        reply('Use ' + prefix + 'queue instead.');
+
 
       }, 'yes');
       //end web streaming command function.
@@ -401,232 +444,255 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
       //addmods player
       newCommand('addmods', channelMsg, function(arg){
-        if(isPlayerLoaded()){
-          Player.addMods(arg);
-        } else {
-          respond('No song / playlist currently playing.', channelID);
-        }
+        try {
+          if(isPlayerLoaded()){
+            Player.addMods(arg);
+          } else {
+            respond('No song / playlist currently playing.', channelID);
+          }
+        } catch (e) { error(e); };
       },'yes');
       //end addmods
 
       //removemods
       newCommand('removemods', channelMsg, function(arg){
-        if (isPlayerLoaded()){
-          Player.removeMods(arg);
-        } else {
-          respond('No song / playlist currently playing.', channelID);
-        }
+        try   {
+          if (isPlayerLoaded()){
+            Player.removeMods(arg);
+          } else {
+            respond('No song / playlist currently playing.', channelID);
+          }
+        } catch(e){ error(e); };
       }, 'yes');
       //end remove mods
 
       //request song
       newCommand('request', channelMsg, function(link){
-        if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
-          var requestURL = link.split(' ')[0];
-          console.log(requestURL.split('/')[0]);
-          if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
-          Player.setAnnouncementChannel(channelID);
-          Player.enqueue(user, userID, requestURL);
-        } else {//no link, search instead
-          var query = link;
-          console.log(query);
-          youTube.search(query, 2, function(error, results){
-            var videoSearchQueryID = results.items[0].id.videoId;
-            var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
+        try   {
+          voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
+          if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
+            var requestURL = link.split(' ')[0];
+            //console.log(requestURL.split('/')[0]);
+            if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
             Player.setAnnouncementChannel(channelID);
-            Player.enqueue(user, userID, requestURLFromQuery);
-          });//end yt search query.
-        }
+            Player.enqueue(user, userID, requestURL);
+          } else {//no link, search instead
+            var query = link;
+            log("Attempting to queue: " + query);
+            youTube.search(query, 2, function(error, results){
+              var videoSearchQueryID = results.items[0].id.videoId;
+              var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
+              Player.setAnnouncementChannel(channelID);
+              Player.enqueue(user, userID, requestURLFromQuery);
+            });//end yt search query.
+          }
 
+          reply(prefix + 'request is a little buggy. ' + prefix + 'Queue is recommended.');
+        }  catch (e) { error(e); };
       }, 'yes');
       //end request command function
 
       //request song
       newCommand('queue', channelMsg, function(link){
-        if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
-          var requestURL = link.split(' ')[0];
-          console.log(requestURL.split('/')[0]);
-          if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
-          Player.setAnnouncementChannel(channelID);
-          Player.enqueue(user, userID, requestURL);
-        } else {//no link, search instead
-          var query = link;
-          console.log(query);
-          var respondChannel = channelID;
+        try {
+          voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
+          if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
+            var requestURL = link.split(' ')[0];
+            //console.log(requestURL.split('/')[0]);
+            if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
+            Player.setAnnouncementChannel(channelID);
+            Player.enqueue(user, userID, requestURL);
+          } else {//no link, search instead
+            var query = link;
+            log('Attempting to queue: ' + query);
+            var respondChannel = channelID;
 
-          function ytSearchPlayerInterface(query, amtOfResults){
-            var fallbackQuery = query;
-            youTube.search(query, amtOfResults, function(error, results){
-              if (error !== null){respond('YT Search responded with error ' + error, respondChannel)};
-              var allowedResults = [];
-              var videoSearchQueryID;
+            function ytSearchPlayerInterface(query, amtOfResults){
+              var fallbackQuery = query;
+              youTube.search(query, amtOfResults, function(error, results){
+                if (error !== null){respond('YT Search responded with error ' + error, respondChannel)};
+                var allowedResults = [];
+                var videoSearchQueryID;
 
-              if (results.items.length > 0){//results obtained Successfully;
-                for (var i = 0; i < amtOfResults; i++){
-                  if (results.items[i].id.kind === 'youtube#video'){
-                    allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
-                  }
+                if (results.items.length > 0){//results obtained Successfully;
+                  for (var i = 0; i < amtOfResults; i++){
+                    if (results.items[i].id.kind === 'youtube#video'){
+                      allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
+                    }
+                  };
+                } else { respond("Search results could not be obtained.", respondChannel); };
+
+                if (allowedResults.length > 0){ // results obtained.
+                var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
+
+                for (var i = 0; i < allowedResults.length; i++){
+                  if (i !== allowedResults.length - 1){
+                    stringedResults += '**' + i + '.** ' + allowedResults[i].title + '\n';
+                  } else {//finish output
+                    stringedResults += '**' + i + '.** ' + allowedResults[i].title + "\n\n **More** | **None / Cancel**";
+                  };
                 };
-              } else { respond("Search results could not be obtained.", respondChannel); };
+                var requestUser = userID;
+                var searchQueryMsgID;
+                bot.sendMessage({
+                  to: respondChannel,
+                  message: stringedResults
+                }, function(err, response){
+                  searchQueryMsgID = response.id;
+                  log(searchQueryMsgID);
+                });
+                setTimeout(hasUserRespondedToYTSearchQuery, 8000);//wait 4 seconds for user response.
+                bot.on('message', function(userR, userIDR, channelIDR, messageR, eventR){
+                  if (userIDR === requestUser){
 
-              if (allowedResults.length > 0){ // results obtained.
-              var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
+                  if (typeof videoSearchQueryID === 'undefined'){
+                    if (messageR.toLowerCase() === 'none' || messageR.toLowerCase() === 'cancel') {//extra options.
+                      respond('Cancelled search query.', respondChannel);
+                      videoSearchQueryID = 'null';
+                      return;
+                    }
+                    if (messageR.toLowerCase() === 'more'){
+                      videoSearchQueryID = 'null';
+                      ytSearchPlayerInterface(query, amtOfResults + 5);
+                      return;
+                    }
+                    var index = parseInt(messageR);
+                    if (typeof allowedResults[index] !== 'undefined'){//check if number entered.
+                      videoSearchQueryID = allowedResults[index].id;
+                      bot.deleteMessage({
+                        channelID: respondChannel,
+                        messageID: searchQueryMsgID
+                      });
+                      //respond('Queueing ' + allowedResults[index].title, respondChannel);
+                      bot.sendMessage({
+                        to: respondChannel,
+                        message: '**Queueing** ' + allowedResults[index].title
+                      }, function (error, response){
+                        if (error !== null){log(error)};
+                        if (response !== 'undefined'){
+                          var deleteMsgAfterAWhileID = response.id;
+                          setTimeout(function(){
+                            bot.deleteMessage({
+                              channelID: respondChannel,
+                              messageID: deleteMsgAfterAWhileID
+                            });
+                          }, 3000);
+                        }
+                      });
+                      var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
+                      Player.setAnnouncementChannel(respondChannel);
+                      Player.enqueue(user, userID, requestURLFromQuery);
+                      return;
+                    }//if id of user msg response is valid check end.
+                } else {//request done, return nothing.
+                  return;
+                }}//check if should listen to original requester user.
 
-              for (var i = 0; i < allowedResults.length; i++){
-                if (i !== allowedResults.length - 1){
-                  stringedResults += '**' + i + '.** ' + allowedResults[i].title + '\n';
-                } else {//finish output
-                  stringedResults += '**' + i + '.** ' + allowedResults[i].title + "\n\n **More** | **None / Cancel**";
-                };
-              };
-              var requestUser = userID;
-              var searchQueryMsgID;
-              bot.sendMessage({
-                to: respondChannel,
-                message: stringedResults
-              }, function(err, response){
-                searchQueryMsgID = response.id;
-                console.log(searchQueryMsgID);
-              });
-              setTimeout(hasUserRespondedToYTSearchQuery, 8000);//wait 4 seconds for user response.
-              bot.on('message', function(userR, userIDR, channelIDR, messageR, eventR){
-                if (userIDR === requestUser){
+                });//end on message event listener user response for search query.
 
-                if (typeof videoSearchQueryID === 'undefined'){
-                  if (messageR.toLowerCase() === 'none' || messageR.toLowerCase() === 'cancel') {//extra options.
-                    respond('Cancelled search query.', respondChannel);
-                    videoSearchQueryID = 'null';
-                    return;
-                  }
-                  if (messageR.toLowerCase() === 'more'){
-                    videoSearchQueryID = 'null';
-                    ytSearchPlayerInterface(query, amtOfResults + 5);
-                    return;
-                  }
-                  var index = parseInt(messageR);
-                  if (typeof allowedResults[index] !== 'undefined'){//check if number entered.
-                    videoSearchQueryID = allowedResults[index].id;
+
+                function hasUserRespondedToYTSearchQuery(){
+                  if (typeof videoSearchQueryID === 'undefined'){//no input from user.
                     bot.deleteMessage({
                       channelID: respondChannel,
                       messageID: searchQueryMsgID
                     });
-                    //respond('Queueing ' + allowedResults[index].title, respondChannel);
-                    bot.sendMessage({
-                      to: respondChannel,
-                      message: '**Queueing** ' + allowedResults[index].title
-                    }, function (error, response){
-                      if (error !== null){console.log(error)};
-                      if (response !== 'undefined'){
-                        var deleteMsgAfterAWhileID = response.id;
-                        setTimeout(function(){
-                          bot.deleteMessage({
-                            channelID: respondChannel,
-                            messageID: deleteMsgAfterAWhileID
-                          });
-                        }, 3000);
-                      }
-                    });
+                    respond('Queueing first result, ' + allowedResults[0].title, respondChannel);
+                    videoSearchQueryID = allowedResults[0].id;
                     var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
                     Player.setAnnouncementChannel(respondChannel);
                     Player.enqueue(user, userID, requestURLFromQuery);
-                    return;
-                  }//if id of user msg response is valid check end.
-              } else {//request done, return nothing.
-                return;
-              }}//check if should listen to original requester user.
+                  }
+                }//end define check user response method and queue song.
 
-              });//end on message event listener user response for search query.
+              } else {// no results obtained.
+                respond("No results found. Either search query was invalid or it turned up no video results.", respondChannel);
+              }
 
+              });//end yt search query.
 
-              function hasUserRespondedToYTSearchQuery(){
-                if (typeof videoSearchQueryID === 'undefined'){//no input from user.
-                  bot.deleteMessage({
-                    channelID: respondChannel,
-                    messageID: searchQueryMsgID
-                  });
-                  respond('Queueing first result, ' + allowedResults[0].title, respondChannel);
-                  videoSearchQueryID = allowedResults[0].id;
-                  var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
-                  Player.setAnnouncementChannel(respondChannel);
-                  Player.enqueue(user, userID, requestURLFromQuery);
-                }
-              }//end define check user response method and queue song.
+            };
 
-            } else {// no results obtained.
-              respond("No results found. Either search query was invalid or it turned up no video results.", respondChannel);
-            }
-
-            });//end yt search query.
-
-          };
-
-          ytSearchPlayerInterface(query, 5);
-        }
-
-      }, 'yes');//end request command function
+            ytSearchPlayerInterface(query, 5);
+          }
+        } catch (e) { error(e); };
+      }, 'yes');
+      //end queue command function
 
       //setplaylist command
       newCommand('setplaylist', channelMsg, function(arg){
-        if (isPlayerLoaded()){
-          Player.setDefaultPlaylist(arg);
-        } else {
-          respond("Can't set playlist until bot joins voice. Queue a random song and try again or use " + prefix + "joinvoice");
-        }
+        try {
+          if (isPlayerLoaded()){
+            Player.setDefaultPlaylist(arg);
+          } else {
+            reply("Can't set playlist until bot joins voice. Queue a random song and try again or use " + prefix + "joinvoice");
+          }
+        } catch(e) { error(e); };
       }, 'yes');
       //end setplaylist
 
       //randomsound command;
       newCommand('randomsound', channelMsg, function playRandomSound(){
+        try {
         audio(soundlog['audio'][randomIntFromInterval(0, soundlog['audio'].length - 1)]);
+      } catch(e) { error(e); };
       });
       //end randomsound method
 
       //set annoyance
       newCommand('setsurprise', channelMsg, function(){
-        if (config.randomSoundboard === 'true'){
+        try {
+          if (config.randomSoundboard === 'true'){
 
-          config.randomSoundboard = 'false';
+            config.randomSoundboard = 'false';
 
-          fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
-            if (err !== null){console.log(err)};
-            console.log('Surprise sounds set to ' + config.randomSoundboard);
-            respond('Surprise sounds set to ' + config.randomSoundboard + '. I will no longer surprise you with some sounds fam.', channelID);
+            fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+              if (err !== null){log(err)};
+              log('Surprise sounds set to ' + config.randomSoundboard);
+              respond('Surprise sounds set to ' + config.randomSoundboard + '. I will no longer surprise you with some sounds fam.', channelID);
 
-          });
-        } else {//turn on
-          config.randomSoundboard = 'true';
-          fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
-            if (err !== null){console.log(err)};
-            console.log('Surprise sounds set to ' + config.randomSoundboard);
-            respond('Surprise sounds set to ' + config.randomSoundboard + '. The best thing about surprises is regret.', channelID);
+            });
+          } else {//turn on
+            config.randomSoundboard = 'true';
+            fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+              if (err !== null){log(err)};
+              log('Surprise sounds set to ' + config.randomSoundboard);
+              respond('Surprise sounds set to ' + config.randomSoundboard + '. The best thing about surprises is regret.', channelID);
 
-          });
-        }
+            });
+          }
+        }   catch(e) { error(e); };
       });
       //end annoyance command
 
       //soundboard
       newCommand('soundboard', channelMsg, function(){
-        audio('./audio/' + soundlog.soundboard[randomIntFromInterval(0,soundlog.soundboard.length)]);
+        try {
+          audio('./audio/' + soundlog.soundboard[randomIntFromInterval(0,soundlog.soundboard.length)]);
+        } catch(e) { error(e); };
       });
       //end soundboard command
 
       //joinvoice:
       newCommand('joinvoice', channelMsg, function(){
-        Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
-      })//end join voice method
+        try {
+          Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+        } catch(e) { error(e); };
+      });
+      //end join voice method
 
       //leaveVoiceChannel
       newCommand('leavevoice', channelMsg, function(){
-        if (isPlayerLoaded()){Player.kill()};
-        var voiceChannelID = '128319522443624448';
-        bot.leaveVoiceChannel(voiceChannelID);
-        bot.setPresence({
-          game: {
-            name: currentStatus
-          }
-        })
-        Player = '';
+        try {
+          if (isPlayerLoaded()){Player.kill()};
+          bot.leaveVoiceChannel(voiceChannelID);
+          bot.setPresence({
+            game: {
+              name: currentStatus
+            }
+          })
+          Player = '';
+        } catch(e){ error(e); };
       });
       //end leave voice method
 
@@ -634,7 +700,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       newCommand('rec', channelMsg, function(name){
         respond('Command disabled. Currenlty in development.', channelID);
 
-      /*  bot.joinVoiceChannel(voiceChannelID, function callback(){
+        /*  bot.joinVoiceChannel(voiceChannelID, function callback(){
           bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
 
               stream.on('incoming', function(ssrc){
@@ -645,12 +711,10 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
           }); //end join voice */
 
         }, 'yes');//end join voice method
-
-
       //stop record method.
 
       //basic responses;
-        switch (channelMsg) {
+      switch (channelMsg) {
           case prefix + 'ping':
             respond('pong',channelID);
             break;
@@ -660,40 +724,42 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
             break;
 
           default:
-      }//end basic responses
+      }
+      //end basic responses
 
       //restart bot method / command;
       if (channelMsg.substring(0, message.length) === prefix + 'restart'){
+        try {
+          if (isPlayerLoaded()){
+            respond("I'm currently playing music. Would you like me to interrupt and force restart?", channelID);
+            bot.on('message', function (user, userID, channelID, message, event){
 
-        if (isPlayerLoaded()){
-          respond("I'm currently playing music. Would you like me to interrupt and force restart?", channelID);
-          bot.on('message', function (user, userID, channelID, message, event){
-
-            if (message.toLowerCase() === 'yes' || message.toLowerCase() === 'y'){
-              bot.setPresence({game: {name: 'Restarting...'}});
-              bot.sendMessage({channelID: channelID, message: "Ok fam. Restarting."}, function (err){
-                if (err !== null){console.log(err)};
-                console.log(user + ' requested a hard restart.');
-                console.log('/restartChild');
-              });
-            } else if (message.toLowerCase() === 'no' || message.toLowerCase() === 'n'){
-              respond("Alright. I'll wait till I leave voice then restart. If I don't leave automatically, use " + prefix + "lv or " + prefix + "leavevoice", channelID);
-              setInterval(checkIfPlayerLoadedAndRestart, 6000);
-              function checkIfPlayerLoadedAndRestart(){
-                if (isPlayerLoaded() === false){
-                  respond("Finished playing through voice. Restarting now.", channelID);
-                  bot.setPresence({game: {name: 'Restarting...'}});
+              if (message.toLowerCase() === 'yes' || message.toLowerCase() === 'y'){
+                bot.setPresence({game: {name: 'Restarting...'}});
+                bot.sendMessage({channelID: channelID, message: "Ok fam. Restarting."}, function (err){
+                  if (err !== null){log(err)};
+                  log(user + ' requested a hard restart.');
                   console.log('/restartChild');
+                });
+              } else if (message.toLowerCase() === 'no' || message.toLowerCase() === 'n'){
+                respond("Alright. I'll wait till I leave voice then restart. If I don't leave automatically, use " + prefix + "lv or " + prefix + "leavevoice", channelID);
+                setInterval(checkIfPlayerLoadedAndRestart, 6000);
+                function checkIfPlayerLoadedAndRestart(){
+                  if (isPlayerLoaded() === false){
+                    respond("Finished playing through voice. Restarting now.", channelID);
+                    bot.setPresence({game: {name: 'Restarting...'}});
+                    console.log('/restartChild');
+                  }
                 }
-              }
-            }//end check to force restart
-          });//end on message event.
-        } else {
+              }//end check to force restart
+            });//end on message event.
+          } else {
 
-          bot.setPresence({game: {name: 'Restarting...'}});
+            bot.setPresence({game: {name: 'Restarting...'}});
 
-          console.log('/restartChild');
-        }
+            console.log('/restartChild');
+          }
+        } catch(e){ error(e); };
       }
       //end restart bot method
 
@@ -701,10 +767,10 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       if (cmdIs('setusername', channelMsg) && getArg(prefix + 'setusername', channelMsg, channelID).length > 0){
         var newUsername = getArg(prefix + 'setusername', channelMsg);
         config.name = newUsername;
-        console.log('Bot Username changing to: ' + newUsername + '.')
+        log('Bot Username changing to: ' + newUsername + '.')
         fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
           if (err !== null){console.log(err)};
-          console.log('File write completed Successfully. New username: ' + newUsername + ' now applied.');
+          log('File write completed Successfully. New username: ' + newUsername + ' now applied.');
           respond('New username: ' + newUsername + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
         });
       }
@@ -712,53 +778,70 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
 
       //debug console method;
       newCommand('dc', channelMsg, function dc(arg){
-        eval(arg);
+        if (userID === '128319285872427008'){//check to see if I am the one using console.
+          try {
+            eval(arg);
+          } catch(e){
+            respond(e, channelID);
+          }
+
+        } else {
+          log('User: ' + user + ': ' + userID + ' tried to use the following in console: ' + arg);
+          reply('Sorry! Only ' + mention('128319285872427008') + ' can use direct console.');
+        }
       }, 'yes');
       //end debug method
 
       //get info
       newCommand('getserverinf', channelMsg, function callback(cmdArg){
-        console.log(bot)
+        log(bot)
       }, 'yes');
       //end get info method
 
       //quote method;
       if (cmdIs('quote', channelMsg, channelID)){
+        try {
+          if (channelMsg !== prefix + 'quote'){
+          var msgArray = [];
+          var username;
 
-        if (channelMsg !== prefix + 'quote'){
-        var msgArray = [];
-        var username;
+            bot.getMessages({
+              channelID: channelID,
+              limit: 50
+            }, function callback(error, array){
+              if (error !== null){log(error)};
 
-          bot.getMessages({
-            channelID: channelID,
-            limit: 50
-          }, function callback(error, array){
-            if (error !== null){console.log(error)};
-            userQuoteID = array[0].mentions[0].id;
-            for (var i = 0; i < array.length; i++){
-              if (array[i].author.id === userQuoteID && array[i].content.substring(0,1) !== prefix){
-                msgArray.push(array[i].content);
-              };
-            };
+              try {
+                userQuoteID = array[0].mentions[0].id;
+              } catch(e){ log(e); };
 
-            if (msgArray.length > 0){
-              var randomNumber = randomIntFromInterval(0, msgArray.length - 1);
-              var randomQuote = msgArray[randomNumber];
+              try {
+                for (var i = 0; i < array.length; i++){
+                  if (array[i].author.id === userQuoteID && array[i].content.substring(0,1) !== prefix){
+                    msgArray.push(array[i].content);
+                  };
+                };
+              } catch(e) { log(e) };
+              if (msgArray.length > 0){
+                var randomNumber = randomIntFromInterval(0, msgArray.length - 1);
+                if (userQuoteID === '128307686340165632'){var randomQuote = "a lot of people think I'm GAYYY"} else {
+                var randomQuote = msgArray[randomNumber];};
 
-              bot.sendMessage({
-                to: channelID,
-                message: "_'" + randomQuote + "'_"
-              })
+                bot.sendMessage({
+                  to: channelID,
+                  message: "_'" + randomQuote + "'_"
+                })
 
-            } else {
-              respond('No quotes found. \n _I cannot retrieve a random user quote if it is more than 50 messages away._', channelID);
-            }
+              } else {
+                respond('No quotes found. \n _I cannot retrieve a random user quote if it is more than 50 messages away._', channelID);
+              }
 
-          });
-        } else {//end check for args conditional
-          respond('Please mention a user to quote from.', channelID)
-        }
+            });
+          } else {//end check for args conditional
+            respond('Please mention a user to quote from.', channelID)
+          }
 
+        } catch(e) { error(e); };
       }
       //end quote method;
 
@@ -778,7 +861,7 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
               second = i.toString();
             }
             if (i !== 0 && i % incrementFactor === 0){incrementer += 2};
-            console.log(incrementer);
+            //console.log(incrementer);
             testArray.push("▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + ' 00:' + second);
 
         }
@@ -791,213 +874,428 @@ if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to
       newCommand('budistop', channelMsg, function(){
         editLooper.stop();
       });
+      //end testbudi
+
+      newCommand('googlefeud', channelMsg, function(){
+        var respondChannel = channelID;
+        //notify user of startup;
+        bot.sendMessage({
+            to: channelID,
+            message: 'Starting Google Feud. Just a sec.',
+            typing: true
+            });
+
+        //finish sending notify message to channel.
+
+        var stringedCategoriesResults = 'Pick an option from the following to continue: \n**';
+        var catResults = [];
+        osmosis
+        .get('http://www.googlefeud.com/')
+        .find('span.caties')
+        .set('categories')
+        .data(function(listing){
+          catResults.push(listing.categories);
+          log(catResults);
+          if (catResults.length === 4){
+            for (var i = 0; i < catResults.length; i++){
+              if (i !== catResults.length - 1){
+                stringedCategoriesResults += catResults[i] + '      ';
+              } else {
+                stringedCategoriesResults += catResults[i] + '**';
+              }
+            }
+
+            respond(stringedCategoriesResults, channelID);
+
+            var convo = new conversation(channelID);
+            convo.start(function(channelID, message){
+              switch (message.toLowerCase()) {
+                case catResults[0].toLowerCase():
+                  respond(catResults[0] + ' category selected.', channelID);
+                  continueToGFGame(catResults[0]);
+                  convo.stop();
+                  break;
+                case catResults[1].toLowerCase():
+                  respond(catResults[1] + ' category selected.', channelID);
+                  categoryResponseFromUser = catResults[1];
+                  continueToGFGame(catResults[1]);
+                  convo.stop();
+                  break;
+                case catResults[2].toLowerCase():
+                  respond(catResults[2] + ' category selected.', channelID);
+                  categoryResponseFromUser = catResults[2];
+                  continueToGFGame(catResults[2]);
+                  convo.stop();
+                  break;
+                case catResults[3].toLowerCase():
+                  respond(catResults[3] + ' category selected.', channelID);
+                  categoryResponseFromUser = catResults[3];
+                  continueToGFGame(catResults[3]);
+                  convo.stop();
+                  break;
+                default:
+              }
+            });
+            //handle user response for category
+          }//wait till 4 results are collected from site (for categories)
+
+          //proceed to the next stage; after category has been selected.
+          function continueToGFGame(category){
+            log("Proceeding to main game with " + category + " selected.");
+          }
+
+        });//end data listing function.
+
+      });
+      //end google feud
 
 
+
+
+
+
+    }//end check to see if sender is not bot.
     }//end conditional for checking command prefix, other messages ignored.
 
 
-//functions that require on message scope:
+  //functions that require on message scope:
 
-//joins voice channel and plays audio file;
-function audio(arg){
-      var extraArguments = arg.split(' ')[1];
-      var serverID = bot.channels[channelID].guild_id;
-    //  var voiceChannelID = bot.servers[serverID].members[userID]
-      //get msg
-      bot.joinVoiceChannel(voiceChannelID, function callback(){
-        bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
-            console.log(arg);
-            stream.playAudioFile(arg);
-            bot.setPresence({game: {name: arg}});//setting playing to audiofilename
-            stream.once('fileEnd', function(){
-              bot.setPresence({//reverting status
-                game: {
-                  name: currentStatus
-                }
+  //joins voice channel and plays audio file;
+  function audio(arg){
+        var extraArguments = arg.split(' ')[1];
+        try {
+          var serverID = bot.channels[channelID].guild_id;
+        } catch(e) { error(e); };
+      //  var voiceChannelID = bot.servers[serverID].members[userID]
+        //get msg
+        bot.joinVoiceChannel(voiceChannelID, function callback(){
+          bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
+              //console.log(arg);
+              stream.playAudioFile(arg);
+              bot.setPresence({game: {name: arg}});//setting playing to audiofilename
+              stream.once('fileEnd', function(){
+                bot.setPresence({//reverting status
+                  game: {
+                    name: currentStatus
+                  }
+                })
+
+                bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
+
+                soundlog['audio'].push(arg);
+                fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
+                  if (err !== null){log(err)};
+                });//end update soundlog file.
               })
+            });//end get audio context
+        })//end join voice method
 
-              bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
+  }
+  //end play audio command method logic.
 
-              soundlog['audio'].push(arg);
-              fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
-                if (err !== null){console.log(err)};
-              });//end update soundlog file.
-            })
-          });//end get audio context
-      })//end join voice method
-
-}
-//end play audio command method logic.
-
-//function to automate adding new commands
-function newCommand(commandName, message, func, arg){
-    if (cmdIs(commandName, message)){//checks to see if cmd contained within received message.
-      //proceed with command method;
-      if (arg === 'yes'){// requires arguments;
-        if (hasArgs(commandName, message)){//command has arguments, proceed to method;
-          var commandArgs = getArg(prefix + commandName, message);
-                      func(commandArgs);
-        }  else {//no arguments, return usage if no arguments required.
-          if (typeof help[commandName] !== 'undefined'){
-            respond('```Usage: ' + prefix + help[commandName].usage + '```', channelID)
+  //function to automate adding new commands
+  function newCommand(commandName, message, func, arg){
+    try {
+      if (cmdIs(commandName, message)){//checks to see if cmd contained within received message.
+        //proceed with command method;
+        if (arg === 'yes'){// requires arguments;
+          if (hasArgs(commandName, message)){//command has arguments, proceed to method;
+            var commandArgs = getArg(prefix + commandName, message);
+                        func(commandArgs);
+          }  else {//no arguments, return usage if no arguments required.
+            if (typeof help[commandName] !== 'undefined'){
+              respond('```Usage: ' + prefix + help[commandName].usage + '```', channelID)
+            }
           }
+        } else {//command doesn't require arguments
+          func();
         }
-      } else {//command doesn't require arguments
-        func();
       }
+    } catch (e){
+      log(e);
     }
-}
-//end new command function;
+  }
+  //end new command function;
 
-}); // end on 'message' event.
+  //quick reply
+  function reply(msg){
+    respond(msg, channelID);
+  };
+  //end quick reply.
+
+  //error handler
+  function error(error){
+    //deals with error msg by logging it to console & responding to user.
+    try {
+      log('Error: ' + error);
+      reply('Error: ' + error);
+    } catch (e){
+      console.log('Could not handle error: ' + e);
+    }
+
+  }
+  //end error handler
+
+  //logging:
+  function log(Message){
+    try {
+      if (typeof serverID !== 'undefined'){
+        var logChannel = config.serverSpecific[serverID].logChannel;
+      } else { serverID = '128319520497598464'};
+      respond('`' + Message + '`', logChannel);
+      console.log(Message);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  //end logging
+
+
+
+
+});
+//end on 'message' event.
+
+//reconnect on disconnect;
+bot.on('disconnect', function(errMsg, code){
+  bot.connect();
+  console.log(config.name + ' disconnected: ' + errMsg + code)
+});
+//end reconnect
+
+
+
 
 //FUNCTIONS;
 
-function nowPlayingProgressBar(duration){
+//logging:
+function log(Message){
+  try {
+    if (typeof serverID !== 'undefined'){
+      var logChannel = config.serverSpecific[serverID].logChannel;
+    } else { serverID = '128319520497598464'};
+    respond(Message, logChannel);
+    console.log(Message);
+  } catch (e) {
+    console.log(e);
+  }
+}
+//end logging
 
-  //convert duration to seconds left;
-  var secondsLeft = duration;
-  var timeLeft;
+//error handler
+function error(error){
+  //deals with error msg by logging it to console & responding to user.
+  try {
+    log('Error: ' + error);
+    //reply('Error: ' + error);
+    if (typeof serverID !== 'undefined'){
+      var logChannel = config.serverSpecific[serverID].logChannel;
+    } else {
+      serverID = '128319520497598464';
+      var logChannel = config.serverSpecific[serverID].logChannel;
+    };
+    bot.sendMessage({
+      to: logChannel,
+      message: "Sorry fam but I error'd: " + error
+    });
+  } catch(e){
+    console.log('Could not handle error: ' + e);
+  }
 
-  function updateTimeLeft(){
-      if (playing && secondsLeft > 0){
+}
+//end error handler
 
-        secondsLeft--;
-        var minutesCalc = Math.floor(secondsLeft / 60);
-        var secondsCALC = time - minutes * 60;
-        var minutesDISPLAY;
-        var secondsDISPLAY;
-        if (minutesCalc.toString().length === 1){
-          minutesDISPLAY = '0' + minutesCalc.toString();
-        } else {minutesDISPLAY = minutesCalc.toString()};
+//conversation handler
+function messageHandler(channelID, message){
+  try {
+    //to run everything that isn't a command;
+      if (holdConversation && typeof logicForMessageHandler === 'function'){//run only if it is desired to hold a conversation & logic is not undefined & user isn't bot.
+        if (desiredResponseChannel === channelID){//proceed
 
-        if (secondsCALC.toString().length === 1){
-          secondsDISPLAY = '0' + secondsCALC.toString();
-        } else {
-          secondsDISPLAY = secondsCALC.toString();
-        }
-
-        timeLeft = minutesDISPLAY + ':' + secondsDISPLAY;
+        log('Message reached message handler.');
+        logicForMessageHandler(channelID, message);
+        } else {log('Message not part of desired response channel.')};
       }
+  } catch(error){
+    log('Message Handler Err: ' + error);
+  }
+
+}
+//end message handler
+
+function conversation(ConvoChannel){
+  try {
+    desiredResponseChannel = ConvoChannel;
+    this.start = function(inputFunc, callback){
+      log(inputFunc);
+      holdConversation = true;
+      logicForMessageHandler = inputFunc; //declares the function to execute the logic.
+      if (typeof callback === 'function'){callback()};
     }
-  //update time every second;
-  setInterval(updateTimeLeft, 1000);
-  //convert seconds to minutes and seconds format;
-
-  //BUDI pre-requisites
-  function BUDI(channel){
-    var loaded;
-    this.start = function(changingMessage){
-      var msgID;
-      loaded = true;
-      bot.sendMessage({
-        to: channel,
-        message: changingMessage
-      }, function(err, response){
-        if (err !== null){console.log(err)};
-        if (response !== 'undefined'){
-          msgID = response.id;
-        } else {console.log('No response.')};
-              editMsgLoop(changingMessage)
-              function editMsgLoop(changingMessage){
-                if (continueLoop){
-
-                if (loaded !== true){loaded = true};
-                if (i < msgArray.length){
-
-                bot.editMessage({
-                  channelID: channel,
-                  messageID: msgID,
-                  message: changingMessage
-                }, function(error, response){
-                  if (error !== null){console.log(error)};
-                  if (typeof response !== 'undefined'){//response recieved
-                    if (response.content === changingMessage){//edited Successfully
-
-                      i++;
-                      setTimeout(carryOnLoopingEditMsg, 1000);
-
-                      function carryOnLoopingEditMsg(){
-                          editMsgLoop(changingMessage);
-                      }
-                    }
-                  } else {//no response.
-                    console.log('No response frome edit Msg.')
-                  }
-
-                });
-              } //checks if index is within array
-            } else {
-              console.log('Loop cancelled or finished')
-            }
-
-            }//end define editmsg loop
-      }//end sendmsg callback
-      )
-
-    }//end this.start msg loop
 
     this.stop = function(){
-      if (loaded){
-        continueLoop = false;
-      } else {
-        console.log('no loop running');
-      }
+      holdConversation = false;
+      logicForMessageHandler = null;
+      log('No longer listening to user response for conversation.');
     }
-  };
-  //end define budi
+  } catch(e) { error(e); };
+}
+//end conversation
 
-  //start budi
-  var budi = new BUDI(announcementChannel);
+function nowPlayingProgressBar(duration){
 
-  //build the progress bar;
-  for (var i = 0; i < duration; i++){
-  var incrementFactor = 5;
+    //convert duration to seconds left;
+    var secondsLeft = duration;
+    var timeLeft;
 
-      if (i !== 0 && i % incrementFactor === 0){incrementer += 2};
-      outputArray.push("▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + timeLeft);
+    function updateTimeLeft(){
+        if (playing && secondsLeft > 0){
 
-  }
+          secondsLeft--;
+          var minutesCalc = Math.floor(secondsLeft / 60);
+          var secondsCALC = time - minutes * 60;
+          var minutesDISPLAY;
+          var secondsDISPLAY;
+          if (minutesCalc.toString().length === 1){
+            minutesDISPLAY = '0' + minutesCalc.toString();
+          } else {minutesDISPLAY = minutesCalc.toString()};
 
-  var incrementer = 0;
-  function buildProgressBar(){
-    var outputArray = [];
-    var incrementalLoadArray = ["", "────────────", "─", "───────────", "──", "──────────", "───", "─────────", "────", "────────", "─────", "───────", "──────", "──────", "───────", "─────", "────────", "────", "─────────", "───", "─────────", "──", "──────────", "─", "───────────", "", "────────────"];
-    var currentPlaceMarker = "🔘";
+          if (secondsCALC.toString().length === 1){
+            secondsDISPLAY = '0' + secondsCALC.toString();
+          } else {
+            secondsDISPLAY = secondsCALC.toString();
+          }
 
-    if (timeLeft !== 0 && timeLeft % incrementFactor === 0){incrementer += 2};
+          timeLeft = minutesDISPLAY + ':' + secondsDISPLAY;
+        }
+      }
+    //update time every second;
+    setInterval(updateTimeLeft, 1000);
+    //convert seconds to minutes and seconds format;
 
-    return "▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + timeLeft;
-  }
+    //BUDI pre-requisites
+    function BUDI(channel){
 
-  editLooper = new BUDI(channel);
-  editLooper.start(buildProgressBar());
+        var loaded;
+        this.start = function(changingMessage){
+          var msgID;
+          loaded = true;
+          bot.sendMessage({
+            to: channel,
+            message: changingMessage
+          }, function(err, response){
+            if (err !== null){log(err)};
+            if (response !== 'undefined'){
+              msgID = response.id;
+            } else {console.log('No response.')};
+                  editMsgLoop(changingMessage)
+                  function editMsgLoop(changingMessage){
+                    if (continueLoop){
+
+                    if (loaded !== true){loaded = true};
+                    if (i < msgArray.length){
+
+                    bot.editMessage({
+                      channelID: channel,
+                      messageID: msgID,
+                      message: changingMessage
+                    }, function(error, response){
+                      if (error !== null){log(error)};
+                      if (typeof response !== 'undefined'){//response recieved
+                        if (response.content === changingMessage){//edited Successfully
+
+                          i++;
+                          setTimeout(carryOnLoopingEditMsg, 1000);
+
+                          function carryOnLoopingEditMsg(){
+                              editMsgLoop(changingMessage);
+                          }
+                        }
+                      } else {//no response.
+                        log('No response frome edit Msg.')
+                      }
+
+                    });
+                  } //checks if index is within array
+                } else {
+                  log('Loop cancelled or finished')
+                }
+
+                }//end define editmsg loop
+          }//end sendmsg callback
+          )
+
+        }//end this.start msg loop
+
+        this.stop = function(){
+          if (loaded){
+            continueLoop = false;
+          } else {
+            log('No edit loop running.');
+          }
+        }
+
+      //end define budi
+
+      //start budi
+      var budi = new BUDI(announcementChannel);
+
+      //build the progress bar;
+      for (var i = 0; i < duration; i++){
+      var incrementFactor = 5;
+
+          if (i !== 0 && i % incrementFactor === 0){incrementer += 2};
+          outputArray.push("▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + timeLeft);
+
+      }
+
+      var incrementer = 0;
+      function buildProgressBar(){
+        var outputArray = [];
+        var incrementalLoadArray = ["", "────────────", "─", "───────────", "──", "──────────", "───", "─────────", "────", "────────", "─────", "───────", "──────", "──────", "───────", "─────", "────────", "────", "─────────", "───", "─────────", "──", "──────────", "─", "───────────", "", "────────────"];
+        var currentPlaceMarker = "🔘";
+
+        if (timeLeft !== 0 && timeLeft % incrementFactor === 0){incrementer += 2};
+
+        return "▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + timeLeft;
+      }
+
+      editLooper = new BUDI(channel);
+      editLooper.start(buildProgressBar());
+    }
+
+
+
 }
 //end define progress bar func
 
 //is player loaded check;
 function isPlayerLoaded(){
-  if (Player !== ''){return true} else {return false};
+  try {
+    if (Player !== ''){return true} else {return false};
+  } catch(e) {
+    error(e);
+  };
 };
 
 //respond function:
 function respond(msg, channelID, user, userID){
-
+  try {
         bot.sendMessage({
           to: channelID,
           message: msg
         }, function callback(error){
           if (error !== null){
-            console.log(error)
+            log(error)
           }
         })
-
+      } catch(e) { error(e); };
 }
 //end respond logic
 
 //purge function logic
 function purgeCmd(message, channelID, user, userID){
-
+  try {
 
         if (message === prefix + 'purge'){
             bot.sendMessage({
@@ -1064,30 +1362,32 @@ function purgeCmd(message, channelID, user, userID){
               respond('```Please enter a number between 2 and 100. Entries greater than 100 are not supported by the Discord BOT Api (Too resource intensive). emplan sorry guys.```', channelID);
             }
           };
-
+        } catch(e) { error(e); };
       }
 //finish purge method
 
 //setglobal prefix method;
 function setprefixCmd(user, userID, channelID, message){
-
-    var newPrefix = getArg(prefix + 'setprefix', message);
-    console.log(newPrefix);
-    bot.sendMessage({to: channelID, message: 'Setting new command prefix: ' + newPrefix + '. This will be ready after restart.'},
-    function callback(err){
-      config.prefix = newPrefix;
-      console.log('Prefix changed to ' + newPrefix + '. Applying change to JSON file now.');
-      fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
-        console.log('File write completed Successfully. New prefix: ' + newPrefix + ' now applied.');
-        respond('New prefix: ' + newPrefix + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
-      });
-    })
+  try {
+      var newPrefix = getArg(prefix + 'setprefix', message);
+      log(newPrefix);
+      bot.sendMessage({to: channelID, message: 'Setting new command prefix: ' + newPrefix + '. This will be ready after restart.'},
+      function callback(err){
+        config.prefix = newPrefix;
+        log('Prefix changed to ' + newPrefix + '. Applying change to JSON file now.');
+        fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+          log('File write completed Successfully. New prefix: ' + newPrefix + ' now applied.');
+          respond('New prefix: ' + newPrefix + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
+        });
+      })
+    } catch (e) { error(e); };
   }
 //end set prefix method;
 
 
 //grabs arguments for input command.
 function getArg(cmd, msg, channelID){
+  try {
     var args = msg.substring(cmd.length + 1, msg.length);
     if (args.length > 0){//arguments exist;
       return args;
@@ -1097,42 +1397,45 @@ function getArg(cmd, msg, channelID){
         message: help.usage[cmd]
       })
     }
+  } catch(e) {error(e); };
 }
 //end get command arguments function
 
 
 //function to check if command is contained within input string / message.
-  function cmdIs(cmdName, message){
+function cmdIs(cmdName, message){
+  try {
     if (message.substring(0 + prefix.length, cmdName.length + 1) === cmdName) {
 
       return true
 
     } else {return false};
+  } catch(e) { error(e); };
   }
 //end check if command function;
 
 
 //generates help command info;
 function generateHelp(){
+  try {
+    var fullHelp = '**reCord bot v' + config.ver + '** find on Github: https://github.com/Vizcosity/discord.gi \n\nif it doesnt work deal with it' + '```';
+    for (var i = 0; i < help.commands.length; i++){
+      var commandName = help.commands[i];
+      var commandNameFull = prefix + help.commands[i];
+      var info = help[commandName].desc;
+      var usage = 'Usage: ' + help[commandName].usage;
 
-  var fullHelp = '**reCord bot v' + config.ver + '** find on Github: https://github.com/Vizcosity/discord.gi \n\nif it doesnt work deal with it' + '```';
-  for (var i = 0; i < help.commands.length; i++){
-    var commandName = help.commands[i];
-    var commandNameFull = prefix + help.commands[i];
-    var info = help[commandName].desc;
-    var usage = 'Usage: ' + help[commandName].usage;
+      var outputString = commandNameFull + ' - ' + info + '\n';
+      if (i === help.commands.length - 1){
+        fullHelp += outputString + '```';
+      } else {
+        fullHelp += outputString;
+      }
 
-    var outputString = commandNameFull + ' - ' + info + '\n';
-    if (i === help.commands.length - 1){
-      fullHelp += outputString + '```';
-    } else {
-      fullHelp += outputString;
     }
 
-  }
-
-  return fullHelp;
-
+    return fullHelp;
+  } catch(e){ error(e); };
 }
 //end generate help function;
 
@@ -1144,20 +1447,21 @@ function randomIntFromInterval(min, max){
 
 //checks if command has arguments;
 function hasArgs(cmd, message, type){
-    //assumes that correct command is input;
-    var calc1 = prefix + cmd + ' ';
-  if (message.substring(0, prefix.length + cmd.length + 1) === calc1 && message.length > calc1.length){
-    //command has arguments
-    if (type === undefined){
-      return true;
+  try {
+      //assumes that correct command is input;
+      var calc1 = prefix + cmd + ' ';
+    if (message.substring(0, prefix.length + cmd.length + 1) === calc1 && message.length > calc1.length){
+      //command has arguments
+      if (type === undefined){
+        return true;
+      } else {
+        if (typeof getArg(cmd, message) === type){ return true} else {console.log(cmd + ' has args ' + getArg(cmd, message) + ' but not correct type'); return false};
+      }
     } else {
-      if (typeof getArg(cmd, message) === type){ return true} else {console.log(cmd + ' has args ' + getArg(cmd, message) + ' but not correct type'); return false};
+      log(cmd + ' has no arguments. Returning false');
+      return false
     }
-  } else {
-    console.log(cmd + ' has no arguments. Returning false');
-    return false
-  }
-
+  } catch(e){ error(e); };
 }
 //end check to see if cmd has arguments function
 
@@ -1173,7 +1477,7 @@ function printObject(o) {
 }
 //end print obj Array
 
-
+/*
 function outputYTAudio(stream, url, callback){
 
     var lame = new Lame.Decoder();
@@ -1188,188 +1492,203 @@ function outputYTAudio(stream, url, callback){
     lame.once('end', callback);
 }
 //end get yt stream function
+*/
 
 
 //BUDI
 function BUDI(channel){
-  var loaded, continueLoop,
-  loopArray = true, stayAsLatestMsg = true;
-  //initiate BUDI by sending msg to channel.
-  /* bot.sendMessage({
-    to: channel,
-    message: msgArray[0]
-  }, function(error, response){
-    if (error !== null){console.log(error)};
-    var msgID = response.id;
-    var i = 0;
-    bot.editMessage({
-      channelID: channel,
-      messageID: msgID,
-      message: msgArray[i]
-    }, function(err, response){
-      if (err !== null){console.log(err)};
-      i++;
-      editMsgLoop(msgArray[i]);
-    });
-
-    function alternateMsgArray(arr, outputVar){
-
-    }
-
-
-
-
-  }); */
-
-  continueLoop = true;
-  this.start = function(msgArray){
-    var msgID;
-    loaded = true;
-    var i = 1;
-    bot.sendMessage({
+    try {
+    var loaded, continueLoop,
+    loopArray = true, stayAsLatestMsg = true;
+    //initiate BUDI by sending msg to channel.
+    /* bot.sendMessage({
       to: channel,
       message: msgArray[0]
-    }, function(err, response){
-      if (err !== null){console.log(err)};
-      if (response !== 'undefined'){
-        msgID = response.id
-      } else {console.log('No response.')};
+    }, function(error, response){
+      if (error !== null){console.log(error)};
+      var msgID = response.id;
+      var i = 0;
+      bot.editMessage({
+        channelID: channel,
+        messageID: msgID,
+        message: msgArray[i]
+      }, function(err, response){
+        if (err !== null){console.log(err)};
+        i++;
+        editMsgLoop(msgArray[i]);
+      });
+
+      function alternateMsgArray(arr, outputVar){
+
+      }
 
 
-            editMsgLoop(msgArray[i]);//start msg loop
 
-            function editMsgLoop(editedMsg){
 
-              if (continueLoop){
+    }); */
 
-              if (loaded !== true){loaded = true};
-              if (i < msgArray.length){
+    continueLoop = true;
+    this.start = function(msgArray){
+      var msgID;
+      loaded = true;
+      var i = 1;
+      bot.sendMessage({
+        to: channel,
+        message: msgArray[0]
+      }, function(err, response){
+        if (err !== null){log(err)};
+        if (response !== 'undefined'){
+          msgID = response.id
+        } else {log('No response.')};
 
-                  bot.editMessage({
-                    channelID: channel,
-                    messageID: msgID,
-                    message: editedMsg
-                  }, function(error, response){
-                    if (error !== null){console.log(error)};
-                    if (typeof response !== 'undefined'){//response recieved
-                      if (response.content === msgArray[i]){//edited Successfully
 
-                    i++;
-                    setTimeout(carryOnLoopingEditMsg, 1000);
+              editMsgLoop(msgArray[i]);//start msg loop
 
-                    function carryOnLoopingEditMsg(){
-                      isBUDItheLatestMsg();
-                      if (loopArray && i === msgArray.length){
-                        //reset i;
-                        i = 0;
-                        editMsgLoop(msgArray[i]);
-                        } else {//no loop, continue normally till end of array.
-                        editMsgLoop(msgArray[i]);}
+              function editMsgLoop(editedMsg){
+
+                if (continueLoop){
+
+                if (loaded !== true){loaded = true};
+                if (i < msgArray.length){
+
+                    bot.editMessage({
+                      channelID: channel,
+                      messageID: msgID,
+                      message: editedMsg
+                    }, function(error, response){
+                      if (error !== null){log(error)};
+                      if (typeof response !== 'undefined'){//response recieved
+                        if (response.content === msgArray[i]){//edited Successfully
+
+                      i++;
+                      setTimeout(carryOnLoopingEditMsg, 1000);
+
+                      function carryOnLoopingEditMsg(){
+                        isBUDItheLatestMsg();
+                        if (loopArray && i === msgArray.length){
+                          //reset i;
+                          i = 0;
+                          editMsgLoop(msgArray[i]);
+                          } else {//no loop, continue normally till end of array.
+                          editMsgLoop(msgArray[i]);}
+                        }
                       }
+                    } else {//no response.
+                      log('No response frome edit Msg.')
                     }
-                  } else {//no response.
-                    console.log('No response frome edit Msg.')
-                  }
 
-                });
-              } //checks if index is within array
+                  });
+                } //checks if index is within array
 
-              } else {
-                console.log('Loop cancelled or finished')
+                } else {
+                  log('Loop cancelled or finished')
+                }
+
               }
+              //end define editmsg loop
 
-            }
-            //end define editmsg loop
-
-            function isBUDItheLatestMsg(){
-              if (loaded){
-                //console.log('BUDI Loaded, proceeding to get msg.');
-              bot.getMessages({
-                channelID: channel,
-                limit: 1
-              }, function(error, results){
-                var output;
-                //console.log(results[0].id);
-                if (error !== null){console.log(error)};
-                if (results !== 'undefined'){
-                  if (results[0] !== 'undefined'){
-                    if(results[0].id === msgID){//id's match, it is latest msg
-                      return makeBUDILatestMsg(true);
-                    } else {
-                      return makeBUDILatestMsg(false);
-                    }
-                  } else {console.log('first result item not defined')}
-                } else {console.log('results not defined')}
-                //console.log(output);
-              });} else {
-                //not loaded
-                console.log('BUDI not loaded. Cannot check if it is latest msg.');
-              }
-
-            }
-            //end define is latest msg BUDI function
-
-            function makeBUDILatestMsg(trueOrFalse){
-              //  while (isBUDItheLatestMsg() === 'undefined'){console.log('waiting for output');/*wait*/}
-              //console.log('BUDI result is ' + trueOrFalse);
-              if (loaded && trueOrFalse === false){//loaded and budi not latest msg.
-                //delete msgID
-                bot.deleteMessage({
+              function isBUDItheLatestMsg(){
+                if (loaded){
+                  //console.log('BUDI Loaded, proceeding to get msg.');
+                bot.getMessages({
                   channelID: channel,
-                  messageID: msgID
-                }, function(error){
-                  if (error !== null){
-                    console.log(error);
-                  } else {
-                  //after message deleted, send new message.
-                  bot.sendMessage({
-                    to: channel,
-                    message: msgArray[i]
-                  }, function(error, response){
-                    if (error !== null){console.log(error)};
-                    if (response !== 'undefined'){
-                      if (response.id !== 'undefined'){
-                        msgID = response.id;
+                  limit: 1
+                }, function(error, results){
+                  var output;
+                  //console.log(results[0].id);
+                  if (error !== null){log(error)};
+                  if (results !== 'undefined'){
+                    if (results[0] !== 'undefined'){
+                      if(results[0].id === msgID){//id's match, it is latest msg
+                        return makeBUDILatestMsg(true);
+                      } else {
+                        return makeBUDILatestMsg(false);
                       }
+                    } else {log('first result item not defined')}
+                  } else {log('results not defined')}
+                  //console.log(output);
+                });} else {
+                  //not loaded
+                  log('BUDI not loaded. Cannot check if it is latest msg.');
+                }
+
+              }
+              //end define is latest msg BUDI function
+
+              function makeBUDILatestMsg(trueOrFalse){
+                //  while (isBUDItheLatestMsg() === 'undefined'){console.log('waiting for output');/*wait*/}
+                //console.log('BUDI result is ' + trueOrFalse);
+                if (loaded && trueOrFalse === false){//loaded and budi not latest msg.
+                  //delete msgID
+                  bot.deleteMessage({
+                    channelID: channel,
+                    messageID: msgID
+                  }, function(error){
+                    if (error !== null){
+                      log(error);
+                    } else {
+                    //after message deleted, send new message.
+                    bot.sendMessage({
+                      to: channel,
+                      message: msgArray[i]
+                    }, function(error, response){
+                      if (error !== null){log(error)};
+                      if (response !== 'undefined'){
+                        if (response.id !== 'undefined'){
+                          msgID = response.id;
+                        }
+                      }
+                    });
                     }
                   });
+                  //end delete method
+                  } else {
+                    var errorMsg = '';
+                    if (loaded !== true){errorMsg = 'BUDI not loaded\n';};
+                    if (trueOrFalse){errorMsg = 'BUDI already latest message'}
+                    //console.log(errorMsg);
+                    //console.log(loaded);
+                    //console.log('BUDI:' + trueOrFalse);
                   }
-                });
-                //end delete method
-                } else {
-                  var errorMsg = '';
-                  if (loaded !== true){errorMsg = 'BUDI not loaded\n';};
-                  if (trueOrFalse){errorMsg = 'BUDI already latest message'}
-                  //console.log(errorMsg);
-                  //console.log(loaded);
-                  //console.log('BUDI:' + trueOrFalse);
-                }
-            }
-            //end reshift BUDI to latest msg method.
-          //  makeBUDILatestMsg();
+              }
+              //end reshift BUDI to latest msg method.
+            //  makeBUDILatestMsg();
 
-    }//end sendmsg callback
-    )
+      }//end sendmsg callback
+      )
 
-  }//end this.start msg loop
+    }//end this.start msg loop
 
-  this.stop = function(){
-    if (loaded){
-    continueLoop = false;} else {
-      console.log('no loop running');
+    this.stop = function(){
+      if (loaded){
+      continueLoop = false;} else {
+        log('no loop running');
+      }
     }
-  }
-};
+  } catch(e) { error(e); };
+  };
 //end define budi
 
 //define is last message
 function isLastMessage(msgID, channelIDCODE){
-  bot.getMessages({
-    channelID: channelIDCODE,
-    limit: 1
-  }, function(error, messageArr){
-    if (error !== null){console.log(error)};
-    if (messageArr[0].id === msgID){ return true } else {return false}
-  });
+  try  {
+    bot.getMessages({
+      channelID: channelIDCODE,
+      limit: 1
+    }, function(error, messageArr){
+      if (error !== null){console.log(error)};
+      if (messageArr[0].id === msgID){ return true } else {return false}
+    });
+  } catch(e){error(e);};
 }
 //end is last message
+
+//mention the user in chat;
+function mention(userID){
+  try {
+    return '<@' + userID + '>';
+  } catch(e) {
+    error(e);
+  }
+}
+//mention the user in chat
