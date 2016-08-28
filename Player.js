@@ -361,7 +361,7 @@ var duration;
 	var usersThatHaveSkippedThisSession = {};
 	this.skip = function(userID){
 
-		if (hasPowerToSkip(userID) || current.id === userID){
+		if (hasPowerToSkip(userID) || current.requesterID === userID){
 			//immediately skip if has power or requester is requesting skip.
 			if (typeof enc !== 'undefined'){
 				try {
