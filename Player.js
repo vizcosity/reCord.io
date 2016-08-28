@@ -10,6 +10,9 @@ function Player(Bot, YTKey, SCInfo, channel) {
 		childProc = require('child_process'),
 		SC = require('node-soundcloud');
 
+
+
+	var voiceChannel = channel;
 	var editLooper;
 	var enc;
 	var configFile = require('./config.json');
@@ -71,7 +74,10 @@ var duration;
 			request (API.Youtube.ContentDetails(data.location), function(err, res, body) {
 				if (err) return log('error', err);
 				body = JSON.parse(body);
+
+				//try {
 				if (body.items.length === 0) { return log('warn', data.location + " is not a valid YouTube video ID."); }
+				//} catch(e) { notify(e); };
 
 				duration = turnStupidAssYoutubeShitIntoActualSeconds(body.items[0].contentDetails.duration);
 				if (duration > 480) return notify("The item provided has a duration of over 8 minutes. Ignoring.");
@@ -123,6 +129,7 @@ var duration;
 						});
 					});
 				});
+
 			});
 		} else if (data.type === "SC") {
 			SC.get( API.SoundCloud.CheckLink("https://soundcloud.com" + data.location), function(errO, resO) {
@@ -346,16 +353,114 @@ var duration;
 		});
 	};
 
-	this.skip = function(){
-		if (typeof enc !== 'undefined'){
-			try {
-				enc.kill();
-				rebuildPlaylist(queue);
-			} catch(e) {
-				err(e);
+	try {
+		var serverID = bot.channels[announcementChannel].guild_id;
+	} catch(e) {err(e); };
+	var activelyCollecting = false;
+	var collectedSkips = 0;
+	var usersThatHaveSkippedThisSession = {};
+	this.skip = function(userID){
+
+		if (hasPowerToSkip(userID) || current.id === userID){
+			//immediately skip if has power or requester is requesting skip.
+			if (typeof enc !== 'undefined'){
+				try {
+					enc.kill();
+					rebuildPlaylist(queue);
+					Bot.sendMessage({
+						to: announcementChannel,
+						message: '**Successfully skipped current song.**'
+					}, function callback(err, response){
+						setTimeout(function(){
+							Bot.deleteMessage({
+							channelID: announcementChannel,
+							messageID: response.id
+						})}, 3000);
+					});
+				} catch(e) {
+					err(e);
+				}
+			} else {
+				notify("I'm having a little trouble skipping. Might have to leave and rejoin voice. (Working on a fix)");
 			}
+
 		} else {
-			notify("I'm having a little trouble skipping. Might have to leave and rejoin voice. (Working on a fix)");
+			//voteskip instead.
+
+			//get amount of users from channel;
+			try {
+				if (activelyCollecting === false){
+					collectedSkips = 0;
+				}
+				var usersInVoiceChannel = Object.keys(Bot.servers[serverID].channels[voiceChannel].members).length - 1; //(bot doesn't count)
+				var skipsRequired = Math.floor(usersInVoiceChannel * 0.51); //requires the majority to skip.
+				activelyCollecting = true;
+
+				if (typeof usersThatHaveSkippedThisSession[userID] === 'undefined'){
+					collectedSkips++;
+					usersThatHaveSkippedThisSession[userID] = '';
+				} else {
+					Bot.sendMessage({
+						to: announcementChannel,
+						message: '<@' + userID + '> ' + 'You have already voted to skip.'
+					}, function callback(err, response){
+						setTimeout(function(){
+								Bot.deleteMessage({
+								channelID: announcementChannel,
+								messageID: response.id
+							});
+						}, 3000);
+					});
+				}
+
+				var skipsleft = skipsRequired - collectedSkips;
+
+				if (collectedSkips >= skipsRequired){
+					//skip
+					if (typeof enc !== 'undefined'){
+
+						try {
+							enc.kill();
+							rebuildPlaylist(queue);
+							activelyCollecting = false;
+							usersThatHaveSkippedThisSession = {};
+							Bot.sendMessage({
+								to: announcementChannel,
+								message: '**Successfully skipped current song.**'
+							}, function callback(err, response){
+								setTimeout(function(){
+									Bot.deleteMessage({
+									channelID: announcementChannel,
+									messageID: response.id
+								})}, 3000);
+							});
+
+						} catch(e) {
+							err(e);
+						}
+					} else {
+						notify("I'm having a little trouble skipping. Might have to leave and rejoin voice. (Working on a fix)");
+					}
+
+					activelyCollecting = false;
+				} else {
+					//return skips left;
+					//notify('Voted to skip. ' +  skipsleft + ' remaining to skip. [' + collectedSkips + '/' + skipsRequired + ']');
+					try {
+						Bot.sendMessage({
+							to: announcementChannel,
+							message: 'Voted to skip. *' +  skipsleft + '* remaining to skip. [' + collectedSkips + '/' + skipsRequired + ']'
+						}, function callback(err, response){
+							setTimeout(function(){
+								Bot.deleteMessage({
+								channelID: announcementChannel,
+								messageID: response.id
+							})}, 3000)
+						});
+					} catch(e) { err(e); };
+				}
+
+			} catch (e){ err(e); };
 		}
 
 	};
@@ -393,6 +498,21 @@ var duration;
 		if (blacklist.indexOf(ret.location) > -1) return false;
 
 		return ret;
+	}
+	function hasPowerToSkip(userID){
+		var skipPowerRole = '219486429452042251';
+		var output = false;
+		try {
+			var userRoles = Bot.servers[serverID].members[userID].roles;
+
+			for (var i = 0; i < userRoles.length; i++) {
+					if (userRoles[i] === skipPowerRole){
+						output = true;
+					}
+			};
+
+		} catch(e) {  err(e); };
+		return output;
 	}
 	function turnStupidAssYoutubeShitIntoActualSeconds(input) {
 		var reptms = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/;
@@ -626,6 +746,7 @@ var duration;
 			this.stop = function(){
 				if (loaded){
 					continueLoop = false;
+					secondsLeft = 0;
 					Bot.deleteMessage({
 						channelID: announcementChannel,
 						messageID: msgID

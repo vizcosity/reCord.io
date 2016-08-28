@@ -150,6 +150,10 @@ bot.on('message', function(user, userID, channelID, message, event){
   } catch(e) { error(e); };
   //set serverID of message.
 
+  //message filtering
+  filter(message.toLowerCase(), event);
+  //end message filtering
+
   //pass messages to convo handler
   messageHandler(channelID, message);
   //end convo handler
@@ -211,7 +215,7 @@ bot.on('message', function(user, userID, channelID, message, event){
     }, 1000);}
 
 
-  } else if (message.substring(0, '++rule34'.length) === '++rule34'){
+    } else if (message.substring(0, '++rule34'.length) === '++rule34'){
     try  {
       var disgustResponses = [
         'wtf dude u nasty',
@@ -455,7 +459,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       //skip function
       newCommand('skip', channelMsg, function(){
         if (isPlayerLoaded()){
-          Player.skip();
+          Player.skip(userID);
         } else {//player not loaded.
           respond('No song / playlist currently playing.', channelID);
         }
@@ -528,7 +532,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           var initialmsgID = event.d.id;
           if (audioFilePlaying){error('Local audio file currently playing. Please ' + prefix + 'lv (' + prefix + 'leave-voice) and try queuing again.')} else {
             voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
-            if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
+            if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
               var requestURL = link.split(' ')[0];
               //console.log(requestURL.split('/')[0]);
               if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
@@ -670,6 +674,78 @@ bot.on('message', function(user, userID, channelID, message, event){
         } catch(e) { error(e); };
       }, 'yes');
       //end setplaylist
+
+      //filtering
+      newCommand('filter', channelMsg, function(arg){
+        try {
+          var firstArg = arg.split(' ')[0];
+          if (firstArg === 'list'){
+            //no arguments, return filtered words;
+            try {
+              var stringedOutput = '**List of filtered words:**\n\n';
+              for (var i = 0; i < config.filter.length; i++){
+                if (i !== config.filter.length){
+                  stringedOutput += '"' + config.filter[i] + '"\n';
+                } else {
+                  stringedOutput += '"' + config.filter[i] + '"';
+                }
+              }
+            } catch(e) { error(e); };
+
+            try {
+              reply(stringedOutput);
+            } catch(e){ error(e); };
+
+          }
+
+          if (firstArg === 'add'){
+            var filterToAdd = arg.substring('add'.length + 1, arg.length).toLowerCase();
+            if (filterToAdd !== '' && filterToAdd !== '  ' && filterToAdd !== '   ' && filterToAdd !== '     '){
+              if (filterToAdd.length <= 3 && userID !== '128319285872427008'){
+                error('Only ' + mention('128319285872427008') + ' can add filters that are 3 characters long or less for now.\n\n (Will add support for admin roles to be able to do this soon.)');
+              } else {
+                if (filterExists(filterToAdd) !== false){//filter already exists
+                  error('Filter: ' + filterToAdd + ' already exists.');
+                } else {
+                  config.filter.push(filterToAdd);
+                  fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+                    if (err !== null){log(err)};
+                    log(user + ': ' + userID + ' added filter: "' + filterToAdd + '"');
+                    respond('Filter: *"' + filterToAdd + '"* successfully added.', channelID);
+                  });
+                }
+              }//end check for small filters
+            } else {
+              error('Cannot filter spaces alone.');
+            }
+          }//check for first argument
+
+          if (firstArg === 'remove'){
+            var filterToRemove = arg.substring('remove'.length + 1, arg.length);
+            var filterIndex = filterExists(filterToRemove); //will be false if doesn't exist; returns index if does.
+            if (filterExists(filterToRemove) === false){  error('Filter: ' + filterToRemove + ' does not exist.'); } else {//filter exists, proceed to removal
+              config.filter.splice(filterIndex, 1); //removes filter from array;
+              fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+                if (err !== null){log(err)};
+                log(user + ': ' + userID + ' removed filter: "' + filterToRemove + '"');
+                respond('Filter: *"' + filterToRemove + '"* successfully removed.', channelID);
+              });
+            }
+          }
+        } catch(e) { error(e); };
+
+        function filterExists(filter){
+          var output = false;
+          for (var i = 0; i < config.filter.length; i++){
+            if (config.filter[i] === filter){
+              output = i;
+              break;
+            }
+          }
+          return output;
+        }
+      }, 'yes');
+      //end filtering
 
       //randomsound command;
       newCommand('randomsound', channelMsg, function playRandomSound(){
@@ -1130,9 +1206,41 @@ bot.on('disconnect', function(errMsg, code){
 //end reconnect
 
 
-
-
 //FUNCTIONS;
+
+//filtering
+function filter(msg, eventINF){
+    var filteredWords = config.filter;
+    if (eventINF.d.author.id !== bot.id && msg.substring(0, prefix.length) !== prefix){//makes sure bot isn't sending the message and that message is not a command.
+      for (var i = 0; i < filteredWords.length; i++){
+        if (msg.indexOf(filteredWords[i].toLowerCase()) !== -1){
+          try {
+            bot.deleteMessage({
+              channelID: eventINF.d.channel_id,
+              messageID: eventINF.d.id
+            }); // delete message
+            log("`[AUTO-FILTERED] '" + msg + "'. From: " + eventINF.d.author.username + ". Contained: " + filteredWords[i] + '`');
+            bot.sendMessage({
+              to: eventINF.d.channel_id,
+              message: "**[AUTO-FILTERED]** *'" + msg + "'*\n\nContained: " + filteredWords[i]
+            }, function callback(err, response){
+              //delete notification after 2 seconds;
+              setTimeout(function(){
+                try {
+                  bot.deleteMessage({
+                    channelID: response.channel_id,
+                    messageID: response.id
+                  });
+                } catch(e){error(e); };
+              }, 2000);
+            })
+          } catch(e){error(e);};
+          break;
+        }
+      }
+    }
+};
+//end filtering
 
 //logging:
 function log(Message){
@@ -1450,7 +1558,6 @@ function setprefixCmd(user, userID, channelID, message){
   }
 //end set prefix method;
 
-
 //grabs arguments for input command.
 function getArg(cmd, msg, channelID){
   try {
@@ -1467,7 +1574,6 @@ function getArg(cmd, msg, channelID){
 }
 //end get command arguments function
 
-
 //function to check if command is contained within input string / message.
 function cmdIs(cmdName, message){
   try {
@@ -1479,7 +1585,6 @@ function cmdIs(cmdName, message){
   } catch(e) { error(e); };
   }
 //end check if command function;
-
 
 //generates help command info;
 function generateHelp(){
@@ -1531,8 +1636,6 @@ function hasArgs(cmd, message, type){
 }
 //end check to see if cmd has arguments function
 
-
-
 //print whole object
 function printObject(o) {
   var out = '';
@@ -1542,24 +1645,6 @@ function printObject(o) {
   return(out);
 }
 //end print obj Array
-
-/*
-function outputYTAudio(stream, url, callback){
-
-    var lame = new Lame.Decoder();
-    var input = ytStream(url);
-
-    lame.once('readable', function(){
-        stream.send(lame);
-    });
-
-    input.pipe(lame);
-
-    lame.once('end', callback);
-}
-//end get yt stream function
-*/
-
 
 //BUDI
 function BUDI(channel){
