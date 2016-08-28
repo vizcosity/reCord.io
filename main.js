@@ -155,7 +155,7 @@ bot.on('message', function(user, userID, channelID, message, event){
   //end convo handler
 
   //check if wildbot is being used
-  if (message.substring(0,2) === '++' && message !== '++leave-voice'){
+  if (message.substring(0,2) === '++' && message !== '++leave-voice' && message.substring(0,'++rule34'.length) !== '++rule34'){
       if (message === '++'){
         bot.sendMessage({
           to: channelID,
@@ -211,6 +211,30 @@ bot.on('message', function(user, userID, channelID, message, event){
     }, 1000);}
 
 
+  } else if (message.substring(0, '++rule34'.length) === '++rule34'){
+    try  {
+      var disgustResponses = [
+        'wtf dude u nasty',
+        'ewwww',
+        'i hope you feel ashamed fam',
+        'i actually feel bad for wildbot, poor piece of shit has to deal with your horny fucks',
+        'u guys need help',
+        'seriously?',
+        mention(userID) + ' im actually ashamed of you',
+        'so much disappoint rn'
+      ];
+
+      var chooseRandomResponse = disgustResponses[randomIntFromInterval(0,disgustResponses.length)];
+      bot.sendMessage({
+        to: channelID,
+        message: chooseRandomResponse,
+        typing: true
+      }, function(){
+        log('Responded to ' + user + ' with ' + chooseRandomResponse)
+      })
+    } catch(e) {
+      error(e);
+    };
   };
   //end cheeky check for other bot.
 
@@ -267,7 +291,10 @@ bot.on('message', function(user, userID, channelID, message, event){
       //purge method:
       newCommand('purge', message, function doPurge(arg){
         try {
-          purgeCmd(channelMsg, channelID, user, userID);
+          if (channelID === config.serverSpecific[serverID].logChannel){reply('Nice try ' + mention(userID) + ';)')} else {
+            purgeCmd(channelMsg, channelID, user, userID);
+          }
+
         } catch (e) {
           error(e);
         }
@@ -379,7 +406,6 @@ bot.on('message', function(user, userID, channelID, message, event){
       newCommand('audio', channelMsg, function audioPlay(arg){
         try  {
           if (isPlayerLoaded() === false){
-          audioFilePlaying = true;
           audio(arg);} else {
             respond('Curently playing from playlist. Cannot play sound yet because it will override music and reset playlist. Please wait till playlist finishes and leave voice.', channelID);
           }
@@ -469,6 +495,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       //request song
       newCommand('request', channelMsg, function(link){
         try   {
+          /*
           voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
           if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
             var requestURL = link.split(' ')[0];
@@ -485,9 +512,12 @@ bot.on('message', function(user, userID, channelID, message, event){
               Player.setAnnouncementChannel(channelID);
               Player.enqueue(user, userID, requestURLFromQuery);
             });//end yt search query.
+          } */
+          if (userID === '165570868355792897'){
+            reply(mention('165570868355792897') + ' david pls can u not thx')
           }
+          reply(prefix + 'request has been disabled (for now) while ' + mention('128319285872427008') + ' works on an ' + prefix + 'instaqueue command.\n Use ' + prefix + 'queue fam.');
 
-          reply(prefix + 'request is a little buggy. ' + prefix + 'Queue is recommended.');
         }  catch (e) { error(e); };
       }, 'yes');
       //end request command function
@@ -495,127 +525,137 @@ bot.on('message', function(user, userID, channelID, message, event){
       //request song
       newCommand('queue', channelMsg, function(link){
         try {
-          voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
-          if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
-            var requestURL = link.split(' ')[0];
-            //console.log(requestURL.split('/')[0]);
-            if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
-            Player.setAnnouncementChannel(channelID);
-            Player.enqueue(user, userID, requestURL);
-          } else {//no link, search instead
-            var query = link;
-            log('Attempting to queue: ' + query);
-            var respondChannel = channelID;
+          var initialmsgID = event.d.id;
+          if (audioFilePlaying){error('Local audio file currently playing. Please ' + prefix + 'lv (' + prefix + 'leave-voice) and try queuing again.')} else {
+            voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
+            if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
+              var requestURL = link.split(' ')[0];
+              //console.log(requestURL.split('/')[0]);
+              if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
+              Player.setAnnouncementChannel(channelID);
+              Player.enqueue(user, userID, requestURL);
+            } else {//no link, search instead
+              var query = link;
+              log('Attempting to queue: ' + query);
+              var respondChannel = channelID;
 
-            function ytSearchPlayerInterface(query, amtOfResults){
-              var fallbackQuery = query;
-              youTube.search(query, amtOfResults, function(error, results){
-                if (error !== null){respond('YT Search responded with error ' + error, respondChannel)};
-                var allowedResults = [];
-                var videoSearchQueryID;
+              function ytSearchPlayerInterface(query, amtOfResults){
+                var fallbackQuery = query;
+                youTube.search(query, amtOfResults, function(error, results){
+                  if (error !== null){respond('YT Search responded with error ' + error, respondChannel)};
+                  var allowedResults = [];
+                  var videoSearchQueryID;
+                  try {
+                    if (results.items.length > 0){//results obtained Successfully;
+                      for (var i = 0; i < amtOfResults; i++){
+                        if (results.items[i].id.kind === 'youtube#video'){
+                          allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
+                        }
+                      };
+                    } else { respond("Search results could not be obtained.", respondChannel); };
+                  } catch(e){ err(e); };
 
-                if (results.items.length > 0){//results obtained Successfully;
-                  for (var i = 0; i < amtOfResults; i++){
-                    if (results.items[i].id.kind === 'youtube#video'){
-                      allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
-                    }
+                  if (allowedResults.length > 0){ // results obtained.
+                  var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
+
+                  for (var i = 0; i < allowedResults.length; i++){
+                    if (i !== allowedResults.length - 1){
+                      stringedResults += '**' + i + '.** ' + allowedResults[i].title + '\n';
+                    } else {//finish output
+                      stringedResults += '**' + i + '.** ' + allowedResults[i].title + "\n\n **More** | **None / Cancel**";
+                    };
                   };
-                } else { respond("Search results could not be obtained.", respondChannel); };
+                  var requestUser = userID;
+                  var searchQueryMsgID;
+                  bot.sendMessage({
+                    to: respondChannel,
+                    message: stringedResults
+                  }, function(err, response){
+                    try {
+                      searchQueryMsgID = response.id;
+                    } catch(e){err(e);};
+                    log(searchQueryMsgID);
+                  });
+                  setTimeout(hasUserRespondedToYTSearchQuery, 8000);//wait 4 seconds for user response.
+                  var deleteMsgsAfterAWhileID = [];
+                  bot.on('message', function(userR, userIDR, channelIDR, messageR, eventR){
+                    deleteMsgsAfterAWhileID.push(event.d.id);
+                    if (userIDR === requestUser){
 
-                if (allowedResults.length > 0){ // results obtained.
-                var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
+                    if (typeof videoSearchQueryID === 'undefined'){
+                      if (messageR.toLowerCase() === 'none' || messageR.toLowerCase() === 'cancel') {//extra options.
+                        respond('Cancelled search query.', respondChannel);
+                        videoSearchQueryID = 'null';
+                        return;
+                      }
+                      if (messageR.toLowerCase() === 'more'){
+                        videoSearchQueryID = 'null';
+                        ytSearchPlayerInterface(query, amtOfResults + 5);
+                        return;
+                      }
+                      var index = parseInt(messageR);
+                      if (typeof allowedResults[index] !== 'undefined'){//check if number entered.
+                        videoSearchQueryID = allowedResults[index].id;
+                        bot.deleteMessage({
+                          channelID: respondChannel,
+                          messageID: searchQueryMsgID
+                        });
+                        //respond('Queueing ' + allowedResults[index].title, respondChannel);
+                        bot.sendMessage({
+                          to: respondChannel,
+                          message: '**Queueing** ' + allowedResults[index].title
+                        }, function (error, response){
+                          if (error !== null){log(error)};
+                          if (response !== 'undefined'){
+                            deleteMsgsAfterAWhileID.push(response.id);
+                            console.log(deleteMsgsAfterAWhileID);
+                            setTimeout(function(){
+                              bot.deleteMessages({
+                                channelID: respondChannel,
+                                messageIDs: deleteMsgsAfterAWhileID
+                              });
+                            }, 3000);
+                          }
+                        });
+                        var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
+                        Player.setAnnouncementChannel(respondChannel);
+                        Player.enqueue(user, userID, requestURLFromQuery);
+                        return;
+                      }//if id of user msg response is valid check end.
+                  } else {//request done, return nothing.
+                    return;
+                  }}//check if should listen to original requester user.
 
-                for (var i = 0; i < allowedResults.length; i++){
-                  if (i !== allowedResults.length - 1){
-                    stringedResults += '**' + i + '.** ' + allowedResults[i].title + '\n';
-                  } else {//finish output
-                    stringedResults += '**' + i + '.** ' + allowedResults[i].title + "\n\n **More** | **None / Cancel**";
-                  };
-                };
-                var requestUser = userID;
-                var searchQueryMsgID;
-                bot.sendMessage({
-                  to: respondChannel,
-                  message: stringedResults
-                }, function(err, response){
-                  searchQueryMsgID = response.id;
-                  log(searchQueryMsgID);
-                });
-                setTimeout(hasUserRespondedToYTSearchQuery, 8000);//wait 4 seconds for user response.
-                bot.on('message', function(userR, userIDR, channelIDR, messageR, eventR){
-                  if (userIDR === requestUser){
+                  });//end on message event listener user response for search query.
 
-                  if (typeof videoSearchQueryID === 'undefined'){
-                    if (messageR.toLowerCase() === 'none' || messageR.toLowerCase() === 'cancel') {//extra options.
-                      respond('Cancelled search query.', respondChannel);
-                      videoSearchQueryID = 'null';
-                      return;
-                    }
-                    if (messageR.toLowerCase() === 'more'){
-                      videoSearchQueryID = 'null';
-                      ytSearchPlayerInterface(query, amtOfResults + 5);
-                      return;
-                    }
-                    var index = parseInt(messageR);
-                    if (typeof allowedResults[index] !== 'undefined'){//check if number entered.
-                      videoSearchQueryID = allowedResults[index].id;
+
+                  function hasUserRespondedToYTSearchQuery(){
+                    if (typeof videoSearchQueryID === 'undefined'){//no input from user.
                       bot.deleteMessage({
                         channelID: respondChannel,
                         messageID: searchQueryMsgID
                       });
-                      //respond('Queueing ' + allowedResults[index].title, respondChannel);
-                      bot.sendMessage({
-                        to: respondChannel,
-                        message: '**Queueing** ' + allowedResults[index].title
-                      }, function (error, response){
-                        if (error !== null){log(error)};
-                        if (response !== 'undefined'){
-                          var deleteMsgAfterAWhileID = response.id;
-                          setTimeout(function(){
-                            bot.deleteMessage({
-                              channelID: respondChannel,
-                              messageID: deleteMsgAfterAWhileID
-                            });
-                          }, 3000);
-                        }
-                      });
+                      respond('Queueing first result, ' + allowedResults[0].title, respondChannel);
+                      videoSearchQueryID = allowedResults[0].id;
                       var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
                       Player.setAnnouncementChannel(respondChannel);
                       Player.enqueue(user, userID, requestURLFromQuery);
-                      return;
-                    }//if id of user msg response is valid check end.
-                } else {//request done, return nothing.
-                  return;
-                }}//check if should listen to original requester user.
+                    }
+                  }//end define check user response method and queue song.
 
-                });//end on message event listener user response for search query.
+                } else {// no results obtained.
+                  respond("No results found. Either search query was invalid or it turned up no video results.", respondChannel);
+                }
 
+                });//end yt search query.
 
-                function hasUserRespondedToYTSearchQuery(){
-                  if (typeof videoSearchQueryID === 'undefined'){//no input from user.
-                    bot.deleteMessage({
-                      channelID: respondChannel,
-                      messageID: searchQueryMsgID
-                    });
-                    respond('Queueing first result, ' + allowedResults[0].title, respondChannel);
-                    videoSearchQueryID = allowedResults[0].id;
-                    var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
-                    Player.setAnnouncementChannel(respondChannel);
-                    Player.enqueue(user, userID, requestURLFromQuery);
-                  }
-                }//end define check user response method and queue song.
+              };
 
-              } else {// no results obtained.
-                respond("No results found. Either search query was invalid or it turned up no video results.", respondChannel);
-              }
-
-              });//end yt search query.
-
-            };
-
-            ytSearchPlayerInterface(query, 5);
-          }
+              ytSearchPlayerInterface(query, 5);
+            }
+          };
         } catch (e) { error(e); };
+
       }, 'yes');
       //end queue command function
 
@@ -685,6 +725,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       newCommand('leavevoice', channelMsg, function(){
         try {
           if (isPlayerLoaded()){Player.kill()};
+          if (audioFilePlaying){audioFilePlaying = false;}
           bot.leaveVoiceChannel(voiceChannelID);
           bot.setPresence({
             game: {
@@ -876,6 +917,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       });
       //end testbudi
 
+      //googlefeud
       newCommand('googlefeud', channelMsg, function(){
         var respondChannel = channelID;
         //notify user of startup;
@@ -954,6 +996,8 @@ bot.on('message', function(user, userID, channelID, message, event){
 
 
 
+
+
     }//end check to see if sender is not bot.
     }//end conditional for checking command prefix, other messages ignored.
 
@@ -962,34 +1006,43 @@ bot.on('message', function(user, userID, channelID, message, event){
 
   //joins voice channel and plays audio file;
   function audio(arg){
-        var extraArguments = arg.split(' ')[1];
-        try {
-          var serverID = bot.channels[channelID].guild_id;
-        } catch(e) { error(e); };
-      //  var voiceChannelID = bot.servers[serverID].members[userID]
-        //get msg
-        bot.joinVoiceChannel(voiceChannelID, function callback(){
-          bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
-              //console.log(arg);
-              stream.playAudioFile(arg);
-              bot.setPresence({game: {name: arg}});//setting playing to audiofilename
-              stream.once('fileEnd', function(){
-                bot.setPresence({//reverting status
-                  game: {
-                    name: currentStatus
-                  }
+        if (audioFilePlaying || isPlayerLoaded()) {
+          if (audioFilePlaying){
+            error('Audio already playing!');
+          };
+          if (isPlayerLoaded()){
+            error('Cannot play sound while streaming music. Wait till music finishes and then leave voice.');
+          }
+        } else {//no audio playing;
+          audioFilePlaying = true;
+          var extraArguments = arg.split(' ')[1];
+          try {
+            var serverID = bot.channels[channelID].guild_id;
+          } catch(e) { error(e); };
+          //  var voiceChannelID = bot.servers[serverID].members[userID]
+          //get msg
+          bot.joinVoiceChannel(voiceChannelID, function callback(){
+            bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
+                //console.log(arg);
+                stream.playAudioFile(arg);
+                bot.setPresence({game: {name: arg}});//setting playing to audiofilename
+                stream.once('fileEnd', function(){
+                  bot.setPresence({//reverting status
+                    game: {
+                      name: currentStatus
+                    }
+                  })
+
+                  bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
+                  audioFilePlaying = false;
+                  soundlog['audio'].push(arg);
+                  fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
+                    if (err !== null){log(err)};
+                  });//end update soundlog file.
                 })
-
-                bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
-
-                soundlog['audio'].push(arg);
-                fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
-                  if (err !== null){log(err)};
-                });//end update soundlog file.
-              })
-            });//end get audio context
-        })//end join voice method
-
+              });//end get audio context
+          })//end join voice method
+        };
   }
   //end play audio command method logic.
 
@@ -1025,6 +1078,19 @@ bot.on('message', function(user, userID, channelID, message, event){
 
   //error handler
   function error(error){
+    //deals with error msg by logging it to console & responding to user.
+    try {
+      log('Error: ' + error);
+      reply('Error: ' + error);
+    } catch (e){
+      console.log('Could not handle error: ' + e);
+    }
+
+  }
+  //end error handler
+
+  //error handler
+  function err(error){
     //deals with error msg by logging it to console & responding to user.
     try {
       log('Error: ' + error);

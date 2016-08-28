@@ -15,6 +15,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 	var configFile = require('./config.json');
 	var currentStatus = configFile.status;
 	var defaultMusicChannel = configFile.defaultMusicChannel;
+	var rebuildingPlaylist = false;
 
 	if (announcementChannel !== defaultMusicChannel){notify("I'll take your request fam but please hop on over to #bot-chat so that generalchat doesn't get congested with music requests.")};
 
@@ -94,12 +95,14 @@ var duration;
 						}
 
 						if (!selection) return notify("Unable to get stream information about link: " + data.type);
-						title = body.items[0].snippet.title;
-						url = selection.url;
-						id = qID();
-						uID = data.location;
+						try {
 
+							title = body.items[0].snippet.title;
+							url = selection.url;
+							id = qID();
+							uID = data.location;
 
+						} catch(e) {logE(e);};
 						queue.push( new MusicItem(type, title, url, id, userID, user, uID) );
 						check();
 
@@ -210,28 +213,31 @@ var duration;
 
 	this.printPlaylist = function(){
 		try {
-			if (typeof queue[0] !== 'undefined'){
-				try {
-					var currentPlayingSong = queue[0].title;
-					var output = '**Current Song: ' + current.title + '**\n \n' + queue.length + ' Songs in playlist: \n';
-				} catch(e) { err(e); };
-			for (var i = 0; i < queue.length; i++){
-				try {
-					if (typeof queue[i] === 'undefined'){notify("Can't retrieve playlist right now.");} else {
+			if (rebuildingPlaylist){notify('Sorry! I was re-organizing the playlist. Try again.')} else {
+				if (typeof queue[0] !== 'undefined'){
+					try {
+						var currentPlayingSong = queue[0].title;
+						var output = '**Current Song: ' + current.title + '**\n \n' + queue.length + ' Songs in playlist: \n';
+					} catch(e) { err(e); };
+				for (var i = 0; i < queue.length; i++){
+					try {
+						if (typeof queue[i] === 'undefined'){notify("Can't retrieve playlist right now.");} else {
 
-						if (i !== queue.length - 1 ){
-							var position = i + 1;
-						output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**' + '\n';} else {//dont add new line
-							output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**';
+							if (i !== queue.length - 1 ){
+								var position = i + 1;
+							output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**' + '\n';} else {//dont add new line
+								output += queue[i].id + '. ' + queue[i].title + ' **(' + queue[i].requester + ')**';
+							}
 						}
-					}
-				} catch(e) {err(e); };
+					} catch(e) {err(e); };
+				}
+
+				return notify(output);
+				} else {//prevent crash if item is not defined.
+					notify("Can't retrieve playlist right now.");
+				}
 			}
 
-			return notify(output);
-			} else {//prevent crash if item is not defined.
-				notify("Can't retrieve playlist right now.");
-			}
 		} catch(e) {err(e); };
 
 	}
@@ -330,11 +336,13 @@ var duration;
 		request( API.Youtube.Search(q), function(err, res, body) {
 			if (err || (res.statusCode / 100 | 0 != 2) ) return log('warn', "Could not execute search");
 			body = JSON.parse(body);
-			for (var i=0; i<body.items.length; i++) {
-				if (body.items[i].id.kind === "youtube#video") {
-					return self.enqueue(user, userID, body.items[i].id.videoId);
+			try {
+				for (var i=0; i<body.items.length; i++) {
+					if (body.items[i].id.kind === "youtube#video") {
+						return self.enqueue(user, userID, body.items[i].id.videoId);
+					}
 				}
-			}
+			} catch(e){err(e);};
 		});
 	};
 
@@ -342,6 +350,7 @@ var duration;
 		if (typeof enc !== 'undefined'){
 			try {
 				enc.kill();
+				rebuildPlaylist(queue);
 			} catch(e) {
 				err(e);
 			}
@@ -497,6 +506,7 @@ var duration;
 							}); */
 
 			nowPlayingProgressBar(duration);
+			rebuildPlaylist(queue);
 
 		});
 
@@ -521,6 +531,7 @@ var duration;
 				messageID: notificationMsgId
 			});
 			editLooper.stop();
+			rebuildPlaylist(queue);
 		});
 	}
 
@@ -567,7 +578,9 @@ var duration;
 				}, function(err, response){
 					if (err !== null){console.log(err)};
 					if (response !== 'undefined'){
-						msgID = response.id;
+						try {
+							msgID = response.id;
+						} catch(e){err(e)};
 					} else {console.log('No response.')};
 
 								editMsgLoop(buildProgressBar)
@@ -735,6 +748,9 @@ var duration;
 		enc.stdout.once('readable', function() {
 			streamReference.send(enc.stdout);
 			current = currentSong;
+			try {
+				rebuildPlaylist(plQueue);
+			} catch(e) {err(e);};
 		});
 
 		enc.stdout.once('end', function() {
@@ -744,6 +760,9 @@ var duration;
 			playingPlaylist = false;
 			editLooper.stop();
 			check();
+			try {
+				rebuildPlaylist(plQueue);
+			} catch(e) {err(e);};
 		});
 
 	}
@@ -792,6 +811,16 @@ var duration;
 
 		notify(m);
 	}
+
+	function rebuildPlaylist(playlistQueue){
+		try {
+			rebuildingPlaylist = true;
+			for (var i = 0; i < playlistQueue.length; i++){
+				playlistQueue[i].id = i + 1;
+			}
+			rebuildingPlaylist = false;
+		} catch(e){ err(e); };
+	}
 	/* --- Prototypes --- */
 	function MusicItem(type, title, url, id, requesterID, requester, uID) {
 		this.type = type;
@@ -801,6 +830,7 @@ var duration;
 		this.requesterID = requesterID;
 		this.requester = requester;
 		this.uID = uID;
+		rebuildPlaylist(queue);
 	}
 	function PlaylistItem(title, url) {
 		this.title = title;
@@ -822,10 +852,10 @@ var duration;
 	function logE(Message){
 		try {
 			if (typeof serverID !== 'undefined'){
-				var logChannel = config.serverSpecific[serverID].logChannel;
+				var logChannel = configFile.serverSpecific[serverID].logChannel;
 			} else { serverID = '128319520497598464'};
 			//log('`' + Message + '`', logChannel);
-			bot.sendMessage({
+			Bot.sendMessage({
 				to: logChannel,
 				message: '`' + Message + '`'
 			})

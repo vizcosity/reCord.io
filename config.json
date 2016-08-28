@@ -1,8 +1,8 @@
 {
-  "ver": 0.3,
+  "ver": 0.31,
   "name": "reCord",
   "prefix": "!",
-  "status": "Waiting",
+  "status": "Ready.",
   "randomSoundboard": "false",
   "defaultMusicChannel": "151051305295675395",
   "randomSoundDelay": "6000",
