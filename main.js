@@ -48,6 +48,7 @@ var desiredResponseChannel;
 var audioFilePlaying = false;
 var sitcom = false;
 var attitude = config.attitude;
+var delay = 0, activeDelay = delay, cmdToCooldown = '', cooldown = false;
 
 bot.on('ready',function(){
   console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
@@ -167,6 +168,10 @@ bot.on('message', function(user, userID, channelID, message, event){
   //pass messages to convo handler
   messageHandler(channelID, message);
   //end convo handler
+
+  //cooldown handler
+  cooldownHandler(message, user);
+  //end cooldown handler
 
   //check if wildbot is being used
   if (message.substring(0,2) === '++' && message !== '++leave-voice' && message.substring(0,'++rule34'.length) !== '++rule34' && attitude === true){
@@ -570,6 +575,7 @@ bot.on('message', function(user, userID, channelID, message, event){
               var query = link;
               log('Attempting to queue: ' + query);
               var respondChannel = channelID;
+              setCooldown('queue', 10000);
 
               function ytSearchPlayerInterface(query, amtOfResults){
                 var fallbackQuery = query;
@@ -1242,7 +1248,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
                   bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
                   audioFilePlaying = false;
-                  soundlog['audio'].push(arg);
+                  fs.writeFile['audio'].push(arg);
                   fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
                     if (err !== null){log(err)};
                   });//end update soundlog file.
@@ -1256,7 +1262,7 @@ bot.on('message', function(user, userID, channelID, message, event){
   //function to automate adding new commands
   function newCommand(commandName, message, func, arg){
     try {
-      if (cmdIs(commandName, message)){//checks to see if cmd contained within received message.
+      if (cmdIs(commandName, message) && !cooldown){//checks to see if cmd contained within received message & that cooldown is not active.
         //proceed with command method;
         if (arg === 'yes'){// requires arguments;
           if (hasArgs(commandName, message)){//command has arguments, proceed to method;
@@ -1342,6 +1348,46 @@ bot.on('message', function(user, userID, channelID, message, event){
 
   }
   //notify end declaration
+
+  //cooldown handler
+  function cooldownHandler(msg, user){
+    if (delay < 5000){
+      var clockEmoji = ':clock1:';
+    } else if (delay >= 5000 && delay < 10000){
+      var clockEmoji = ':clock2:';
+    } else if (delay >= 10000 && delay < 15000){
+      var clockEmoji = ':clock3:';
+    } else if (delay >= 15000 && delay < 20000){
+      var clockEmoji = ':clock4:';
+    } else {
+      clockEmoji = ':clock5:';
+    }
+    var responseArray = [
+      "Yooo **" + user + "** you have a savage but no chill.",
+      "**" + user + "** I'm gonna have to ask that you calm down.",
+      "**" + user + "** fam, like, chill for a sec.",
+      "Oi **" + user + "** can you chill out for a sec? Too quick!"
+    ]
+    activeDelay = delay;
+
+    setInterval(function(){
+      if (cooldown && activeDelay > 0){
+        activeDelay -= 1000
+        console.log(activeDelay);
+      } else {
+        return;
+      }
+    }, 1000);
+
+    var outputResponse = responseArray[randomIntFromInterval(0,responseArray.length)] + clockEmoji + " " + activeDelay/1000 + " seconds left on that cooldown.";
+
+    if (delay > 0 && cmdIs(cmdToCooldown, msg)){
+      //delay is set to something above zero & msg contains the cooldown command.
+      channelMsg = '';
+      notify(outputResponse);
+    }
+  }
+  //end cooldownHandler
 
 
 });
@@ -1992,3 +2038,20 @@ function mention(userID){
   }
 }
 //mention the user in chat
+
+//set cooldown
+function setCooldown(command, del){
+  console.log('Cooldown on ' + prefix + command + ' set for ' + del)
+  cooldown = true;
+  cmdToCooldown = command;
+  delay = del;
+  //setting the global variables;
+
+  setTimeout(function(){
+  console.log('Cooldown on ' + prefix + command + ' finished after ' + del)
+    cooldown = false;
+    cmdToCooldown = '';
+    delay = 0;
+  }, del);
+}
+//end set cooldown

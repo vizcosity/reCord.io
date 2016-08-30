@@ -1,7 +1,7 @@
 {
   "ver": 0.31,
   "name": "reCord",
-  "prefix": "!",
+  "prefix": "+",
   "status": "Ready.",
   "randomSoundboard": "false",
   "defaultMusicChannel": "151051305295675395",
