@@ -154,7 +154,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
   //try setting serverID
   try {
-    //var serverID = bot.channels[channelID].guild_id;
+    var serverID = bot.channels[channelID].guild_id;
   } catch(e) {
     error(e);
   };
@@ -251,7 +251,6 @@ bot.on('message', function(user, userID, channelID, message, event){
     };
   };
   //end cheeky check for other bot.
-
 
   //prefix & alias check:
   if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to cmd methods;
@@ -1153,6 +1152,46 @@ bot.on('message', function(user, userID, channelID, message, event){
       });
       //end sitcom simulator
 
+      //clean chat: Cleans chat from command spam.
+      newCommand('clean', channelMsg, function(){
+        try {
+          bot.getMessages({
+            channelID: channelID,
+            limit: 100
+          }, function(error, response){
+            if (error !== null) { log(error); };
+            //console.log(response);
+            var deleteMsgArray = [];
+            for (var i = 0; i < response.length; i++){
+
+              try {
+                if (response[i].content.substring(0, prefix.length) === prefix || response[i].author.id === bot.id){
+                  deleteMsgArray.push(response[i].id);
+                }
+              } catch(e) { log(e); };
+
+
+
+            }//end of loop
+
+            if (deleteMsgArray.length === 0){
+              notify('**Error:** I could not find any commands in chat. Must already be clean.');
+            } else {//delete msg array.
+
+              bot.deleteMessages({
+                channelID: channelID,
+                messageIDs: deleteMsgArray
+              }, function(){
+                //delete finished.
+                notify('**Chat successfully cleaned.**');
+              });
+            }
+
+          });
+        } catch(e) { error(e); };
+
+      });
+      //end clean chat
 
 
 
