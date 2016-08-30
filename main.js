@@ -1167,7 +1167,12 @@ bot.on('message', function(user, userID, channelID, message, event){
 
               try {
                 if (response[i].content.substring(0, prefix.length) === prefix || response[i].author.id === bot.id){
-                  deleteMsgArray.push(response[i].id);
+                  try {
+                    if (response[i].id === bot.id && response[i].content.substring(0, 'Now playing'.length) === 'Now playing'){/* do nothing */ } else {
+                      deleteMsgArray.push(response[i].id);
+                    }
+                  } catch(e){log(e); };
+
                 }
               } catch(e) { log(e); };
 
