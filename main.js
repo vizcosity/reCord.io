@@ -46,6 +46,8 @@ var randomSoundDelay = parseInt(config.randomSoundDelay);
 var holdConversation = false;
 var desiredResponseChannel;
 var audioFilePlaying = false;
+var sitcom = false;
+var attitude = config.attitude;
 
 bot.on('ready',function(){
   console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
@@ -142,12 +144,20 @@ var conversationHandlerLogic;
 
 bot.on('message', function(user, userID, channelID, message, event){
 
+  /*try {//attempt to set voice channel
+    voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
+  } catch (e) {
+    log('Could not set voice channel of user. Using default channel: ' + e);
+  };*/
+
   if (userID !== bot.id){
 
   //try setting serverID
   try {
-    var serverID = bot.channels[channelID].guild_id;
-  } catch(e) { error(e); };
+    //var serverID = bot.channels[channelID].guild_id;
+  } catch(e) {
+    error(e);
+  };
   //set serverID of message.
 
   //message filtering
@@ -159,7 +169,7 @@ bot.on('message', function(user, userID, channelID, message, event){
   //end convo handler
 
   //check if wildbot is being used
-  if (message.substring(0,2) === '++' && message !== '++leave-voice' && message.substring(0,'++rule34'.length) !== '++rule34'){
+  if (message.substring(0,2) === '++' && message !== '++leave-voice' && message.substring(0,'++rule34'.length) !== '++rule34' && attitude === true){
       if (message === '++'){
         bot.sendMessage({
           to: channelID,
@@ -292,8 +302,26 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes');
       //end shortcut method.
 
+      //set attitude
+      newCommand('attitude', channelMsg, function(){
+        if (attitude === false){
+          notify('**Attitude enabled**. Wildbot can suck it.');
+          attitude = true;
+          fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+            if (err !== null){log(err)};
+            log(user + ': ' + userID + ' toggled attitude to: "' + attitude + '"');
+          });
+          } else {
+          //attitude is already true, turn to false;
+          attitude = false;
+          log(user + ': ' + userID + ' toggled attitude to: "' + attitude + '"');
+        }
+
+      });
+      //end set attitude
+
       //purge method:
-      newCommand('purge', message, function doPurge(arg){
+      newCommand('purge', channelMsg, function doPurge(arg){
         try {
           if (channelID === config.serverSpecific[serverID].logChannel){reply('Nice try ' + mention(userID) + ';)')} else {
             purgeCmd(channelMsg, channelID, user, userID);
@@ -1067,6 +1095,64 @@ bot.on('message', function(user, userID, channelID, message, event){
       });
       //end google feud
 
+      //set sitcom simulator
+      var currentlyLaughing = false;
+      newCommand('sitcom', channelMsg, function(){
+          if (audioFilePlaying === false && isPlayerLoaded() === false){
+          try {
+            voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
+            if (sitcom){
+              sitcom = false;
+              notify('**Sitcom now disabled.**');
+              sitcomStop();
+            } else {
+              sitcom = true;
+              notify('**Sitcom started.**');
+              sitcomStart();
+            };
+
+            function sitcomStart(){
+              audioFilePlaying = true;
+              if (sitcom){
+                bot.joinVoiceChannel(voiceChannelID, function(){
+                  bot.getAudioContext({channel: voiceChannelID, stereo: true}, function(error, stream){
+                    if (error !== null){ err(error); };
+
+                     bot.on('incomingAudio', function(){
+                       console.log('received!');
+                       //console.log(ssrc.toString() + stream.toString());
+                      //sound incoming, proceed to randomly playback sitcom sounds.
+                      var chanceNumber = randomIntFromInterval(0,1);
+                      if (chanceNumber === 1 && currentlyLaughing === false){
+                        currentlyLaughing = true;
+                        stream.playAudioFile(soundlog.sitcom.path + soundlog.sitcom.files[randomIntFromInterval(0, soundlog.sitcom.files.length)]);
+                        stream.on('fileEnd', function(){
+                          currentlyLaughing = false;
+                        });
+                      }
+                    });
+                  });
+                });
+              }
+
+            };
+            //define sitcom start
+
+            function sitcomStop(){
+              if (sitcom !== false) sitcom = false;
+              bot.leaveVoiceChannel(voiceChannelID);
+              audioFilePlaying = false;
+            }
+            //define sitcom stop
+
+          } catch(e) { err(e); };
+        } else {
+          if (audioFilePlaying){ err('Local audio is already playing, I cannot interrupt! Cannot start sitcom until bot leaves voice.'); };
+          if (isPlayerLoaded()){ err('Currently streaming music from web, cannot interrupt. Try starting sitcom again when bot is not in voice.'); };
+        }
+      });
+      //end sitcom simulator
+
 
 
 
@@ -1192,7 +1278,25 @@ bot.on('message', function(user, userID, channelID, message, event){
   }
   //end logging
 
+  //notify:
+  function notify(msg, delay) {
 
+    if (typeof delay === 'undefined') delay = 3000; //defaults to 3 seconds of notification before messsage self-destructs.
+    bot.sendMessage({
+      to: channelID,
+      message: msg
+    }, function callback(err, response){
+      var previousMessageID =  response.id;
+      setTimeout(function(){
+        bot.deleteMessage({
+          channelID: response.channel_id,
+          messageID: previousMessageID
+        });
+      }, delay);
+    });
+
+  }
+  //notify end declaration
 
 
 });

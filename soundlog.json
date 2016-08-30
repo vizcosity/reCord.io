@@ -147,5 +147,19 @@
     "Why you heff to be mad (Original).mp3",
     "Yes.mp3",
     "YOU NEED TO SHUT THE FUCK UP.mp3"
-  ]
+  ],
+
+  "sitcom": {
+    "path": "./audio/Sitcom/",
+    "files": [
+      "Sitcom Laughter 01 Sound Effect.mp3",
+      "Sitcom Laughter 02 Sound Effect.mp3",
+      "Sitcom Laughter 03 Sound Effect.mp3",
+      "Sitcom Laughter 04 Sound Effect.mp3",
+      "Sitcom Laughter 05 Sound Effect.mp3",
+      "Sitcom Laughter 06 Sound Effect.mp3",
+      "Sitcom Laughter 07 Sound Effect.mp3",
+      "Sitcom Laughter 08 Sound Effect.mp3"
+    ]
+  }
 }
