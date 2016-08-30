@@ -313,6 +313,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           } else {
           //attitude is already true, turn to false;
           attitude = false;
+		  notify('**Attitude disabled**. I will no longer pester you about wildbot.');
           log(user + ': ' + userID + ' toggled attitude to: "' + attitude + '"');
         }
 
