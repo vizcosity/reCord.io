@@ -15,7 +15,8 @@ local.properties
 .classpath
 .settings/
 .loadpath
-audio/**
+audio/*
+*.mp3
 soundlog.json
 alias.json
 
