@@ -49,7 +49,7 @@ var desiredResponseChannel;
 var audioFilePlaying = false;
 var sitcom = false;
 var attitude = config.attitude;
-var delay = 0, activeDelay = delay, cmdToCooldown = '', cooldown = false, cooldownResponse, delayCountdown, cdCount = 0;
+var delay = 0, activeDelay = delay, cmdToCooldown = '', cooldown = false, cooldownResponse = 'Loading...', delayCountdown, cdCount = 0;
 
 bot.on('ready',function(){
   console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
@@ -1402,8 +1402,8 @@ bot.on('message', function(user, userID, channelID, message, event){
           //cooldown = false;
           //activeDelay = 0;
           //cooldownAlreadyCalled = false;
-          cdCount--;
-          console.log(cdCount);
+          //cdCount--;
+          //console.log(cdCount);
           return;
         }
       }, 1000);
@@ -1963,6 +1963,7 @@ function setCooldown(command, del){
     cmdToCooldown = '';
     delay = 0;
     activeDelay = 0;
+    cooldownResponse = 'Loading...';
   }, del);
 }
 //end set cooldown
