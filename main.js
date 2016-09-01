@@ -1944,7 +1944,7 @@ function setCooldown(command, del){
   cooldown = true;
   cmdToCooldown = command;
   delay = del;
-  activeDelay = del;
+  activeDelay = del - 1000;
   //setting the global variables;
   setInterval(function(){
     if (activeDelay > 0){
