@@ -1386,12 +1386,12 @@ bot.on('message', function(user, userID, channelID, message, event){
           //console.log(activeDelay);
         }
       } else {
-      //  clearInterval(delayCountdown);
-      //  cooldown = false;
-      //  activeDelay = 0;
+        //clearInterval(delayCountdown);
+        //cooldown = false;
+        activeDelay = 0;
         return;
       }
-    }, 1000);
+    }, 2000);
 
     if (cooldown && cmdIs(cmdToCooldown, msg)){
       coolDownResponder(channelID);
