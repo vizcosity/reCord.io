@@ -48,7 +48,7 @@ var desiredResponseChannel;
 var audioFilePlaying = false;
 var sitcom = false;
 var attitude = config.attitude;
-var delay = 0, activeDelay = delay, cmdToCooldown = '', cooldown = false;
+var delay = 0, activeDelay = delay, cmdToCooldown = '', cooldown = false, cooldownResponse, delayCountdown;
 
 bot.on('ready',function(){
   console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
@@ -1369,23 +1369,34 @@ bot.on('message', function(user, userID, channelID, message, event){
       "Oi **" + user + "** can you chill out for a sec? Too quick!"
     ]
     activeDelay = delay;
+    var selectedResponse = responseArray[randomIntFromInterval(0,responseArray.length - 1)];
 
-    setInterval(function(){
+    delayCountdown = setInterval(function(){
       if (cooldown && activeDelay > 0){
         activeDelay -= 1000
-        console.log(activeDelay);
+        //console.log(activeDelay);
+        var outputResponse = selectedResponse + clockEmoji + " **" + activeDelay/1000 + "** seconds left on that cooldown.";
+
+        if (delay > 0 && cmdIs(cmdToCooldown, msg)){
+          //delay is set to something above zero & msg contains the cooldown command.
+          channelMsg = '';
+          //notify(outputResponse);
+          cooldownResponse = outputResponse;
+          //console.log(cooldownResponse);
+          //console.log(activeDelay);
+        }
       } else {
+      //  clearInterval(delayCountdown);
+      //  cooldown = false;
+      //  activeDelay = 0;
         return;
       }
     }, 1000);
 
-    var outputResponse = responseArray[randomIntFromInterval(0,responseArray.length)] + clockEmoji + " " + activeDelay/1000 + " seconds left on that cooldown.";
-
-    if (delay > 0 && cmdIs(cmdToCooldown, msg)){
-      //delay is set to something above zero & msg contains the cooldown command.
-      channelMsg = '';
-      notify(outputResponse);
+    if (cooldown && cmdIs(cmdToCooldown, msg)){
+      coolDownResponder(channelID);
     }
+
   }
   //end cooldownHandler
 
@@ -1511,132 +1522,7 @@ function conversation(ConvoChannel){
 }
 //end conversation
 
-function nowPlayingProgressBar(duration){
 
-    //convert duration to seconds left;
-    var secondsLeft = duration;
-    var timeLeft;
-
-    function updateTimeLeft(){
-        if (playing && secondsLeft > 0){
-
-          secondsLeft--;
-          var minutesCalc = Math.floor(secondsLeft / 60);
-          var secondsCALC = time - minutes * 60;
-          var minutesDISPLAY;
-          var secondsDISPLAY;
-          if (minutesCalc.toString().length === 1){
-            minutesDISPLAY = '0' + minutesCalc.toString();
-          } else {minutesDISPLAY = minutesCalc.toString()};
-
-          if (secondsCALC.toString().length === 1){
-            secondsDISPLAY = '0' + secondsCALC.toString();
-          } else {
-            secondsDISPLAY = secondsCALC.toString();
-          }
-
-          timeLeft = minutesDISPLAY + ':' + secondsDISPLAY;
-        }
-      }
-    //update time every second;
-    setInterval(updateTimeLeft, 1000);
-    //convert seconds to minutes and seconds format;
-
-    //BUDI pre-requisites
-    function BUDI(channel){
-
-        var loaded;
-        this.start = function(changingMessage){
-          var msgID;
-          loaded = true;
-          bot.sendMessage({
-            to: channel,
-            message: changingMessage
-          }, function(err, response){
-            if (err !== null){log(err)};
-            if (response !== 'undefined'){
-              msgID = response.id;
-            } else {console.log('No response.')};
-                  editMsgLoop(changingMessage)
-                  function editMsgLoop(changingMessage){
-                    if (continueLoop){
-
-                    if (loaded !== true){loaded = true};
-                    if (i < msgArray.length){
-
-                    bot.editMessage({
-                      channelID: channel,
-                      messageID: msgID,
-                      message: changingMessage
-                    }, function(error, response){
-                      if (error !== null){log(error)};
-                      if (typeof response !== 'undefined'){//response recieved
-                        if (response.content === changingMessage){//edited Successfully
-
-                          i++;
-                          setTimeout(carryOnLoopingEditMsg, 1000);
-
-                          function carryOnLoopingEditMsg(){
-                              editMsgLoop(changingMessage);
-                          }
-                        }
-                      } else {//no response.
-                        log('No response frome edit Msg.')
-                      }
-
-                    });
-                  } //checks if index is within array
-                } else {
-                  log('Loop cancelled or finished')
-                }
-
-                }//end define editmsg loop
-          }//end sendmsg callback
-          )
-
-        }//end this.start msg loop
-
-        this.stop = function(){
-          if (loaded){
-            continueLoop = false;
-          } else {
-            log('No edit loop running.');
-          }
-        }
-
-      //end define budi
-
-      //start budi
-      var budi = new BUDI(announcementChannel);
-
-      //build the progress bar;
-      for (var i = 0; i < duration; i++){
-      var incrementFactor = 5;
-
-          if (i !== 0 && i % incrementFactor === 0){incrementer += 2};
-          outputArray.push("▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + timeLeft);
-
-      }
-
-      var incrementer = 0;
-      function buildProgressBar(){
-        var outputArray = [];
-        var incrementalLoadArray = ["", "────────────", "─", "───────────", "──", "──────────", "───", "─────────", "────", "────────", "─────", "───────", "──────", "──────", "───────", "─────", "────────", "────", "─────────", "───", "─────────", "──", "──────────", "─", "───────────", "", "────────────"];
-        var currentPlaceMarker = "🔘";
-
-        if (timeLeft !== 0 && timeLeft % incrementFactor === 0){incrementer += 2};
-
-        return "▶ " + incrementalLoadArray[incrementer] + currentPlaceMarker + incrementalLoadArray[incrementer + 1] + timeLeft;
-      }
-
-      editLooper = new BUDI(channel);
-      editLooper.start(buildProgressBar());
-    }
-
-
-
-}
-//end define progress bar func
 
 //is player loaded check;
 function isPlayerLoaded(){
@@ -2049,9 +1935,173 @@ function setCooldown(command, del){
 
   setTimeout(function(){
   console.log('Cooldown on ' + prefix + command + ' finished after ' + del)
+    clearInterval(delayCountdown);
     cooldown = false;
     cmdToCooldown = '';
     delay = 0;
+    activeDelay = 0;
   }, del);
 }
 //end set cooldown
+
+function coolDownResponder(channel){
+  var currentMsgID;
+  var continueLoop = true;
+  //BUDI pre-requisites
+  function BUDI(channel){
+    var msgID;
+    var loaded;
+    this.start = function(changingMessage){
+      loaded = true;
+      bot.sendMessage({
+        to: channel,
+        message: changingMessage()
+      }, function(err, response){
+        if (err !== null){console.log(err)};
+        if (response !== 'undefined'){
+          try {
+            msgID = response.id;
+          } catch(e){ log(e)};
+        } else {console.log('No response.')};
+
+              editMsgLoop(changingMessage)
+
+              function editMsgLoop(buildMSG){
+                //console.log()
+                if (continueLoop && cooldown){
+                //isBUDItheLatestMsg();
+                //console.log('got to the edit msg loop');
+                if (loaded !== true){loaded = true};
+                var editMsgToSend = changingMessage();
+                bot.editMessage({
+                  channelID: channel,
+                  messageID: msgID,
+                  message: editMsgToSend
+                }, function(error, response){
+                  if (error !== null){console.log(error)};
+                  if (typeof response !== 'undefined'){//response recieved
+                    if (response.content === editMsgToSend){//edited Successfully
+
+                      setTimeout(carryOnLoopingEditMsg, 1000);
+
+                      function carryOnLoopingEditMsg(){
+                          editMsgLoop(changingMessage);
+                      }
+                    }
+                  } else {//no response.
+                    console.log('No response frome edit Msg.')
+                  }
+
+                });
+            } else {
+              console.log('Loop cancelled or finished');
+              try {
+                //console.log('trying to delete')
+                bot.deleteMessage({
+                  channelID: channel,
+                  messageID: msgID
+                }, function(err){ if (err !== null) console.log('end loop delete err: ' + err)});
+              } catch (e) { log(e); };
+            }
+
+            }//end define editmsg loop
+      }//end sendmsg callback
+      )
+
+    }//end this.start msg loop
+
+    this.stop = function(){
+      if (loaded){
+        continueLoop = false;
+        secondsLeft = 0;
+        Bot.deleteMessage({
+          channelID: announcementChannel,
+          messageID: msgID
+        })
+      } else {
+        console.log('no loop running');
+      }
+    }
+
+    function isBUDItheLatestMsg(){
+      if (loaded){
+        //console.log('BUDI Loaded, proceeding to get msg.');
+      Bot.getMessages({
+        channelID: channel,
+        limit: 1
+      }, function(error, results){
+        var output;
+        //console.log(results[0].id);
+        if (error !== null){console.log(error)};
+        if (results !== 'undefined'){
+          if (results[0] !== 'undefined'){
+            if(results[0].id === msgID){//id's match, it is latest msg
+              return makeBUDILatestMsg(true);
+            } else {
+              return makeBUDILatestMsg(false);
+            }
+          } else {console.log('first result item not defined')}
+        } else {console.log('results not defined')}
+        //console.log(output);
+      });} else {
+        //not loaded
+        console.log('BUDI not loaded. Cannot check if it is latest msg.');
+      }
+
+    }
+    //end define is latest msg BUDI function
+
+    function makeBUDILatestMsg(trueOrFalse){
+      //  while (isBUDItheLatestMsg() === 'undefined'){console.log('waiting for output');/*wait*/}
+      //console.log('BUDI result is ' + trueOrFalse);
+      if (loaded && trueOrFalse === false){//loaded and budi not latest msg.
+        //delete msgID
+        Bot.deleteMessage({
+          channelID: channel,
+          messageID: msgID
+        }, function(error){
+          if (error !== null){
+            console.log(error);
+          } else {
+          //after message deleted, send new message.
+          Bot.sendMessage({
+            to: channel,
+            message: buildProgressBar()
+          }, function(error, response){
+            if (error !== null){console.log(error)};
+            if (response !== 'undefined'){
+              if (response.id !== 'undefined'){
+                msgID = response.id;
+              }
+            }
+          });
+          }
+        });
+        //end delete method
+        } else {
+          var errorMsg = '';
+          if (loaded !== true){errorMsg = 'BUDI not loaded\n';};
+          if (trueOrFalse){errorMsg = 'BUDI already latest message'}
+          //console.log(errorMsg);
+          //console.log(loaded);
+          //console.log('BUDI:' + trueOrFalse);
+        }
+    }
+    //end reshift BUDI to latest msg method.
+  //  makeBUDILatestMsg();
+
+  };
+  //end define budi
+
+  //build the progress bar;
+  //var incrementer = 0;
+  function buildCooldownMessage(){
+    return cooldownResponse;
+  }
+
+  editLooper = new BUDI(channel);
+  editLooper.start(buildCooldownMessage);
+
+
+}
+//end define progress bar func
