@@ -7,6 +7,7 @@ var ytStream = require('youtube-audio-stream');
 var ytdl = require('ytdl-core');
 var YouTube = require('youtube-node');
 var youTube = new YouTube();
+//var countdown = require('countdownjs');
 
 youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU');
 
@@ -1373,7 +1374,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
     delayCountdown = setInterval(function(){
       if (cooldown && activeDelay > 0){
-        activeDelay -= 1000
+        //activeDelay -= 1000
         //console.log(activeDelay);
         var outputResponse = selectedResponse + clockEmoji + " **" + activeDelay/1000 + "** seconds left on that cooldown.";
 
@@ -1387,8 +1388,8 @@ bot.on('message', function(user, userID, channelID, message, event){
         }
       } else {
       //  clearInterval(delayCountdown);
-      //  cooldown = false;
-      //  activeDelay = 0;
+        cooldown = false;
+        activeDelay = 0;
         return;
       }
     }, 1000);
@@ -1979,7 +1980,7 @@ function coolDownResponder(channel){
                   if (error !== null){console.log(error)};
                   if (typeof response !== 'undefined'){//response recieved
                     if (response.content === editMsgToSend){//edited Successfully
-
+                      activeDelay = activeDelay - 1000;
                       setTimeout(carryOnLoopingEditMsg, 1000);
 
                       function carryOnLoopingEditMsg(){
