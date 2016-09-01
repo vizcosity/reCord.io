@@ -49,7 +49,7 @@ var desiredResponseChannel;
 var audioFilePlaying = false;
 var sitcom = false;
 var attitude = config.attitude;
-var delay = 0, activeDelay = delay, cmdToCooldown = '', cooldown = false, cooldownResponse, delayCountdown;
+var delay = 0, activeDelay = delay, cmdToCooldown = '', cooldown = false, cooldownResponse, delayCountdown, cdCount = 0;
 
 bot.on('ready',function(){
   console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
@@ -1352,52 +1352,66 @@ bot.on('message', function(user, userID, channelID, message, event){
 
   //cooldown handler
   function cooldownHandler(msg, user){
-    if (delay < 5000){
-      var clockEmoji = ':clock1:';
-    } else if (delay >= 5000 && delay < 10000){
-      var clockEmoji = ':clock2:';
-    } else if (delay >= 10000 && delay < 15000){
-      var clockEmoji = ':clock3:';
-    } else if (delay >= 15000 && delay < 20000){
-      var clockEmoji = ':clock4:';
-    } else {
-      clockEmoji = ':clock5:';
-    }
-    var responseArray = [
-      "Yooo **" + user + "** you have a savage but no chill.",
-      "**" + user + "** I'm gonna have to ask that you calm down.",
-      "**" + user + "** fam, like, chill for a sec.",
-      "Oi **" + user + "** can you chill out for a sec? Too quick!"
-    ]
-    activeDelay = delay;
-    var selectedResponse = responseArray[randomIntFromInterval(0,responseArray.length - 1)];
 
-    delayCountdown = setInterval(function(){
-      if (cooldown && activeDelay > 0){
-        //activeDelay -= 1000
-        //console.log(activeDelay);
-        var outputResponse = selectedResponse + clockEmoji + " **" + activeDelay/1000 + "** seconds left on that cooldown.";
-
-        if (delay > 0 && cmdIs(cmdToCooldown, msg)){
-          //delay is set to something above zero & msg contains the cooldown command.
-          channelMsg = '';
-          //notify(outputResponse);
-          cooldownResponse = outputResponse;
-          //console.log(cooldownResponse);
-          //console.log(activeDelay);
-        }
+      if (cdCount < 1 && delay > 0 && cmdIs(cmdToCooldown, msg)){
+      cdCount++;
+      //coolDownHandlerCount++;
+      //console.log(coolDownHandlerCount);
+      console.log('cooldown handler called');
+      if (delay < 5000){
+        var clockEmoji = ':clock1:';
+      } else if (delay >= 5000 && delay < 10000){
+        var clockEmoji = ':clock2:';
+      } else if (delay >= 10000 && delay < 15000){
+        var clockEmoji = ':clock3:';
+      } else if (delay >= 15000 && delay < 20000){
+        var clockEmoji = ':clock4:';
       } else {
-      //  clearInterval(delayCountdown);
-        cooldown = false;
-        activeDelay = 0;
-        return;
+        clockEmoji = ':clock5:';
       }
-    }, 1000);
+      //cooldownAlreadyCalled = true;
+      var responseArray = [
+        "Yooo **" + user + "** you have a savage but no chill.",
+        "**" + user + "** I'm gonna have to ask that you calm down.",
+        "**" + user + "** fam, like, chill for a sec.",
+        "Oi **" + user + "** can you chill out for a sec? Too quick!"
+      ];
 
-    if (cooldown && cmdIs(cmdToCooldown, msg)){
-      coolDownResponder(channelID);
+      var randomNum = randomIntFromInterval(0,responseArray.length - 1);
+      //console.log(randomNum);
+      //activeDelay = delay;
+      var selectedResponse = responseArray[randomNum];
+      //console.log(selectedResponse);
+
+      delayCountdown = setInterval(function(){
+        if (cooldown && activeDelay > 0){
+          //activeDelay = activeDelay - 1000;
+          //console.log(activeDelay);
+          var outputResponse = selectedResponse + clockEmoji + " **" + activeDelay/1000 + "** seconds left on that cooldown.";
+
+          if (delay > 0 && cmdIs(cmdToCooldown, msg)){
+            //delay is set to something above zero & msg contains the cooldown command.
+            channelMsg = '';
+            //notify(outputResponse);
+            cooldownResponse = outputResponse;
+            console.log(cooldownResponse);
+            //console.log(activeDelay);
+          }
+        } else {
+        //  clearInterval(delayCountdown);
+          //cooldown = false;
+          //activeDelay = 0;
+          //cooldownAlreadyCalled = false;
+          cdCount--;
+          console.log(cdCount);
+          return;
+        }
+      }, 1000);
+
+      if (cooldown && cmdIs(cmdToCooldown, msg)){
+        coolDownResponder(channelID);
+      }
     }
-
   }
   //end cooldownHandler
 
@@ -1930,10 +1944,20 @@ function setCooldown(command, del){
   cooldown = true;
   cmdToCooldown = command;
   delay = del;
+  activeDelay = del;
   //setting the global variables;
+  setInterval(function(){
+    if (activeDelay > 0){
+      activeDelay = activeDelay - 1000;
+    } else {
+      clearInterval(this);
+    }
+
+  }, 1000)
 
   setTimeout(function(){
   console.log('Cooldown on ' + prefix + command + ' finished after ' + del)
+    cdCount--;
     clearInterval(delayCountdown);
     cooldown = false;
     cmdToCooldown = '';
@@ -1980,7 +2004,7 @@ function coolDownResponder(channel){
                   if (error !== null){console.log(error)};
                   if (typeof response !== 'undefined'){//response recieved
                     if (response.content === editMsgToSend){//edited Successfully
-                      activeDelay = activeDelay - 1000;
+                      //activeDelay = activeDelay - 1000;
                       setTimeout(carryOnLoopingEditMsg, 1000);
 
                       function carryOnLoopingEditMsg(){
