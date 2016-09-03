@@ -12,7 +12,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 
 
 
-
+	var killing = false;
 	var soundlogFile = require('./soundlog.json');
 	var holdConversation = false, conversationLog = []; //variables for conversation handler.
 	var voiceChannel = channel;
@@ -511,10 +511,11 @@ var duration;
 	this.kill = function(){
 
 		try {
+			killing = true;
 			playing = false;
-			//queue = [];
-			//plQueue = [];
-			rebuildPlaylist();
+			queue = [];
+			plQueue = [];
+			//rebuildPlaylist();
 			enc.kill();
 			playing = false;
 			resetStatus();
@@ -706,7 +707,9 @@ var duration;
 				messageID: notificationMsgId
 			});
 			editLooper.stop();
-			rebuildPlaylist(queue);
+			if (!killing){
+				rebuildPlaylist(queue);
+			}
 		});
 	}
 
