@@ -166,7 +166,13 @@
       "announcementChannel": "128319520497598464",
       "queue": [],
       "currentSong": {
-        
+        "type": "YT",
+        "title": "Porter Robinson - Sad Machine (Lyric Video)",
+        "url": "https://r1---sn-a8au-h5ql.googlevideo.com/videoplayback?requiressl=yes&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpcm2cms%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&source=youtube&dur=258.321&lmt=1471820290896753&sver=3&mn=sn-a8au-h5ql&ratebypass=yes&signature=0756C546708D244BCD79D198A20A6D508F1B1B21.57F2CCABD43A0EB032AD87B419F1561352E3B7AB&pcm2cms=yes&initcwndbps=2498750&key=yt6&mime=video%2Fmp4&ei=WBbLV_KBGqLqiQbbuIcw&expire=1472948920&upn=xs25DVqxq-0&id=o-AGMKGBT19JCy7LErPH6CM47UO-cs5azV0WnWYrH15PwK&pl=20&ms=au&mv=m&mt=1472926566&itag=22&ip=195.166.208.253&mm=31&ipbits=0",
+        "requesterID": "128319285872427008",
+        "requester": "Aaron",
+        "uID": "HAIDqt2aUek",
+        "duration": 259
       }
     }
   }

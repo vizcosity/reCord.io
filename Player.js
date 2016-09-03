@@ -121,7 +121,7 @@ var duration;
 							uID = data.location;
 
 						} catch(e) {logE(e);};
-						queue.push( new MusicItem(type, title, url, id, userID, user, uID) );
+						queue.push( new MusicItem(type, title, url, id, userID, user, uID, duration) );
 						check();
 
 					//	notify(user + " has requested " + title);
@@ -206,11 +206,18 @@ var duration;
 	this.resumePlaylist = function(){
 		try {
 			var guildID = Bot.channels[announcementChannel].guild_id;
-		//console.log('resume called');
-		//console.log(guildID);
-			self.enqueue(soundlogFile.servers[guildID].currentSong.requester, soundlogFile.servers[guildID].currentSong.requesterID, soundlogFile.servers[guildID].currentSong.uID)
+			//console.log('resume called');
+			//console.log(guildID);
+			//self.enqueue(soundlogFile.servers[guildID].currentSong.requester, soundlogFile.servers[guildID].currentSong.requesterID, soundlogFile.servers[guildID].currentSong.uID)
+
 			current = soundlogFile.servers[guildID].currentSong;
 			queue = soundlogFile.servers[guildID].queue;
+			//play(current);
+			//playing = true;
+			//next = queue[0];
+			//check();
+			setTimeout(check, 1000);
+
 			//console.log(current);
 			//playingPlaylist = true;
 			//ready = true;
@@ -276,10 +283,12 @@ var duration;
 				}, function(err, response){
 					if (err !== null){log(err); };
 					setTimeout(function(){
-						Bot.deleteMessage({
-							channelID: response.channel_id,
-							messageID: response.id
-						});
+						try {
+							Bot.deleteMessage({
+								channelID: response.channel_id,
+								messageID: response.id
+							});
+						} catch(e){ log(e); };
 					}, 3000);
 				});
 				//return notify(output);
@@ -509,9 +518,17 @@ var duration;
 
 	};
 
+	this.evaluate = function(input){
+		//for debugging purposes.
+		try {
+			eval(input);
+		} catch(e) {err(e); };
+	}
+
 	this.kill = function(){
 
 		try {
+
 			killing = true;
 			playing = false;
 			queue = [];
@@ -522,7 +539,9 @@ var duration;
 			resetStatus();
 
 		} catch(e){
+
 			err(e);
+
 		}
 
 	}
@@ -674,7 +693,7 @@ var duration;
 
 		var notificationMsgId;
 		enc.stdout.once('readable', function() {
-			secondsLeft = duration;
+			//secondsLeft = duration;
 			streamReference.send(enc.stdout);
 			delete currentSong.id;
 			current = currentSong;
@@ -682,7 +701,7 @@ var duration;
 			currentSongTitle = currentPlayingSong;
 			requesterName = requester;
 			Bot.setPresence({game: {name: currentPlayingSong}});
-			nowPlayingProgressBar(duration);
+			nowPlayingProgressBar();
 			rebuildPlaylist(queue);
 
 		});
@@ -715,10 +734,10 @@ var duration;
 	}
 
 	var timeLeft = 'Loading';
-	function nowPlayingProgressBar(duration){
+	function nowPlayingProgressBar(){
 		var channel = announcementChannel;
 		//convert duration to seconds left;
-		var secondsLeft = duration;
+		var secondsLeft = current.duration;
 
 		function updateTimeLeft(){
 				if (playing && secondsLeft > 0){
@@ -888,16 +907,22 @@ var duration;
 		//build the progress bar;
 		//var incrementer = 0;
 		function buildProgressBar(){
-			var outputArray = [];
-			var incrementalLoadArray = [["", "────────────"], ["─", "───────────"], ["──", "──────────"], ["───", "─────────"], ["────", "────────"], ["─────", "───────"], ["──────", "──────"], ["───────", "─────"], ["────────", "────"], ["─────────", "───"], ["─────────", "───"], ["──────────", "──"], ["───────────", "─"], ["────────────", ""]];
-			var currentPlaceMarker = "🔘";
-			var incrementFactor = Math.floor(duration / 12);
-			var percentageOfSongPlayedCALC = secondsLeft / duration;
-			var percentageOfSongPlayed = 1 - percentageOfSongPlayedCALC;
-			var arrayLength = incrementalLoadArray.length - 1;
-			var iTPBI = Math.floor(percentageOfSongPlayed * arrayLength);
-			//if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
-			return '**Now playing:** ' + currentSongTitle + ' _requested by ' + requesterName + '_' + '\n\n' + "▶ " + incrementalLoadArray[iTPBI][0] + currentPlaceMarker + incrementalLoadArray[iTPBI][1] + ' [' + timeLeft + ']' ;
+			try {
+				//if (typeof current === 'undefined'){ duration = 0 } else {duration = current.duration;};
+				var outputArray = [];
+				var incrementalLoadArray = [["", "────────────"], ["─", "───────────"], ["──", "──────────"], ["───", "─────────"], ["────", "────────"], ["─────", "───────"], ["──────", "──────"], ["───────", "─────"], ["────────", "────"], ["─────────", "───"], ["─────────", "───"], ["──────────", "──"], ["───────────", "─"], ["────────────", ""]];
+				var currentPlaceMarker = "🔘";
+				var incrementFactor = Math.floor(current.duration / 12);
+				//console.log('incrementFactor: ' + incrementFactor);
+				var percentageOfSongPlayedCALC = secondsLeft / current.duration;
+				//console.log('percentage calculation: ' + percentageOfSongPlayedCALC);
+				var percentageOfSongPlayed = 1 - percentageOfSongPlayedCALC;
+				var arrayLength = incrementalLoadArray.length - 1;
+				var iTPBI = Math.floor(percentageOfSongPlayed * arrayLength);
+				//if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
+
+					return '**Now playing:** ' + currentSongTitle + ' _requested by ' + requesterName + '_' + '\n\n' + "▶ " + incrementalLoadArray[iTPBI][0] + currentPlaceMarker + incrementalLoadArray[iTPBI][1] + ' [' + timeLeft + ']' ;
+				} catch(e){ log(e); };
 
 		}
 
@@ -1024,7 +1049,7 @@ var duration;
 
 
 	/* --- Prototypes --- */
-	function MusicItem(type, title, url, id, requesterID, requester, uID) {
+	function MusicItem(type, title, url, id, requesterID, requester, uID, duration) {
 		this.type = type;
 		this.title = title;
 		this.url = url;
@@ -1032,6 +1057,7 @@ var duration;
 		this.requesterID = requesterID;
 		this.requester = requester;
 		this.uID = uID;
+		this.duration = duration;
 		rebuildPlaylist(queue);
 	}
 	function PlaylistItem(title, url) {

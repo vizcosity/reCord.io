@@ -615,7 +615,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             var query = link;
             log('Attempting to queue: ' + query);
             var respondChannel = channelID;
-            setCooldown('queue', 10000);
+            setCooldown('queue', 6000);
 
             function ytSearchPlayerInterface(query, amtOfResults){
               var fallbackQuery = query;
@@ -1032,6 +1032,18 @@ bot.on('message', function(user, userID, channelID, message, event){
         }
       }, 'yes');
       //end debug method
+
+      //debug console player
+      newCommand('dcp', channelMsg, function(arg){
+        try {
+          if (isPlayerLoaded()) {
+            Player.evaluate(arg);
+          } else {
+            notify('**Cannot execute player console command. Player not running.');
+          }
+        } catch(e){ log(e); };
+      }, 'yes');
+      //end debug console player
 
       //get info
       newCommand('getserverinf', channelMsg, function callback(cmdArg){
