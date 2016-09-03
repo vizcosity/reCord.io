@@ -166,7 +166,8 @@ var duration;
 		}
 
 		try {
-			rebuildPlaylist();
+			setTimeout(rebuildPlaylist, 5000);
+			//rebuildPlaylist();
 		} catch(e) { log(e); };
 
 	};
