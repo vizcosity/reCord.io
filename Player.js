@@ -167,7 +167,7 @@ var duration;
 
 		try {
 			//setTimeout(rebuildPlaylist, 5000);
-			rebuildPlaylist();
+			//rebuildPlaylist();
 		} catch(e) { log(e); };
 
 	};
@@ -209,7 +209,7 @@ var duration;
 		//console.log('resume called');
 		//console.log(guildID);
 			self.enqueue(soundlogFile.servers[guildID].currentSong.requester, soundlogFile.servers[guildID].currentSong.requesterID, soundlogFile.servers[guildID].currentSong.uID)
-			//current = soundlogFile.servers[guildID].currentSong;
+			current = soundlogFile.servers[guildID].currentSong;
 			queue = soundlogFile.servers[guildID].queue;
 			//console.log(current);
 			//playingPlaylist = true;
