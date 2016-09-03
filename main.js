@@ -1352,25 +1352,28 @@ bot.on('message', function(user, userID, channelID, message, event){
   //function to automate adding new commands
   function newCommand(commandName, message, func, arg){
     try {
-      if (cmdIs(commandName, message) && !cooldown){//checks to see if cmd contained within received message & that cooldown is not active.
-        //proceed with command method;
-        if (arg === 'yes'){// requires arguments;
-          if (hasArgs(commandName, message)){//command has arguments, proceed to method;
-            var commandArgs = getArg(prefix + commandName, message);
-                        func(commandArgs);
-          }  else {//no arguments, return usage if no arguments required.
-            if (typeof help[commandName] !== 'undefined'){
-              respond('```Usage: ' + prefix + help[commandName].usage + '```', channelID)
+      if (cmdIs(commandName, message)){//checks to see if cmd contained within received message & that cooldown is not active.
+        if (cmdIs(cmdToCooldown, message) && cooldown){} else {
+            //proceed with command method;
+            if (arg === 'yes'){// requires arguments;
+              if (hasArgs(commandName, message)){//command has arguments, proceed to method;
+                var commandArgs = getArg(prefix + commandName, message);
+                            func(commandArgs);
+              }  else {//no arguments, return usage if no arguments required.
+                if (typeof help[commandName] !== 'undefined'){
+                  respond('```Usage: ' + prefix + help[commandName].usage + '```', channelID)
+                }
+              }
+            } else {//command doesn't require arguments
+              func();
             }
-          }
-        } else {//command doesn't require arguments
-          func();
+
+            //after 3 seconds, delete the user msg;
+            try {
+              setTimeout(clearLastMsg, 3000);
+            } catch(e) {log(e); };
         }
 
-        //after 3 seconds, delete the user msg;
-        try {
-          setTimeout(clearLastMsg, 3000);
-        } catch(e) {log(e); };
       }
     } catch (e){
       log(e);
@@ -1851,7 +1854,7 @@ function getArg(cmd, msg, channelID){
 //function to check if command is contained within input string / message.
 function cmdIs(cmdName, message){
   try {
-    if (message.substring(0 + prefix.length, cmdName.length + 1) === cmdName) {
+    if (message.substring(prefix.length, cmdName.length + 1) === cmdName) {
 
       return true
 
