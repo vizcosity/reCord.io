@@ -166,8 +166,8 @@ var duration;
 		}
 
 		try {
-			setTimeout(rebuildPlaylist, 5000);
-			//rebuildPlaylist();
+			//setTimeout(rebuildPlaylist, 5000);
+			rebuildPlaylist();
 		} catch(e) { log(e); };
 
 	};
@@ -214,7 +214,7 @@ var duration;
 			//console.log(current);
 			//playingPlaylist = true;
 			//ready = true;
-			check();
+			//check();
 		} catch(e){ log(e); };
 	}
 
