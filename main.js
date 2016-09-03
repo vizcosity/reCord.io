@@ -25,13 +25,14 @@ var editLooper;
 
 var CLIArguments = process.argv[2];
 var token = "MjA1MzkxMTI2MjkzNzc0MzM2.CpJbog.TH8o86o4pIoHghC6_U2H3xQwJKg";
+var prefix = config.prefix;
 
 if (CLIArguments === 'dev'){
   console.log('Starting Developer mode.')
   token = "MjE4NzcyNzg0MDU3Mjg2NjU2.CqIH_w.pnZbF7HqN1-ciwO_5PD8S0Dz6pQ";
+  prefix = '+';
 };
 
-var prefix = config.prefix;
 
 var bot = new Discord.Client({
   //token: "MjA1MzkxMTI2MjkzNzc0MzM2.CpJbog.TH8o86o4pIoHghC6_U2H3xQwJKg",
@@ -44,7 +45,7 @@ var currentStatus = config.status;
 
 var randomSoundboard = config.randomSoundboard;
 var randomSoundDelay = parseInt(config.randomSoundDelay);
-var holdConversation = false;
+var holdConversation = false, conversationLog = []; //variables for conversation handler.
 var desiredResponseChannel;
 var audioFilePlaying = false;
 var sitcom = false;
@@ -167,7 +168,7 @@ bot.on('message', function(user, userID, channelID, message, event){
   //end message filtering
 
   //pass messages to convo handler
-  messageHandler(channelID, message);
+  messageHandler(channelID, message, userID, event.d.id);
   //end convo handler
 
   //cooldown handler
@@ -563,38 +564,76 @@ bot.on('message', function(user, userID, channelID, message, event){
       //request song
       newCommand('queue', channelMsg, function(link){
         try {
-          var initialmsgID = event.d.id;
-          if (audioFilePlaying){error('Local audio file currently playing. Please ' + prefix + 'lv (' + prefix + 'leave-voice) and try queuing again.')} else {
-            voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
-            if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
-              var requestURL = link.split(' ')[0];
-              //console.log(requestURL.split('/')[0]);
-              if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
-              Player.setAnnouncementChannel(channelID);
-              Player.enqueue(user, userID, requestURL);
-            } else {//no link, search instead
-              var query = link;
-              log('Attempting to queue: ' + query);
-              var respondChannel = channelID;
-              setCooldown('queue', 10000);
+            var initialmsgID = event.d.id;
+            if (audioFilePlaying){error('Local audio file currently playing. Please ' + prefix + 'lv (' + prefix + 'leave-voice) and try queuing again.')} else {
+              voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
+              //check to see if a playlist was running before bot left voice.
 
-              function ytSearchPlayerInterface(query, amtOfResults){
-                var fallbackQuery = query;
-                youTube.search(query, amtOfResults, function(error, results){
-                  if (error !== null){respond('YT Search responded with error ' + error, respondChannel)};
-                  var allowedResults = [];
-                  var videoSearchQueryID;
-                  try {
-                    if (results.items.length > 0){//results obtained Successfully;
-                      for (var i = 0; i < amtOfResults; i++){
-                        if (results.items[i].id.kind === 'youtube#video'){
-                          allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
-                        }
-                      };
-                    } else { respond("Search results could not be obtained.", respondChannel); };
-                  } catch(e){ err(e); };
+              if (wasPlaylistRunning(serverID) && !isPlayerLoaded()){//a playlist was on, and the Player is currently off.
+                console.log('Detected playlist was running.')
+                var resumePlaylistHandler = new conversation(channelID, userID);
+                respond('It looks like a playlist was running before I left voice. Would you like to resume?', channelID);
+                resumePlaylistHandler.start(function(channelID, message, userIDs, messageID){
 
-                  if (allowedResults.length > 0){ // results obtained.
+                  var response = message.toLowerCase();
+
+                  if (response === 'yes'){
+                    Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
+                    Player.setAnnouncementChannel(channelID);
+
+                    Player.resumePlaylist()
+
+                    resumePlaylistHandler.clear();
+                    } else if (response === 'no'){
+                      respond('**Playlist resume cancelled.**', channelID);
+                      //continue to regular queue method.
+                      queueMethod();
+
+                  }
+                  setTimeout(resumePlaylistHandler.clear, 15000);
+                });
+              } else {
+
+                queueMethod();
+
+              //allow queue check.
+            };
+
+          }
+        } catch (e) { error(e); };
+
+        function queueMethod(){
+          console.log('Proceeding to queue function.');
+          if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
+            var requestURL = link.split(' ')[0];
+            //console.log(requestURL.split('/')[0]);
+
+            if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
+            Player.setAnnouncementChannel(channelID);
+            Player.enqueue(user, userID, requestURL);
+          } else {//no link, search instead
+            var query = link;
+            log('Attempting to queue: ' + query);
+            var respondChannel = channelID;
+            setCooldown('queue', 10000);
+
+            function ytSearchPlayerInterface(query, amtOfResults){
+              var fallbackQuery = query;
+              youTube.search(query, amtOfResults, function(error, results){
+                if (error !== null){notify('YT Search responded with **error**. Wait a sec and try again.'); log(error);};
+                var allowedResults = [];
+                var videoSearchQueryID;
+                try {
+                  if (results.items.length > 0){//results obtained Successfully;
+                    for (var i = 0; i < amtOfResults; i++){
+                      if (results.items[i].id.kind === 'youtube#video'){
+                        allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
+                      }
+                    };
+                  } else { notify("Search results could not be obtained."); };
+                } catch(e){ log(e); };
+
+                if (allowedResults.length > 0){ // results obtained.
                   var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
 
                   for (var i = 0; i < allowedResults.length; i++){
@@ -612,61 +651,68 @@ bot.on('message', function(user, userID, channelID, message, event){
                   }, function(err, response){
                     try {
                       searchQueryMsgID = response.id;
-                    } catch(e){err(e);};
+                    } catch(e){log(e);};
                     log(searchQueryMsgID);
                   });
                   setTimeout(hasUserRespondedToYTSearchQuery, 8000);//wait 4 seconds for user response.
                   var deleteMsgsAfterAWhileID = [];
-                  bot.on('message', function(userR, userIDR, channelIDR, messageR, eventR){
-                    deleteMsgsAfterAWhileID.push(event.d.id);
-                    if (userIDR === requestUser){
-
-                    if (typeof videoSearchQueryID === 'undefined'){
-                      if (messageR.toLowerCase() === 'none' || messageR.toLowerCase() === 'cancel') {//extra options.
-                        respond('Cancelled search query.', respondChannel);
-                        videoSearchQueryID = 'null';
-                        return;
+                  var queryHandler = new conversation(channelID, requestUser);
+                  queryHandler.start(function(channelID, message, userIDs, messageID){
+                    //console.log('[QUERY INTERFACE]: ' + message);
+                    //console.log(userIDs + ': ' + requestUser);
+                    if (userIDs === requestUser){
+                      if (typeof videoSearchQueryID === 'undefined'){
+                        if (message.toLowerCase() === 'none' || message.toLowerCase() === 'cancel') {//extra options.
+                          bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID});
+                          notify('**Cancelled search query.**');
+                          videoSearchQueryID = 'null';
+                          //bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID}); //removes the search query message.
+                          queryHandler.clear('both');
+                          return;
+                        }
+                        if (message.toLowerCase() === 'more'){
+                          videoSearchQueryID = 'null';
+                          bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID});
+                          ytSearchPlayerInterface(query, amtOfResults + 5);
+                          //bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID}); //removes the search query message.
+                          //queryHandler.clear('both');
+                          return;
+                        }
+                        var index = parseInt(message); //change the recieved message into a number.
+                        if (typeof allowedResults[index] !== 'undefined'){//check if number entered.
+                          videoSearchQueryID = allowedResults[index].id;
+                          bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID}); //removes the search query message.
+                          //respond('Queueing ' + allowedResults[index].title, respondChannel);
+                          queryHandler.clear('both');
+                          notify('**Queueing** ' + allowedResults[index].title);
+                          /*bot.sendMessage({
+                            to: respondChannel,
+                            message: '**Queueing** ' + allowedResults[index].title
+                            }, function (error, response){
+                            if (error !== null){log(error)};
+                            if (response !== 'undefined'){
+                              deleteMsgsAfterAWhileID.push(response.id);
+                              console.log(deleteMsgsAfterAWhileID);
+                              setTimeout(function(){
+                                bot.deleteMessages({
+                                  channelID: respondChannel,
+                                  messageIDs: deleteMsgsAfterAWhileID
+                                });
+                              }, 3000);
+                            }
+                          });
+                          //end notify of queueing */
+                          var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
+                          Player.setAnnouncementChannel(respondChannel);
+                          Player.enqueue(user, userID, requestURLFromQuery);
+                          return;
+                        }//if id of user msg response is valid check end.
                       }
-                      if (messageR.toLowerCase() === 'more'){
-                        videoSearchQueryID = 'null';
-                        ytSearchPlayerInterface(query, amtOfResults + 5);
-                        return;
-                      }
-                      var index = parseInt(messageR);
-                      if (typeof allowedResults[index] !== 'undefined'){//check if number entered.
-                        videoSearchQueryID = allowedResults[index].id;
-                        bot.deleteMessage({
-                          channelID: respondChannel,
-                          messageID: searchQueryMsgID
-                        });
-                        //respond('Queueing ' + allowedResults[index].title, respondChannel);
-                        bot.sendMessage({
-                          to: respondChannel,
-                          message: '**Queueing** ' + allowedResults[index].title
-                        }, function (error, response){
-                          if (error !== null){log(error)};
-                          if (response !== 'undefined'){
-                            deleteMsgsAfterAWhileID.push(response.id);
-                            console.log(deleteMsgsAfterAWhileID);
-                            setTimeout(function(){
-                              bot.deleteMessages({
-                                channelID: respondChannel,
-                                messageIDs: deleteMsgsAfterAWhileID
-                              });
-                            }, 3000);
-                          }
-                        });
-                        var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
-                        Player.setAnnouncementChannel(respondChannel);
-                        Player.enqueue(user, userID, requestURLFromQuery);
-                        return;
-                      }//if id of user msg response is valid check end.
-                  } else {//request done, return nothing.
-                    return;
-                  }}//check if should listen to original requester user.
-
-                  });//end on message event listener user response for search query.
-
+                    }//make sure you listen to the orgiginal requester only.
+                    try {
+                      setTimeout(queryHandler.stop(), 10000) //stop convo automatically in 10 seconds.
+                    } catch(e){ log(e); };
+                  });
 
                   function hasUserRespondedToYTSearchQuery(){
                     if (typeof videoSearchQueryID === 'undefined'){//no input from user.
@@ -686,14 +732,14 @@ bot.on('message', function(user, userID, channelID, message, event){
                   respond("No results found. Either search query was invalid or it turned up no video results.", respondChannel);
                 }
 
-                });//end yt search query.
+              });//end yt search query.
 
-              };
+            };
 
-              ytSearchPlayerInterface(query, 5);
-            }
-          };
-        } catch (e) { error(e); };
+            ytSearchPlayerInterface(query, 5);
+          }//end search
+
+        }//end queue method
 
       }, 'yes');
       //end queue command function
@@ -709,6 +755,20 @@ bot.on('message', function(user, userID, channelID, message, event){
         } catch(e) { error(e); };
       }, 'yes');
       //end setplaylist
+
+      //conversation
+      newCommand('convo', channelMsg, function(){
+        var convo = new conversation(channelID, userID);
+        respond('test', channelID);
+        convo.start(function(channelID, message){
+          bot.sendMessage({
+            to: channelID,
+            message: 'done'
+          }, function(err){ if (err !== null) console.log(err)});
+          //setTimeout(convo.clear(), 2000);
+        });
+      });
+      //end convo
 
       //filtering
       newCommand('filter', channelMsg, function(arg){
@@ -827,7 +887,36 @@ bot.on('message', function(user, userID, channelID, message, event){
       //joinvoice:
       newCommand('joinvoice', channelMsg, function(){
         try {
-          Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+          //Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+          if (wasPlaylistRunning(serverID) && !isPlayerLoaded()){//a playlist was on, and the Player is currently off.
+            console.log('Detected playlist was running.')
+            var resumePlaylistHandler = new conversation(channelID, userID);
+            respond('It looks like a playlist was running before I left voice. Would you like to resume?', channelID);
+            resumePlaylistHandler.start(function(channelID, message, userIDs, messageID){
+
+              var response = message.toLowerCase();
+
+              if (response === 'yes'){
+                Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
+                Player.setAnnouncementChannel(channelID);
+
+                Player.resumePlaylist();
+
+                resumePlaylistHandler.clear();
+                } else if (response === 'no'){
+                  respond('**Playlist resume cancelled.**', channelID);
+                  //continue to regular queue method.
+                  //queueMethod();
+                  resumePlaylistHandler.clear();
+              }
+              setTimeout(resumePlaylistHandler.clear, 15000);
+            });
+          } else {
+            Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+            Player.setAnnouncementChannel(channelID);
+
+          }
+
         } catch(e) { error(e); };
       });
       //end join voice method
@@ -1277,6 +1366,11 @@ bot.on('message', function(user, userID, channelID, message, event){
         } else {//command doesn't require arguments
           func();
         }
+
+        //after 3 seconds, delete the user msg;
+        try {
+          setTimeout(clearLastMsg, 3000);
+        } catch(e) {log(e); };
       }
     } catch (e){
       log(e);
@@ -1332,90 +1426,100 @@ bot.on('message', function(user, userID, channelID, message, event){
 
   //notify:
   function notify(msg, delay) {
-
-    if (typeof delay === 'undefined') delay = 3000; //defaults to 3 seconds of notification before messsage self-destructs.
-    bot.sendMessage({
-      to: channelID,
-      message: msg
-    }, function callback(err, response){
-      var previousMessageID =  response.id;
-      setTimeout(function(){
-        bot.deleteMessage({
-          channelID: response.channel_id,
-          messageID: previousMessageID
-        });
-      }, delay);
-    });
-
+    try {
+      if (typeof delay === 'undefined') delay = 3000; //defaults to 3 seconds of notification before messsage self-destructs.
+      bot.sendMessage({
+        to: channelID,
+        message: msg
+      }, function callback(err, response){
+        var previousMessageID =  response.id;
+        setTimeout(function(){
+          bot.deleteMessage({
+            channelID: response.channel_id,
+            messageID: previousMessageID
+          });
+        }, delay);
+      });
+    } catch (e) {log(e); };
   }
   //notify end declaration
 
   //cooldown handler
   function cooldownHandler(msg, user){
-
+    try {
       if (cdCount < 1 && delay > 0 && cmdIs(cmdToCooldown, msg)){
-      cdCount++;
-      //coolDownHandlerCount++;
-      //console.log(coolDownHandlerCount);
-      console.log('cooldown handler called');
-      if (delay < 5000){
-        var clockEmoji = ':clock1:';
-      } else if (delay >= 5000 && delay < 10000){
-        var clockEmoji = ':clock2:';
-      } else if (delay >= 10000 && delay < 15000){
-        var clockEmoji = ':clock3:';
-      } else if (delay >= 15000 && delay < 20000){
-        var clockEmoji = ':clock4:';
-      } else {
-        clockEmoji = ':clock5:';
-      }
-      //cooldownAlreadyCalled = true;
-      var responseArray = [
-        "Yooo **" + user + "** you have a savage but no chill.",
-        "**" + user + "** I'm gonna have to ask that you calm down.",
-        "**" + user + "** fam, like, chill for a sec.",
-        "Oi **" + user + "** can you chill out for a sec? Too quick!"
-      ];
-
-      var randomNum = randomIntFromInterval(0,responseArray.length - 1);
-      //console.log(randomNum);
-      //activeDelay = delay;
-      var selectedResponse = responseArray[randomNum];
-      //console.log(selectedResponse);
-
-      delayCountdown = setInterval(function(){
-        if (cooldown && activeDelay > 0){
-          //activeDelay = activeDelay - 1000;
-          //console.log(activeDelay);
-          var outputResponse = selectedResponse + clockEmoji + " **" + activeDelay/1000 + "** seconds left on that cooldown.";
-
-          if (delay > 0 && cmdIs(cmdToCooldown, msg)){
-            //delay is set to something above zero & msg contains the cooldown command.
-            channelMsg = '';
-            //notify(outputResponse);
-            cooldownResponse = outputResponse;
-            console.log(cooldownResponse);
-            //console.log(activeDelay);
-          }
+        cdCount++;
+        //coolDownHandlerCount++;
+        //console.log(coolDownHandlerCount);
+        console.log('cooldown handler called');
+        if (delay < 5000){
+          var clockEmoji = ':clock1:';
+        } else if (delay >= 5000 && delay < 10000){
+          var clockEmoji = ':clock2:';
+        } else if (delay >= 10000 && delay < 15000){
+          var clockEmoji = ':clock3:';
+        } else if (delay >= 15000 && delay < 20000){
+          var clockEmoji = ':clock4:';
         } else {
-        //  clearInterval(delayCountdown);
-          //cooldown = false;
-          //activeDelay = 0;
-          //cooldownAlreadyCalled = false;
-          //cdCount--;
-          //console.log(cdCount);
-          return;
+          clockEmoji = ':clock5:';
         }
-      }, 1000);
+        //cooldownAlreadyCalled = true;
+        var responseArray = [
+          "Yooo **" + user + "** you have a savage but no chill.",
+          "**" + user + "** I'm gonna have to ask that you calm down.",
+          "**" + user + "** fam, like, chill for a sec.",
+          "Oi **" + user + "** can you chill out for a sec? Too quick!"
+        ];
 
-      if (cooldown && cmdIs(cmdToCooldown, msg)){
-        coolDownResponder(channelID);
+        var randomNum = randomIntFromInterval(0,responseArray.length - 1);
+        //console.log(randomNum);
+        //activeDelay = delay;
+        var selectedResponse = responseArray[randomNum];
+        //console.log(selectedResponse);
+
+        delayCountdown = setInterval(function(){
+          if (cooldown && activeDelay > 0){
+            //activeDelay = activeDelay - 1000;
+            //console.log(activeDelay);
+            var outputResponse = selectedResponse + clockEmoji + " **" + activeDelay/1000 + "** seconds left on that cooldown.";
+
+            if (delay > 0 && cmdIs(cmdToCooldown, msg)){
+              //delay is set to something above zero & msg contains the cooldown command.
+              channelMsg = '';
+              //notify(outputResponse);
+              cooldownResponse = outputResponse;
+              //console.log(cooldownResponse);
+              //console.log(activeDelay);
+            }
+          } else {
+          //  clearInterval(delayCountdown);
+            //cooldown = false;
+            //activeDelay = 0;
+            //cooldownAlreadyCalled = false;
+            //cdCount--;
+            //console.log(cdCount);
+            return;
+          }
+        }, 1000);
+
+        if (cooldown && cmdIs(cmdToCooldown, msg)){
+          clearLastMsg();
+          coolDownResponder(channelID);
+        }
       }
-    }
+    } catch (e) { log(e); };
   }
   //end cooldownHandler
 
-
+  //clear last user msg
+  function clearLastMsg(){
+    try {
+      bot.deleteMessage({
+        channelID: event.d.channel_id,
+        messageID: event.d.id
+      });
+    } catch(e) {log (e); };
+  }
 });
 //end on 'message' event.
 
@@ -1501,14 +1605,21 @@ function error(error){
 //end error handler
 
 //conversation handler
-function messageHandler(channelID, message){
+function messageHandler(channelID, message, userID, messageID){
   try {
     //to run everything that isn't a command;
       if (holdConversation && typeof logicForMessageHandler === 'function'){//run only if it is desired to hold a conversation & logic is not undefined & user isn't bot.
         if (desiredResponseChannel === channelID){//proceed
+          conversationLog.push({
+            'channelID': channelID,
+            'userID': userID,
+            'message content': message,
+            'messageID': messageID
+          });
+        //log('Message reached message handler.');
 
-        log('Message reached message handler.');
-        logicForMessageHandler(channelID, message);
+        logicForMessageHandler(channelID, message, userID, messageID);
+
         } else {log('Message not part of desired response channel.')};
       }
   } catch(error){
@@ -1518,8 +1629,10 @@ function messageHandler(channelID, message){
 }
 //end message handler
 
-function conversation(ConvoChannel){
+//coonversation method.
+function conversation(ConvoChannel, userID){
   try {
+    if (typeof userID !== 'undefined'){var desiredUser =  userID;} else {var desiredUser = '00000000000';}
     desiredResponseChannel = ConvoChannel;
     this.start = function(inputFunc, callback){
       log(inputFunc);
@@ -1532,7 +1645,74 @@ function conversation(ConvoChannel){
       holdConversation = false;
       logicForMessageHandler = null;
       log('No longer listening to user response for conversation.');
+      setTimeout(function(){
+        conversationLog = [];
+      }, 3000);
     }
+
+
+    this.clear = function(option){
+      //options: [user, bot, both, any]
+      //console.log('Clear requested.');
+      var messagesToDelete = [];
+      var testSampleArray = [];
+      try {
+        if (option === 'any' && conversationLog.length > 0){
+          for (var i = 0; i < conversationLog.length; i++){
+
+            if (conversationLog[i].channelID === ConvoChannel){
+              messagesToDelete.push(conversationLog[i].messageID);
+            }
+
+          }//messages ID's collected.
+
+        } else if (option === 'user' && conversationLog.length > 0){
+          for (var i = 0; i < conversationLog.length; i++){
+            if (conversationLog[i].channelID === ConvoChannel && conversationLog[i].userID === desiredUser){
+              messagesToDelete.push(conversationLog[i].messageID);
+            }
+          }
+        } else if (option === 'bot' && conversationLog.length > 0){
+          for (var i = 0; i < conversationLog.length; i++){
+            if (conversationLog[i].userID === bot.id && conversation[i].channelID === ConvoChannel){
+              messagesToDelete.push(conversationLog[i].messageID);
+            }
+          }
+        } else if (option === 'both' && conversationLog.length > 0){
+          //console.log('Clearing both user & bot messages.');
+          for (var i = 0; i < conversationLog.length; i++){
+            //console.log(conversationLog);
+            if (conversationLog[i].userID === bot.id || conversationLog[i].userID === desiredUser && conversationLog[i].channelID === ConvoChannel){
+              messagesToDelete.push(conversationLog[i].messageID);
+              testSampleArray.push(conversationLog[i]['message content']);
+            }
+          }
+
+        }
+
+        //messages IDs collected, proceed to deletion.
+        if (messagesToDelete.length > 0){
+          //console.log('deleting:');
+          //console.log(testSampleArray);
+        //  console.log(messagesToDelete);
+          if (messagesToDelete.length > 1){
+            bot.deleteMessages({
+              channelID: ConvoChannel,
+              messageIDs: messagesToDelete
+            }, function(err){if (err !== null) console.log(err);});
+          } else if (messagesToDelete.length === 1){
+            bot.deleteMessage({
+              channelID: ConvoChannel,
+              messageID: messagesToDelete[0]
+            }, function(err){if (err !== null) console.log(err); });
+          }
+            this.stop();
+            //messages deleted.
+        }
+
+      } catch(e) { log(e); };
+    }
+
   } catch(e) { error(e); };
 }
 //end conversation
@@ -1745,32 +1925,6 @@ function BUDI(channel){
     try {
     var loaded, continueLoop,
     loopArray = true, stayAsLatestMsg = true;
-    //initiate BUDI by sending msg to channel.
-    /* bot.sendMessage({
-      to: channel,
-      message: msgArray[0]
-    }, function(error, response){
-      if (error !== null){console.log(error)};
-      var msgID = response.id;
-      var i = 0;
-      bot.editMessage({
-        channelID: channel,
-        messageID: msgID,
-        message: msgArray[i]
-      }, function(err, response){
-        if (err !== null){console.log(err)};
-        i++;
-        editMsgLoop(msgArray[i]);
-      });
-
-      function alternateMsgArray(arr, outputVar){
-
-      }
-
-
-
-
-    }); */
 
     continueLoop = true;
     this.start = function(msgArray){
@@ -1969,163 +2123,175 @@ function setCooldown(command, del){
 //end set cooldown
 
 function coolDownResponder(channel){
-  var currentMsgID;
-  var continueLoop = true;
-  //BUDI pre-requisites
-  function BUDI(channel){
-    var msgID;
-    var loaded;
-    this.start = function(changingMessage){
-      loaded = true;
-      bot.sendMessage({
-        to: channel,
-        message: changingMessage()
-      }, function(err, response){
-        if (err !== null){console.log(err)};
-        if (response !== 'undefined'){
-          try {
-            msgID = response.id;
-          } catch(e){ log(e)};
-        } else {console.log('No response.')};
 
-              editMsgLoop(changingMessage)
+  try {
+    var currentMsgID;
+    var continueLoop = true;
+    //BUDI pre-requisites
+    function BUDI(channel){
+      var msgID;
+      var loaded;
+      this.start = function(changingMessage){
+        loaded = true;
+        bot.sendMessage({
+          to: channel,
+          message: changingMessage()
+        }, function(err, response){
+          if (err !== null){console.log(err)};
+          if (response !== 'undefined'){
+            try {
+              msgID = response.id;
+            } catch(e){ log(e)};
+          } else {console.log('No response.')};
 
-              function editMsgLoop(buildMSG){
-                //console.log()
-                if (continueLoop && cooldown){
-                //isBUDItheLatestMsg();
-                //console.log('got to the edit msg loop');
-                if (loaded !== true){loaded = true};
-                var editMsgToSend = changingMessage();
-                bot.editMessage({
-                  channelID: channel,
-                  messageID: msgID,
-                  message: editMsgToSend
-                }, function(error, response){
-                  if (error !== null){console.log(error)};
-                  if (typeof response !== 'undefined'){//response recieved
-                    if (response.content === editMsgToSend){//edited Successfully
-                      //activeDelay = activeDelay - 1000;
-                      setTimeout(carryOnLoopingEditMsg, 1000);
+                editMsgLoop(changingMessage)
 
-                      function carryOnLoopingEditMsg(){
-                          editMsgLoop(changingMessage);
+                function editMsgLoop(changingMessage){
+                  //console.log()
+                  if (continueLoop && cooldown){
+                  //isBUDItheLatestMsg();
+                  //console.log('got to the edit msg loop');
+                  if (loaded !== true){loaded = true};
+                  var editMsgToSend = changingMessage();
+                  bot.editMessage({
+                    channelID: channel,
+                    messageID: msgID,
+                    message: editMsgToSend
+                  }, function(error, response){
+                    if (error !== null){console.log(error)};
+                    if (typeof response !== 'undefined'){//response recieved
+                      if (response.content === editMsgToSend){//edited Successfully
+                        //activeDelay = activeDelay - 1000;
+                        setTimeout(carryOnLoopingEditMsg, 1000);
+
+                        function carryOnLoopingEditMsg(){
+                            editMsgLoop(changingMessage);
+                        }
                       }
+                    } else {//no response.
+                      console.log('No response frome edit Msg.')
                     }
-                  } else {//no response.
-                    console.log('No response frome edit Msg.')
-                  }
 
-                });
-            } else {
-              console.log('Loop cancelled or finished');
-              try {
-                //console.log('trying to delete')
-                bot.deleteMessage({
-                  channelID: channel,
-                  messageID: msgID
-                }, function(err){ if (err !== null) console.log('end loop delete err: ' + err)});
-              } catch (e) { log(e); };
-            }
-
-            }//end define editmsg loop
-      }//end sendmsg callback
-      )
-
-    }//end this.start msg loop
-
-    this.stop = function(){
-      if (loaded){
-        continueLoop = false;
-        secondsLeft = 0;
-        Bot.deleteMessage({
-          channelID: announcementChannel,
-          messageID: msgID
-        })
-      } else {
-        console.log('no loop running');
-      }
-    }
-
-    function isBUDItheLatestMsg(){
-      if (loaded){
-        //console.log('BUDI Loaded, proceeding to get msg.');
-      Bot.getMessages({
-        channelID: channel,
-        limit: 1
-      }, function(error, results){
-        var output;
-        //console.log(results[0].id);
-        if (error !== null){console.log(error)};
-        if (results !== 'undefined'){
-          if (results[0] !== 'undefined'){
-            if(results[0].id === msgID){//id's match, it is latest msg
-              return makeBUDILatestMsg(true);
-            } else {
-              return makeBUDILatestMsg(false);
-            }
-          } else {console.log('first result item not defined')}
-        } else {console.log('results not defined')}
-        //console.log(output);
-      });} else {
-        //not loaded
-        console.log('BUDI not loaded. Cannot check if it is latest msg.');
-      }
-
-    }
-    //end define is latest msg BUDI function
-
-    function makeBUDILatestMsg(trueOrFalse){
-      //  while (isBUDItheLatestMsg() === 'undefined'){console.log('waiting for output');/*wait*/}
-      //console.log('BUDI result is ' + trueOrFalse);
-      if (loaded && trueOrFalse === false){//loaded and budi not latest msg.
-        //delete msgID
-        Bot.deleteMessage({
-          channelID: channel,
-          messageID: msgID
-        }, function(error){
-          if (error !== null){
-            console.log(error);
-          } else {
-          //after message deleted, send new message.
-          Bot.sendMessage({
-            to: channel,
-            message: buildProgressBar()
-          }, function(error, response){
-            if (error !== null){console.log(error)};
-            if (response !== 'undefined'){
-              if (response.id !== 'undefined'){
-                msgID = response.id;
+                  });
+              } else {
+                console.log('Loop cancelled or finished');
+                try {
+                  //console.log('trying to delete')
+                  bot.deleteMessage({
+                    channelID: channel,
+                    messageID: msgID
+                  }, function(err){ if (err !== null) console.log('end loop delete err: ' + err)});
+                } catch (e) { log(e); };
               }
+
+              }//end define editmsg loop
+        }//end sendmsg callback
+        )
+
+      }//end this.start msg loop
+
+      this.stop = function(){
+        if (loaded){
+          continueLoop = false;
+          secondsLeft = 0;
+          Bot.deleteMessage({
+            channelID: announcementChannel,
+            messageID: msgID
+          })
+        } else {
+          console.log('no loop running');
+        }
+      }
+
+      function isBUDItheLatestMsg(){
+        if (loaded){
+          //console.log('BUDI Loaded, proceeding to get msg.');
+        Bot.getMessages({
+          channelID: channel,
+          limit: 1
+        }, function(error, results){
+          var output;
+          //console.log(results[0].id);
+          if (error !== null){console.log(error)};
+          if (results !== 'undefined'){
+            if (results[0] !== 'undefined'){
+              if(results[0].id === msgID){//id's match, it is latest msg
+                return makeBUDILatestMsg(true);
+              } else {
+                return makeBUDILatestMsg(false);
+              }
+            } else {console.log('first result item not defined')}
+          } else {console.log('results not defined')}
+          //console.log(output);
+        });} else {
+          //not loaded
+          console.log('BUDI not loaded. Cannot check if it is latest msg.');
+        }
+
+      }
+      //end define is latest msg BUDI function
+
+      function makeBUDILatestMsg(trueOrFalse){
+        //  while (isBUDItheLatestMsg() === 'undefined'){console.log('waiting for output');/*wait*/}
+        //console.log('BUDI result is ' + trueOrFalse);
+        if (loaded && trueOrFalse === false){//loaded and budi not latest msg.
+          //delete msgID
+          Bot.deleteMessage({
+            channelID: channel,
+            messageID: msgID
+          }, function(error){
+            if (error !== null){
+              console.log(error);
+            } else {
+            //after message deleted, send new message.
+            Bot.sendMessage({
+              to: channel,
+              message: buildProgressBar()
+            }, function(error, response){
+              if (error !== null){console.log(error)};
+              if (response !== 'undefined'){
+                if (response.id !== 'undefined'){
+                  msgID = response.id;
+                }
+              }
+            });
             }
           });
+          //end delete method
+          } else {
+            var errorMsg = '';
+            if (loaded !== true){errorMsg = 'BUDI not loaded\n';};
+            if (trueOrFalse){errorMsg = 'BUDI already latest message'}
+            //console.log(errorMsg);
+            //console.log(loaded);
+            //console.log('BUDI:' + trueOrFalse);
           }
-        });
-        //end delete method
-        } else {
-          var errorMsg = '';
-          if (loaded !== true){errorMsg = 'BUDI not loaded\n';};
-          if (trueOrFalse){errorMsg = 'BUDI already latest message'}
-          //console.log(errorMsg);
-          //console.log(loaded);
-          //console.log('BUDI:' + trueOrFalse);
-        }
+      }
+      //end reshift BUDI to latest msg method.
+    //  makeBUDILatestMsg();
+
+    };
+    //end define budi
+
+    //build the progress bar;
+    //var incrementer = 0;
+    function buildCooldownMessage(){
+      return cooldownResponse;
     }
-    //end reshift BUDI to latest msg method.
-  //  makeBUDILatestMsg();
 
-  };
-  //end define budi
+    editLooper = new BUDI(channel);
+    editLooper.start(buildCooldownMessage);
 
-  //build the progress bar;
-  //var incrementer = 0;
-  function buildCooldownMessage(){
-    return cooldownResponse;
-  }
-
-  editLooper = new BUDI(channel);
-  editLooper.start(buildCooldownMessage);
-
-
+  } catch(e) { log(e); };
 }
 //end define progress bar func
+
+//check to see if Player not closed properly.
+function wasPlaylistRunning(serverID){
+  if (soundlog.servers[serverID].queue.length > 0){
+    return true;
+  } else if (soundlog.servers[serverID].queue.length === 0){
+    return false;
+  }
+}
+//end check for Player closure.

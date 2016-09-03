@@ -12,6 +12,9 @@ function Player(Bot, YTKey, SCInfo, channel) {
 
 
 
+
+	var soundlogFile = require('./soundlog.json');
+	var holdConversation = false, conversationLog = []; //variables for conversation handler.
 	var voiceChannel = channel;
 	var editLooper;
 	var enc;
@@ -19,8 +22,13 @@ function Player(Bot, YTKey, SCInfo, channel) {
 	var currentStatus = configFile.status;
 	var defaultMusicChannel = configFile.defaultMusicChannel;
 	var rebuildingPlaylist = false;
+	var fs = require('fs');
 
-	if (announcementChannel !== defaultMusicChannel){notify("I'll take your request fam but please hop on over to #bot-chat so that generalchat doesn't get congested with music requests.")};
+	//if (announcementChannel !== defaultMusicChannel){notify("I'll take your request fam but please hop on over to #bot-chat so that generalchat doesn't get congested with music requests.")};
+
+	//try {
+	//	var serverID = Bot.channels[announcementChannel].guild_id;
+	//} catch(e) {err('beginning' + e); };
 
 	var API = {
 		Youtube: {
@@ -88,14 +96,18 @@ var duration;
 
 					ytdl.getInfo( "https://www.youtube.com/watch?v=" + data.location, function(err, info) {
 						if (err) return log('error', err);
+						//console.log("https://www.youtube.com/watch?v=" + data.location);
 						var f = info.formats;
+						//console.log(f);
 						var selection, hb = 0;
 						for (var i=0; i<f.length; i++) {
 							var current = f[i];
-							if (current.type && current.type.indexOf('audio/') > -1) {
+							//console.log(current);
+							if (current.type /*&& current.type.indexOf('audio/') > -1*/) {
 								if (Number(current.audioBitrate) > hb) {
 									hb = Number(current.audioBitrate);
 									selection = current;
+									//console.log(current);
 								}
 							}
 						}
@@ -153,6 +165,10 @@ var duration;
 			});
 		}
 
+		try {
+			rebuildPlaylist();
+		} catch(e) { log(e); };
+
 	};
 
 	this.printQueue = function(){
@@ -185,6 +201,21 @@ var duration;
 			}
 		} catch(e) {err(e); };
 	};
+
+	this.resumePlaylist = function(){
+		try {
+			var guildID = Bot.channels[announcementChannel].guild_id;
+		//console.log('resume called');
+		//console.log(guildID);
+			self.enqueue(soundlogFile.servers[guildID].currentSong.requester, soundlogFile.servers[guildID].currentSong.requesterID, soundlogFile.servers[guildID].currentSong.uID)
+			//current = soundlogFile.servers[guildID].currentSong;
+			queue = soundlogFile.servers[guildID].queue;
+			//console.log(current);
+			//playingPlaylist = true;
+			//ready = true;
+			check();
+		} catch(e){ log(e); };
+	}
 
 	this.wrongSong = function(user, userID) {
 		for (var i = queue.length - 1; i >= 0; i--) {
@@ -238,10 +269,22 @@ var duration;
 						}
 					} catch(e) {err(e); };
 				}
-
-				return notify(output);
+				return Bot.sendMessage({
+					to: announcementChannel,
+					message: output
+				}, function(err, response){
+					if (err !== null){log(err); };
+					setTimeout(function(){
+						Bot.deleteMessage({
+							channelID: response.channel_id,
+							messageID: response.id
+						});
+					}, 3000);
+				});
+				//return notify(output);
 				} else {//prevent crash if item is not defined.
-					notify("Can't retrieve playlist right now.");
+					notification(current.title + ' requested by **(' + current.requester + ')**')
+					//notify("Can't retrieve playlist right now.");
 				}
 			}
 
@@ -275,6 +318,7 @@ var duration;
 				var url = selection.url;
 				plQueue.push( new PlaylistItem(title, url) );
 				addQItem(items);
+				rebuildPlaylist();
 			});
 		}
 	};
@@ -282,9 +326,10 @@ var duration;
 	this.setAnnouncementChannel = function(ID) {
 		try {
 			var sID = Bot.channels[ID].guild_id;
+
 			if (!sID) return log('warn', "Cannot find server associated with: " + ID);
 			var cList = Bot.servers[sID].channels;
-		} catch(e) { err(e); };
+		} catch(e) { err('anouncement set error: ' + e); };
 		for (var channel in cList) {
 			if (channel === ID && cList[channel].type === "text") {
 				return announcementChannel = ID;
@@ -353,9 +398,7 @@ var duration;
 		});
 	};
 
-	try {
-		var serverID = bot.channels[announcementChannel].guild_id;
-	} catch(e) {err(e); };
+
 	var activelyCollecting = false;
 	var collectedSkips = 0;
 	var usersThatHaveSkippedThisSession = {};
@@ -469,10 +512,13 @@ var duration;
 
 		try {
 			playing = false;
-			queue = [];
+			//queue = [];
+			//plQueue = [];
+			rebuildPlaylist();
 			enc.kill();
 			playing = false;
 			resetStatus();
+
 		} catch(e){
 			err(e);
 		}
@@ -533,7 +579,7 @@ var duration;
 				a += 1;
 			}
 		}
-		return a >= 15;
+		return a >= 40;
 	}
 	function log() {
 		var types = {
@@ -573,6 +619,25 @@ var duration;
 	}
 	var currentSongTitle;
 	var requesterName;
+
+	//notification
+	function notification(message){
+		Bot.sendMessage({
+			to: announcementChannel,
+			message: message
+		}, function(err, response){
+			if (err !== null) log(err);
+
+			setTimeout(function(){
+				Bot.deleteMessage({
+					channelID: response.channel_id,
+					messageID: response.id
+				});
+			}, 3000);
+		});
+	}
+
+
 	function play(currentSong) {
 		try {
 			var requester = queue[0].requester;
@@ -615,16 +680,6 @@ var duration;
 			currentSongTitle = currentPlayingSong;
 			requesterName = requester;
 			Bot.setPresence({game: {name: currentPlayingSong}});
-
-						/*	Bot.sendMessage({
-								to: announcementChannel,
-								message: '**Now playing:** ' + currentPlayingSong + ' _requested by ' + requester + '_'
-							}, function(error, response){
-								if (error !== null){console.log(error)};
-								if (response !== 'undefined' || response !== undefined){
-								notificationMsgId = response.id;}
-							}); */
-
 			nowPlayingProgressBar(duration);
 			rebuildPlaylist(queue);
 
@@ -655,7 +710,7 @@ var duration;
 		});
 	}
 
-	var timeLeft;
+	var timeLeft = 'Loading';
 	function nowPlayingProgressBar(duration){
 		var channel = announcementChannel;
 		//convert duration to seconds left;
@@ -935,13 +990,35 @@ var duration;
 
 	function rebuildPlaylist(playlistQueue){
 		try {
+			var guildID = Bot.channels[announcementChannel].guild_id;
+		} catch(e) { log(e); };
+
+		var plQueueLOG = plQueue;
+		//var queueLOG = soundlogFile.queue;
+		try {
 			rebuildingPlaylist = true;
 			for (var i = 0; i < playlistQueue.length; i++){
 				playlistQueue[i].id = i + 1;
+
 			}
 			rebuildingPlaylist = false;
-		} catch(e){ err(e); };
+			try {
+				soundlogFile.servers[guildID].queue = playlistQueue;
+
+				if (soundlogFile.servers[guildID].announcementChannel.length === 0){
+				soundlogFile.servers[guildID].announcementChannel = announcementChannel;}
+
+				soundlogFile.servers[serverID].currentSong = current;
+				fs.writeFile('./soundlog.json', JSON.stringify(soundlogFile, null, 2), function callback(err){
+          log('Queue log updated.');
+          //respond('New prefix: ' + newPrefix + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
+        });
+			} catch(e){ log(e); };
+		} catch(e){ log(e); };
 	}
+
+
+
 	/* --- Prototypes --- */
 	function MusicItem(type, title, url, id, requesterID, requester, uID) {
 		this.type = type;
@@ -987,6 +1064,7 @@ var duration;
 	}
 	//end logging
 }
+
 
 
 
