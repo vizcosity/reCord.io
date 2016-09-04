@@ -473,6 +473,10 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes');
       //end web streaming command function.
 
+      newCommand('spotify', channelMsg, function(arg){
+
+      }, 'yes');
+
       //view playlist
       newCommand('playlist', channelMsg, function(arg){
         if (isPlayerLoaded()){
@@ -562,7 +566,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       //end request command function
 
       //request song
-      newCommand('queue', channelMsg, function(link){
+      newCommand('q', channelMsg, function(link){
         try {
             var initialmsgID = event.d.id;
             if (audioFilePlaying){error('Local audio file currently playing. Please ' + prefix + 'lv (' + prefix + 'leave-voice) and try queuing again.')} else {
@@ -756,6 +760,10 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes');
       //end setplaylist
 
+      newCommand('queue', channelMsg, function(){
+        notify('Hey **' + user + '** ' + prefix + 'queue was changed to ' + prefix + 'q. Just a quicker way of doing it!' )
+      });
+
       //conversation
       newCommand('convo', channelMsg, function(){
         var convo = new conversation(channelID, userID);
@@ -902,14 +910,14 @@ bot.on('message', function(user, userID, channelID, message, event){
 
                 Player.resumePlaylist();
 
-                resumePlaylistHandler.clear();
+                resumePlaylistHandler.clear('both');
                 } else if (response === 'no'){
                   respond('**Playlist resume cancelled.**', channelID);
                   //continue to regular queue method.
                   //queueMethod();
-                  resumePlaylistHandler.clear();
+                  resumePlaylistHandler.clear('both');
               }
-              setTimeout(resumePlaylistHandler.clear, 15000);
+              setTimeout(resumePlaylistHandler.clear('both'), 15000);
             });
           } else {
             Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
@@ -1620,8 +1628,9 @@ function error(error){
 //end error handler
 
 //conversation handler
-function messageHandler(channelID, message, userID, messageID){
+function messageHandler(channelID, message, userID, messageID, userType){
   try {
+    var type;
     //to run everything that isn't a command;
       if (holdConversation && typeof logicForMessageHandler === 'function'){//run only if it is desired to hold a conversation & logic is not undefined & user isn't bot.
         if (desiredResponseChannel === channelID){//proceed
