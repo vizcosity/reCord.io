@@ -21,6 +21,7 @@ var spawn = require('child_process').spawn;
 var player = require('./Player.js');
 var Player = '';
 var osmosis = require('osmosis');
+var spotifyServer = require('./authorization_code/app.js');
 var editLooper;
 
 var CLIArguments = process.argv[2];
@@ -473,14 +474,124 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes');
       //end web streaming command function.
 
-      newCommand('spotify', channelMsg, function(arg){
+      newCommand('spotify', channelMsg, function(){
+        try {
+        var outputTracklist = [];
+        var redirectURI = 'http://192.168.1.88:8888/callback';
+        var spotGrab = new spotifyServer('31e6e9b77b9747f0b9d56e7a7f94e075', 'edf8f3013a3e430f9505f6f7e47677d3', redirectURI);
+        var authenticationMsgID;
+        bot.sendMessage({
+          to: channelID,
+          message: 'I need you to authenticate your Spotify account. Click here: http://192.168.1.88:8888'
+        }, function(err, resp){
+          authenticationMsgID = resp.id;
+        });
+        spotGrab.start(function(){
+          //grab the authenticated user information;
+          spotGrab.getUserInfo(function callback(data){
+            var spotifyUserID = data.id;
+            console.log('Succesfully grabbed user Info for ' + userID + ': ' + data.display_name);
+            //userID collected, proceed to grab user playlists;
 
-      }, 'yes');
+            spotGrab.getPlaylists(spotifyUserID, function(playlistData, error){
+              if (error !== null) {console.log(error)};
+              //console.log(playlistData);
+              var playlistInfo = [];
+              var playlists = playlistData.items;
+              var outputPlaylistString = 'Available playlists: \n\n';
+              var iterate = 0;
+              for (var i = 0; i < playlists.length; i++){
+                if (playlists[i].owner.id !== 'spotify'){
+
+                  playlistInfo.push({
+                    "name": playlists[i].name,
+                    "id": playlists[i].id,
+                    "playlistOwner": playlists[i].owner.id,
+                    "playlistURL": playlists[i].tracks.href
+                  });
+
+                  if (i < playlists.length - 1){
+                    outputPlaylistString += '**' + iterate + '.**  ' + playlists[i].name + '\n';
+                  } else {
+                    outputPlaylistString += '**' + iterate + '.**  ' + playlists[i].name + '\n\n**Select an option**';
+                  }
+                  iterate++;
+                }
+              }
+            //playlists collected, proceed to get tracks;
+
+            (function(){
+            bot.deleteMessage({
+              channelID: channelID,
+              messageID: authenticationMsgID
+            });//delete the authentification link message;
+
+            var spotifyConvo = new conversation(channelID, userID);
+            notify('**Authenticated!**');
+            var outputPlaylistStringMsgID;
+            console.log(outputPlaylistString);
+            bot.sendMessage({
+              to: channelID,
+              message: outputPlaylistString
+            }, function(err, resp){
+              outputPlaylistStringMsgID = resp.id;
+            });
+
+
+            spotifyConvo.start(function(channelID, message, userIDs, messageID){
+              //start conversation to select the desired playlist.
+              if (userID === userIDs) {
+                //listen to the person who initiated the conversation;
+                var playlistIndex = parseInt(message);
+                if (playlistIndex >= playlistInfo.length){
+                  //index is larger than the amt of playlists;
+                  notify('**' + user + '** I did not recognize that, are you sure you entered a valid available number?');
+                } else {
+                  bot.deleteMessage({
+                    channelID: channelID,
+                    messageID: outputPlaylistStringMsgID
+                  }); //delete playlist options.
+                  //index selection is valid - playlistIndex is used to target the desired playlist.
+                  var desiredPlaylistID = playlistInfo[playlistIndex].id;
+                  spotGrab.getTracks(spotifyUserID, desiredPlaylistID, function(trackData, error){
+                    if (error !== null) console.log(error);
+                    //Tracks have been collected.
+                    //console.log(trackData);
+                        var stringedOutputTracklist = 'Tracks inside **' + playlistInfo[0].name + '**: \n\n';
+                          for (var i = 0; i < trackData.items.length; i++){
+                            outputTracklist.push(trackData.items[i].track.artists[0].name + ' - ' + trackData.items[i].track.name)
+                            if (i < trackData.items.length - 1){
+                              //string normally with break
+                              stringedOutputTracklist += trackData.items[i].track.artists[0].name + ' - ' + trackData.items[i].track.name + '\n';
+                            } else {
+                              stringedOutputTracklist += trackData.items[i].track.artists[0].name + ' - ' + trackData.items[i].track.name;
+                            }
+                          }//tracklist collected and parsed.
+
+                          notify(stringedOutputTracklist);
+
+                          spotifyConvo.clear('both');
+                          spotGrab.stop();
+                          spotGrab = null;
+                          delete spotGrab;
+                          return youTubePlaylistBuilder(outputTracklist);
+                      });
+                    }
+
+                  }//end check for the
+                });
+              })()//anonymous function
+            })//end get playlists
+
+          });//end get userinfo
+        });// end spotgrab start
+      } catch(e) {log(e); };
+      });//end new command
 
       //view playlist
       newCommand('playlist', channelMsg, function(arg){
+        var firstArg = arg.split(' ')[0];
         if (isPlayerLoaded()){
-          var firstArg = arg.split(' ')[0];
           if (firstArg === 'info'){
             Player.printPlaylist();
           } else if (firstArg === 'remove') {
@@ -488,10 +599,45 @@ bot.on('message', function(user, userID, channelID, message, event){
             secondArg = parseInt(secondArg);
 
             Player.deleteSong(user, userID, secondArg);
+          } else if (firstArg === 'add' || firstArg === 'queue'){
+            var thirdArg = arg.split(' ')[1];//this is the link.
+            queuePlaylist(thirdArg);
           }
         } else {//player not loaded
-          respond('No playlist currently set up.', channelID);
+          console.log(firstArg);
+          if (firstArg == 'add' || firstArg == 'queue'){
+            //queue a playlist but start player first.
+            Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
+            var thirdArg = arg.split(' ')[1];
+            console.log(thirdArg);
+            queuePlaylist(thirdArg);
+          } else {
+            respond('No playlist currently set up.', channelID);
+
+          }
         }
+        //define the queueplaylist function
+        function queuePlaylist(link){
+          var baseUrl = link.split('/')[2];
+          if (baseUrl !== 'www.youtube.com'){
+            notify('Hey **' + user + '** that link is invalid. Url is from "' + baseUrl + '" when it needs to be from "www.youtube.com".');
+          } else {
+            //playlist URL is valid, convert to just the ID;
+            var playlistID = link.split('list=')[1];
+            console.log(playlistID);
+            if (!isPlayerLoaded()){
+              if (!audioFilePlaying){
+                Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+              } else {
+                notify("I can't start queueing when a local audio file is playing. Leave voice and try again.");
+              } //start the player.
+            }//load player if it is not loaded.
+
+            Player.setAnnouncementChannel(channelID);
+            Player.queuePlaylist(user, userID, playlistID);
+          }
+        }
+
       }, 'yes');
       //end view playlist
 
@@ -619,7 +765,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             var query = link;
             log('Attempting to queue: ' + query);
             var respondChannel = channelID;
-            setCooldown('queue', 6000);
+            setCooldown('q', 6000);
 
             function ytSearchPlayerInterface(query, amtOfResults){
               var fallbackQuery = query;
@@ -752,7 +898,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       newCommand('setplaylist', channelMsg, function(arg){
         try {
           if (isPlayerLoaded()){
-            Player.setDefaultPlaylist(arg);
+            Player.queuePlaylist(arg);
           } else {
             reply("Can't set playlist until bot joins voice. Queue a random song and try again or use " + prefix + "joinvoice");
           }
@@ -761,7 +907,26 @@ bot.on('message', function(user, userID, channelID, message, event){
       //end setplaylist
 
       newCommand('queue', channelMsg, function(){
-        notify('Hey **' + user + '** ' + prefix + 'queue was changed to ' + prefix + 'q. Just a quicker way of doing it!' )
+        if (userID === '128307686340165632'){
+          notify("Just for you **" + user + "** I'll take your request." );
+
+          setTimeout(function(){
+            bot.sendMessage({
+              to: channelID,
+              message: "PSYCHE. Seriously what is with you? Do you not have something against optimization?",
+              typing: true
+            }, function(err){
+              bot.sendMessage({
+                to: channelID,
+                message: "optimze yourself",
+                typing: true
+              });
+            });
+
+          }, 2000);
+        } else {
+          notify('Hey **' + user + '** ' + prefix + 'queue was changed to ' + prefix + 'q. Just a quicker way of doing it!' );
+        }
       });
 
       //conversation
@@ -1370,7 +1535,7 @@ bot.on('message', function(user, userID, channelID, message, event){
   //end play audio command method logic.
 
   //function to automate adding new commands
-  function newCommand(commandName, message, func, arg){
+  function newCommand(commandName, message, func, arg, shortcut){
     try {
       if (cmdIs(commandName, message)){//checks to see if cmd contained within received message & that cooldown is not active.
         if (cmdIs(cmdToCooldown, message) && cooldown){} else {
@@ -2309,6 +2474,12 @@ function coolDownResponder(channel){
   } catch(e) { log(e); };
 }
 //end define progress bar func
+
+//youtube playlist builder from array of song titles
+function youTubePlaylistBuilder(array){
+
+}
+//end youtube playlist builder
 
 //check to see if Player not closed properly.
 function wasPlaylistRunning(serverID){

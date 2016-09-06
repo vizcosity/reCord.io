@@ -164,16 +164,155 @@
   "servers": {
     "128319520497598464": {
       "announcementChannel": "128319520497598464",
-      "queue": [],
+      "queue": [
+        {
+          "type": "YT",
+          "title": "Basic Tape - Not Afraid",
+          "url": "https://r1---sn-a8au-h5qe.googlevideo.com/videoplayback?id=o-AOH_6AJ0Cs1GFc8xKkeA4tNE5VKxULl2NcKYgKog1YBK&mn=sn-a8au-h5qe&mm=31&ms=au&ei=qw3PV-j_OZOiW_yHofgG&pl=20&mv=m&ipbits=0&ip=195.166.209.4&ratebypass=yes&dur=197.462&lmt=1471648661917501&source=youtube&key=yt6&mime=video%2Fmp4&expire=1473208844&requiressl=yes&mt=1473186368&initcwndbps=2007500&sver=3&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&itag=22&upn=ms3KfPgJgTQ&signature=61C1486436492D10D384DABAF426F45ED647621A.9F450A8D409D59D4F0A94D2C441945A1AC0088F4",
+          "id": 1,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "gdjmDZaxmxI",
+          "duration": 198,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "Just A Gent - Heavy As A Heartbreak (feat. LANKS)",
+          "url": "https://r1---sn-a8au-h5qe.googlevideo.com/videoplayback?ipbits=0&initcwndbps=1887500&dur=243.345&key=yt6&lmt=1472042394487945&expire=1473208845&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&ip=195.166.209.4&itag=22&id=o-AK1njvwR-TutnOPodDDznXn3I6Y5GbrU4MFeypKNYr_q&sver=3&ratebypass=yes&mn=sn-a8au-h5qe&mm=31&upn=vTkQrMlDUcc&ms=au&ei=rQ3PV7wtlplYiNCnoAE&mv=m&pl=20&mt=1473186781&signature=B9E33F2D409E0F911267A44948EC1AB1CF888258.8807EAAD894ACAECBACD5D0599F3D38723E39780&source=youtube&mime=video%2Fmp4&requiressl=yes",
+          "id": 2,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "XV-wUFbgBU4",
+          "duration": 244,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "Stephen - Crossfire",
+          "url": "https://r4---sn-a8au-h5ql.googlevideo.com/videoplayback?mime=video%2Fmp4&expire=1473208846&source=youtube&pl=20&itag=22&dur=271.464&requiressl=yes&ei=rg3PV4NphbRYlb-A0Ag&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&upn=PvHXXCShz90&id=o-AL7Chiomic67MKZWLvq37Ar3vTtzIL6ByQl1ymQppb-c&mn=sn-a8au-h5ql&mm=31&ms=au&mv=m&mt=1473186781&key=yt6&ip=195.166.209.4&initcwndbps=2357500&lmt=1471174204008333&ipbits=0&ratebypass=yes&sver=3&signature=7506A1178C03414FA4EB2E3F77CE785BB4BB007A.48B70BC446B5225EE0D72103792C7AD5BCF0D001",
+          "id": 3,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "eH4F1Tdb040",
+          "duration": 272,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "[Progressive House] - Laszlo - Home (feat. Richard Caddock) [Monstercat Release]",
+          "url": "https://r8---sn-a8au-h5ql.googlevideo.com/videoplayback?key=yt6&mime=video%2Fmp4&itag=22&signature=BC80519647CA851CC2030ACA50466231B38AF823.620336E2B377558B71022B727D02395BD86A9390&sver=3&pcm2cms=yes&dur=292.501&ipbits=0&expire=1473208847&ratebypass=yes&requiressl=yes&ip=195.166.209.4&ms=au&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpcm2cms%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&mv=m&mt=1473186781&pl=20&id=o-AA_nd2abJ3SlrS4mtOW-RBbHvS7wYjaU7Y5Sbvxafivu&mn=sn-a8au-h5ql&mm=31&initcwndbps=2357500&lmt=1471661054046378&upn=Rc0mLjvbKvs&source=youtube&ei=rg3PV7TQOIGvW6KejogE",
+          "id": 4,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "kPveq0RmjNU",
+          "duration": 293,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "[Future Bass] - Pegboard Nerds - Just Like That (feat. Johnny Graves) [Monstercat EP Release]",
+          "url": "https://r5---sn-a8au-h5ql.googlevideo.com/videoplayback?expire=1473208848&dur=203.639&ratebypass=yes&sver=3&key=yt6&mime=video%2Fmp4&itag=22&pl=20&mn=sn-a8au-h5ql&ip=195.166.209.4&mm=31&id=o-APpeWDqZhJbl-Bf214vxkCqVX7UJFI93aVk4mi9_99KV&signature=30F3A531DE121E2C9D8848CAF98D6929FF5BD94F.34A3090A1B5E085B0F9E5ECEDCAA1009EE6EC092&ms=au&pcm2cms=yes&mv=m&upn=w4zRgiHLUFw&mt=1473186781&ipbits=0&lmt=1471535055914833&sparams=dur%2Cei%2Cgcr%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpcm2cms%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&gcr=gi&requiressl=yes&ei=sA3PV9PNA9KQWK6krVA&initcwndbps=2357500&source=youtube",
+          "id": 5,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "XZq2l0iLV7Y",
+          "duration": 204,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "GoPro Music: Haywyre Performs ‘Insight’ - POV",
+          "url": "https://r5---sn-a8au-h5ql.googlevideo.com/videoplayback?source=youtube&initcwndbps=2357500&id=o-AGF1F4436dOLQIUJXgRUo1DvqKTcI2ULD_oHUnLIEVvi&sver=3&key=yt6&ip=195.166.209.4&lmt=1470909203002952&dur=248.639&expire=1473208849&upn=VSpt-Klho_M&signature=D0BE57A7EDED8A238B74C694C62488053C9E4654.9D7920B5D083F9D8699EF9D37854A62471949315&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&ipbits=0&mime=video%2Fmp4&pl=20&itag=22&mt=1473186781&mv=m&ei=sQ3PV6eBKoOhWuTklcAK&ms=au&requiressl=yes&ratebypass=yes&mm=31&mn=sn-a8au-h5ql",
+          "id": 6,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "iSmKiJxtg-c",
+          "duration": 249,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "Flume - Never Be Like You feat. Kai",
+          "url": "https://r8---sn-a8au-h5ql.googlevideo.com/videoplayback?mv=m&mt=1473186781&ms=au&key=yt6&ip=195.166.209.4&upn=Q6RxDsUDLwI&mn=sn-a8au-h5ql&mm=31&sparams=dur%2Cei%2Cgcr%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&id=o-AP9nbHDyDGPHQKOjeL1GTx0xjn0fABeHAvIdCC5Dp2-9&ei=sg3PV4a8KteAWfe0k_AC&lmt=1471774018048543&gcr=gi&requiressl=yes&source=youtube&pl=20&itag=22&dur=233.290&mime=video%2Fmp4&expire=1473208850&sver=3&ratebypass=yes&signature=4CB1FAAE52831A500FBF30E176BA195A74592032.5F2637780466DC327768B0E569A404D360B094A0&initcwndbps=2357500&ipbits=0",
+          "id": 7,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "Ly7uj0JwgKg",
+          "duration": 234,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "Flume & Chet Faker - Drop the Game [Official Music Video]",
+          "url": "https://r4---sn-a8au-h5ql.googlevideo.com/videoplayback?lmt=1471763260467723&source=youtube&initcwndbps=2357500&dur=249.034&ei=sw3PV9OXNcefWbujtNgJ&signature=B68CC6AC289820B7BC5CDFDADE218CEC7B80825B.6D12A0D8B5D626122A08915FC5A0DE14459D225B&requiressl=yes&pcm2cms=yes&itag=22&key=yt6&expire=1473208851&ip=195.166.209.4&mm=31&mn=sn-a8au-h5ql&mt=1473186781&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpcm2cms%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&mv=m&ms=au&sver=3&id=o-AAa7zB4-5N_nS1m_xF1FawjO1NCpo_PEY4SmVXv3fJb0&mime=video%2Fmp4&pl=20&upn=8mksAUme6bI&ratebypass=yes&ipbits=0",
+          "id": 8,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "6vopR3ys8Kw",
+          "duration": 250,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "Hellberg - Slumber Party [Exclusive]",
+          "url": "https://r1---sn-a8au-h5ql.googlevideo.com/videoplayback?ip=195.166.209.4&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&initcwndbps=2357500&upn=SdAejgNr45E&id=o-AHyzYdT3K5l4IvFR3IVfiueJZT9wILzcXBkKbbTY1H4G&ei=tQ3PV-jjAoOTWvutq6AC&lmt=1471164313010016&ratebypass=yes&pl=20&expire=1473208853&sver=3&dur=233.917&ipbits=0&itag=22&key=yt6&mime=video%2Fmp4&requiressl=yes&mn=sn-a8au-h5ql&mm=31&mv=m&mt=1473186781&ms=au&source=youtube&signature=D262419BA8799B484D8801EB54BD208F258C640B.A4CFA385D6FA18442FD7114CFCC03412B69C757E",
+          "id": 9,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "y5eiogAK9G4",
+          "duration": 234,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "Oh Wonder - Dazzle (Synchronice Remix) [ELECTRO HOUSE]",
+          "url": "https://r7---sn-a8au-h5ql.googlevideo.com/videoplayback?ipbits=0&ratebypass=yes&key=yt6&upn=1h5x12DqI7w&itag=22&signature=BE95E242CDC2E2B048EC92960A18D9A18C743ED6.216D4634317EAF8BCE5EE8C4F01465CD2596A32D&dur=223.166&initcwndbps=2147500&sver=3&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&lmt=1427093603871864&ei=tg3PV57vAcKaWvuyu8gJ&source=youtube&mm=31&mn=sn-a8au-h5ql&pl=20&ip=195.166.209.4&mime=video%2Fmp4&requiressl=yes&expire=1473208854&mt=1473186368&mv=m&id=o-AMaBdt5Pwb2DH26TkgldKx3d4nZorQMESZdU-p5QPK7X&ms=au",
+          "id": 10,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "7w_X1COUfsM",
+          "duration": 224,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "[Indie Dance] - Puppet & Cormak - Enough Is Enough (feat. Richard Caddock) [Monstercat Release]",
+          "url": "https://r6---sn-a8au-h5qe.googlevideo.com/videoplayback?pl=20&ei=tw3PV-6oDpC0WIT_o7gD&expire=1473208855&sver=3&id=o-AM2fY0YZ-5crImeJ3c9pjL00dHU1VGQFrNQIzQJZFtWq&dur=199.830&mn=sn-a8au-h5qe&mm=31&lmt=1471519995985575&ip=195.166.209.4&key=yt6&ms=au&mv=m&source=youtube&ratebypass=yes&ipbits=0&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&requiressl=yes&itag=22&mime=video%2Fmp4&upn=oCPqbeLYkOY&signature=B14F511B22737EFDF78432F6E099045F25672D9A.14CD04C0E1DEC1EE776DF6A806844970F2FCEBE1&initcwndbps=1887500&mt=1473186781",
+          "id": 11,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "X0JNmAK12r4",
+          "duration": 200,
+          "itemType": "playlist"
+        },
+        {
+          "type": "YT",
+          "title": "Danrell - Blame It All On Me",
+          "url": "https://r5---sn-a8au-h5ql.googlevideo.com/videoplayback?id=o-AEdntU1HH1fd3ZEzgM9AyZqVLI946xj6oG3TWixD8r9a&mn=sn-a8au-h5ql&mm=31&ms=au&ei=uA3PV77BEcSCWf_0pugJ&mv=m&mt=1473186781&pl=20&ip=195.166.209.4&ratebypass=yes&itag=22&sver=3&expire=1473208856&upn=wL7tKa_Rtcg&key=yt6&lmt=1472435477338913&dur=207.447&source=youtube&requiressl=yes&initcwndbps=2357500&ipbits=0&mime=video%2Fmp4&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&signature=2BA33671C5AF6081DAB3658A67E61A1F34FE3B81.6223AF3675E1209C58E1CAF9BE9D58CA7279C0CD",
+          "id": 12,
+          "requesterID": "128319285872427008",
+          "requester": "Aaron",
+          "uID": "S1icffV-XoM",
+          "duration": 208,
+          "itemType": "playlist"
+        }
+      ],
       "currentSong": {
         "type": "YT",
-        "title": "Porter Robinson - Divinity ft. Amy Millan",
-        "url": "https://r1---sn-a8au-h5ql.googlevideo.com/videoplayback?ipbits=0&expire=1473012268&pcm2cms=yes&mime=video%2Fmp4&itag=22&ratebypass=yes&pl=20&sver=3&source=youtube&upn=zKNdJJ6x5Qc&lmt=1472247899516025&id=o-ANCFKEFWlrFmOhDIWDO28H_JNf3-TiWF32aDoQ5STea5&ms=au&mt=1472990032&initcwndbps=2615000&mv=m&signature=B6F54926F8DE9696F2F8499AB4DA6B8822C311B0.923076EEA2465943A41E547E3FB922E86CDB7B60&key=yt6&ip=195.166.208.253&mm=31&mn=sn-a8au-h5ql&ei=zA3MV6nRJqjYigauloSoBQ&dur=366.712&sparams=dur%2Cei%2Cgcr%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpcm2cms%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&gcr=gi&requiressl=yes",
+        "title": "EDEN - Billie Jean",
+        "url": "https://r4---sn-a8au-h5ql.googlevideo.com/videoplayback?ms=au&ei=qg3PV_DsNIm9Wq_StvAN&mv=m&pl=20&mt=1473186781&mn=sn-a8au-h5ql&mm=31&key=yt6&dur=236.448&source=youtube&id=o-AM5mUOUsXLNe9RX0tPVzdPSWMvEUl15E_hgLx2SqNlYt&requiressl=yes&itag=22&lmt=1472146309584555&mime=video%2Fmp4&ip=195.166.209.4&expire=1473208842&ipbits=0&ratebypass=yes&initcwndbps=2357500&upn=ldPKWoi92Aw&sparams=dur%2Cei%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cpl%2Cratebypass%2Crequiressl%2Csource%2Cupn%2Cexpire&sver=3&signature=244BB22BAFA699EE545F38B00F0CD3C0F816B8FA.1CA8C629A2E32DD60D58DF281FF886B67AEFCA2C",
         "requesterID": "128319285872427008",
         "requester": "Aaron",
-        "uID": "si81bIoZRJQ",
-        "duration": 367
+        "uID": "Nud5WD_nUY8",
+        "duration": 237,
+        "itemType": "playlist"
       }
     }
+  },
+  "playlists": {
+    "global": [],
+    "server-specific": {},
+    "personal": {}
   }
 }

@@ -17,7 +17,6 @@ local.properties
 .loadpath
 audio/*
 *.mp3
-soundlog.json
 alias.json
 
 # External tool builders

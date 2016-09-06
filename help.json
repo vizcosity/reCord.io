@@ -1,5 +1,5 @@
 {
-  "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio", "shortcut", "queue", "request", "setsurprise", "skip", "filter", "attitude", "clean"],
+  "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio", "shortcut", "q", "request", "setsurprise", "skip", "filter", "attitude", "clean"],
 
   "purge" : {
     "desc": "Removes a specified amount of messages from the chat.",
@@ -51,9 +51,9 @@
     "usage": "shortcut <shortcut name> <command to execute>"
   },
 
-  "queue": {
+  "q": {
     "desc": "Plays songs from YouTube. Accepts either links or search queries.",
-    "usage": "queue <link / search query>"
+    "usage": "q <link / search query>"
   },
 
   "request": {
