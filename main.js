@@ -1553,7 +1553,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
                   bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
                   audioFilePlaying = false;
-                  fs.writeFile['audio'].push(arg);
+                  soundlog['audio'].push(arg);
                   fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
                     if (err !== null){log(err)};
                   });//end update soundlog file.
