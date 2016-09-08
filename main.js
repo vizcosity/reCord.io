@@ -677,7 +677,7 @@ bot.on('message', function(user, userID, channelID, message, event){
         //defined the generate saved playlist function
         function generateSavedPlaylists(userID, send){
           console.log('Generating playlists');
-          var output = "Here is a list of your available playlists:\n\n";
+          var output = "Here is a list of your available playlists:\n\nSave a playlist with " + prefix + "playlist add <link>\n\n";
           userID = userID.toString();
           //serverID = JSON.parse(serverID);
           var globalPlaylistsOutput = "Global Playlists: ";
