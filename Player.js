@@ -131,6 +131,7 @@ var duration;
 						check();
 
 					//	notify(user + " has requested " + title);
+						try {
 						Bot.sendMessage({
 							to: announcementChannel,
 							message: '**' + user + ' Successfully Queued:** ' + title
@@ -145,6 +146,8 @@ var duration;
 								}, 3000); //delete notification message.
 							}
 						});
+					} catch(e){ log(e); };
+						
 					});
 				});
 
