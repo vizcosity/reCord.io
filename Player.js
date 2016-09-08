@@ -1,6 +1,6 @@
 function Player(Bot, YTKey, SCInfo, channel) {
 	var self = this;
-	var queue = [], plQueue = [],
+	var queue = [], plQueue = [], playlistArray = [],
 		last, current, next,
 		announcementChannel,
 		streamReference, ready = false, playing = false, playingPlaylist = false, plRef, encs = ['ffmpeg', 'avconv'], plInterruption = true,
@@ -69,6 +69,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 
 var duration;
 	this.enqueue = function(user, userID, link) {
+		try {
 		var data = parseInput(link);
 		var type = data.type,
 			title, url, id, uID;
@@ -86,14 +87,15 @@ var duration;
 				if (err) return log('error', err);
 				body = JSON.parse(body);
 
-				//try {
-				if (body.items.length === 0) { return log('warn', data.location + " is not a valid YouTube video ID."); }
-				//} catch(e) { notify(e); };
+				try {
+					if (body.items.length === 0) { return log('warn', data.location + " is not a valid YouTube video ID."); }
+				} catch(e) { notify(e); };
 
-				duration = turnStupidAssYoutubeShitIntoActualSeconds(body.items[0].contentDetails.duration);
-				if (duration > 480) return notify("The item provided has a duration of over 8 minutes. Ignoring.");
-				//console.log(body.items[0]);
-
+				try {
+					duration = turnStupidAssYoutubeShitIntoActualSeconds(body.items[0].contentDetails.duration);
+					if (duration > 480) return notify("The item provided has a duration of over 8 minutes. Ignoring.");
+					//console.log(body.items[0]);
+				} catch(e){ log(e); };
 				request( API.Youtube.Snippet(data.location) , function(err, res, body) {
 					if (err) return log('error', err);
 					body = JSON.parse(body);
@@ -174,6 +176,7 @@ var duration;
 			//rebuildPlaylist();
 		} catch(e) { log(e); };
 
+	} catch(e) { log(e); };
 	};
 
 	this.printQueue = function(){
@@ -304,6 +307,14 @@ var duration;
 					message: output
 				}, function(err, response){
 					if (err !== null){log(err); };
+					function timeoutDuration(queuelength){
+						if (1000 * queuelength >= 15000){
+							return 1000 * queuelength;
+						} else {
+							return 15000
+						}
+					}
+
 					setTimeout(function(){
 						try {
 							Bot.deleteMessage({
@@ -311,7 +322,7 @@ var duration;
 								messageID: response.id
 							});
 						} catch(e){ log(e); };
-					}, 1000 * queue.length);
+					}, timeoutDuration(queue.length));
 				});
 				//return notify(output);
 				} else {//prevent crash if item is not defined.
@@ -324,12 +335,21 @@ var duration;
 
 	}
 
-	this.queuePlaylist = function(user, userID, ID, playlistName, saveScope) {
-		plQueue = [];//legacy
-		var playlistName = 'Untitled Playlist';
+	this.queuePlaylist = function(user, userID, ID, customPlaylistName, saveScope) {
+		//plQueue = [];//legacy
+		playlistArray = [];
+		//console.log(saveScope);
+
+		var playlistName = 'Untitled Playlist'
+		if (playlistName !== null){
+			playlistName = customPlaylistName;
+		}
 		var playlistDesc = '-';
 		request( API.Youtube.GetPlaylist(ID) , function(err, res, body) {
-			if (err || (res.statusCode / 100 | 0) != 2) return log('error', ID + " is not a valid Playlist ID");
+			if (err || (res.statusCode / 100 | 0) != 2) {
+				notify('Playlist ID is not valid. Make sure you are copying the URL from the playlist page and not the first video of the playlist.');
+				return log('error', ID + " is not a valid Playlist ID");
+			}
 			body = JSON.parse(body);
 			//console.log(body);
 			var items = body.items;
@@ -353,6 +373,14 @@ var duration;
 
 			if (items.length === 0) {//items have finished being added.
 				notification('**Finished grabbing playlist.**');
+				console.log(saveScope);
+
+				if (typeof saveScope !== 'undefined'){
+					//save the playlist;
+					//console.log(playlistArray);
+					savePlaylist(playlistArray, saveScope);
+
+				}
 
 				return check();
 			}
@@ -384,6 +412,7 @@ var duration;
 					var url = selection.url;
 					var uID = ci.snippet.resourceId.videoId;
 					var id = pqID();
+					var plName = playlistName;
 					//var plItemDurr = ci.contentDetails.duration;
 
 					//console.log(ci.length);
@@ -395,6 +424,7 @@ var duration;
 					//notification('**' + percentageImported + '%**' + ' done importing');
 				} catch(e){ log(e); };
 					queue.push( new PlaylistItem(type, title, url, id, userID, user, uID, plDuration, plName) );
+					playlistArray.push( new PlaylistItem(type, title, url, id, userID, user, uID, plDuration, plName) );
 					addQItem(items);
 					rebuildPlaylist();
 			});
@@ -408,6 +438,31 @@ var duration;
 
 	function pqID() {
 		return plQueue.length > 0 ? plQueue[plQueue.length - 1].id + 1 : 0;
+	}
+
+	this.clearQueue = function(){
+		console.log('Cleared queue.');
+		queue = [];
+		rebuildPlaylist(queue);
+	}
+
+	this.queueLocalPlaylist = function(playlistArray, user, userID){
+		try {
+			for (var i = 0; i < playlistArray.length; i++){
+				try {
+					var p = playlistArray[i]; // for the purpose of queueing playlist
+					queue.push(p);
+				}	catch(e){ log(e); };
+			}
+			//rebuildPlaylist();
+			rebuildPlaylist(queue);
+			setTimeout(check, 3000);
+
+		} catch(e){ log(e); };
+	}
+
+	this.checkVoice = function(){
+		return check();
 	}
 
 	this.setAnnouncementChannel = function(ID) {
@@ -600,6 +655,65 @@ var duration;
 		try {
 			eval(input);
 		} catch(e) {err(e); };
+	}
+
+
+	function savePlaylist(plQueue, saveScope){
+
+		try {
+			if (typeof plQueue !== 'undefined' && plQueue.length > 0) {
+				//proceed
+				try {
+					var playlistName = plQueue[0].playlistName;
+					var playlistOwnerID = plQueue[0].requesterID;
+					var playlistOwner = plQueue[0].requester;
+				} catch(e){ log(e);
+					notify('I couldn\'t save your playlist. Error: ' + e);
+				};
+
+				//soundlogFile.playlists[saveScope].playlistOwnerID = plqueue;
+				if (saveScope === 'personal'){
+					try {
+						if (typeof soundlogFile.playlists[saveScope][playlistOwnerID] === 'undefined'){//attribute doesnt exist so make one for the object
+							soundlogFile.playlists[saveScope][playlistOwnerID] = [];
+						}
+						soundlogFile.playlists[saveScope][playlistOwnerID].push(plQueue);
+						updateSoundlogWithPlaylist();
+					} catch(e){ log(e); };
+				} else if (saveScope === 'serverSpecific'){
+					try {
+						var guildID = Bot.channels[announcementChannel].guild_id;
+						if (typeof soundlogFile.playlists[saveScope][guildID] === 'undefined'){
+							soundlogFile.playlists[saveScope][guildID] = {};
+						}
+						soundlogFile.playlists[saveScope][guildID][playlistName] = plQueue;
+						updateSoundlogWithPlaylist();
+					} catch(e){ log(e); };
+				} else if (saveScope === 'global'){
+					try {
+						soundlogFile.playlists[saveScope][playlistName] = plQueue;
+						updateSoundlogWithPlaylist();
+					} catch(e){ log(e); };
+				}
+
+				function updateSoundlogWithPlaylist(){
+					try 	{
+						fs.writeFile('./soundlog.json', JSON.stringify(soundlogFile, null, 2), function callback(err){
+							log('Saved playlist ' + playlistName);
+							notify('Playlist: **' + playlistName + '** successfully saved. Request it again with the playlist command.');
+						});
+
+						playlistArray = [];
+						log('Cleared the PlaylistArray. Ready to collect another playlist.');
+					}	catch(e){ log(e); };
+				}
+
+
+			}
+		} catch(e){ log('Could not save playlist: ' + e);
+			notify('I encountered an error and could not save your playlist: ' + e);
+		}
+
 	}
 
 	this.kill = function(){
@@ -1162,6 +1276,9 @@ var duration;
 				soundlogFile.servers[guildID].currentSong = current;
 				fs.writeFile('./soundlog.json', JSON.stringify(soundlogFile, null, 2), function callback(err){
           log('Queue log updated.');
+					if (rebuildingPlaylist){
+						rebuildingPlaylist = false;
+					}
           //respond('New prefix: ' + newPrefix + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
         });
 			} catch(e){ log(e); };
