@@ -1,5 +1,5 @@
 {
-  "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio", "shortcut", "q", "request", "setsurprise", "skip", "filter", "attitude", "clean"],
+  "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio", "shortcut", "q", "request", "setsurprise", "skip", "filter", "attitude", "clean", "playlist"],
 
   "purge" : {
     "desc": "Removes a specified amount of messages from the chat.",
@@ -62,8 +62,8 @@
   },
 
   "playlist": {
-    "desc": "Can be used to view playlist info or remove songs from playlist.",
-    "usage": "playlist <info / remove> <song position>"
+    "desc": "Queue, add and manage saved playlists. Use the command for options info.",
+    "usage": "playlist <q / add / remove> <id / link / id>\nIf you're confused, launch the command. Options are also available there."
   },
 
   "setsurprise": {

@@ -13,5 +13,6 @@
   "fuckyouleroy": "request https://www.youtube.com/watch?v=q2WS65T7Vuc",
   "allahu": "audio ./audio/allahu akbar.mp3",
   "test": "request porter robinson language",
-  "earrape": "audio ear.mp3"
+  "earrape": "audio ear.mp3",
+  "playlists": "playlist"
 }

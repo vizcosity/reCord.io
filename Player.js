@@ -23,6 +23,10 @@ function Player(Bot, YTKey, SCInfo, channel) {
 	var defaultMusicChannel = configFile.defaultMusicChannel;
 	var rebuildingPlaylist = false;
 	var fs = require('fs');
+	var YouTube = require('youtube-node');
+	var youTube = new YouTube(); // require other youtube API for better search.
+	youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU');
+
 
 	//if (announcementChannel !== defaultMusicChannel){notify("I'll take your request fam but please hop on over to #bot-chat so that generalchat doesn't get congested with music requests.")};
 
@@ -147,7 +151,7 @@ var duration;
 							}
 						});
 					} catch(e){ log(e); };
-						
+
 					});
 				});
 
@@ -185,14 +189,14 @@ var duration;
 	this.printQueue = function(){
 		try {
 			console.log(queue);
-		} catch(e) {err(e); };
+		} catch(e) {log(e); };
 	};
 
 	this.logger = function(){
 		try {
 			console.log(current);
 			console.log(last);
-		} catch(e) { err(e); };
+		} catch(e) { log(e); };
 	};
 
 	this.deleteSong = function(user, userID, songID) {
@@ -205,12 +209,12 @@ var duration;
 								notify( user + " has removed the song " + queue[i].title );
 								return queue.splice(i, 1);
 							}
-						} catch(e) {err(e); };
+						} catch(e) {log(e); };
 					}
-				} catch(e){err(e);};
+				} catch(e){log(e);};
 
 			}
-		} catch(e) {err(e); };
+		} catch(e) {log(e); };
 	};
 
 	this.resumePlaylist = function(){
@@ -274,7 +278,7 @@ var duration;
 					try {
 						var currentPlayingSong = queue[0].title;
 						var output = '**Current Song: ' + current.title + '**\n \n' + queue.length + ' Songs in playlist: \n';
-					} catch(e) { err(e); };
+					} catch(e) { log(e); };
 				for (var i = 0; i < queue.length; i++){
 					try {
 						if (typeof queue[i] === 'undefined'){notify("Can't retrieve playlist right now.");} else {
@@ -301,7 +305,7 @@ var duration;
 							}
 
 						}
-					} catch(e) {err(e); };
+					} catch(e) {log(e); };
 				}
 				//console.log(output);
 				//console.log('attempting to spit playlist to :' + announcementChannel);
@@ -334,8 +338,53 @@ var duration;
 				}
 			}
 
-		} catch(e) {err(e); };
+		} catch(e) {log(e); };
 
+	}
+
+	this.getSongLink = function(pos){
+		var item = pos;
+
+			return "http://youtube.com/watch?v=" + item.uID;
+	}
+
+	this.getSongInfo = function(pos){
+			if (typeof pos === 'number'){
+				var item = queue[pos];
+			} else {
+				var item = pos;
+			}
+			var output = '```C\n#===SONG INFO===#\n';
+			var type= '[SONG TYPE]: ';
+			var name= '[SONG NAME]: ';
+			var requester='[REQUESTER]: ';
+			var length='[LENGTH]: ';
+			var playlist='[PLAYLIST]: ';
+
+			try {
+				type += item.type;
+				name += item.title;
+				requester += item.requester;
+				length += item.duration + ' Seconds';
+				if (item.itemType === 'playlist'){
+					try {
+						playlist += item.playlistName;
+					} catch(e){ log(e); };
+				}
+			} catch(e){ log(e); };
+
+			output+= type + "\n" + name + '\n' + requester + '\n' + length;
+			if (item.itemType === 'playlist'){
+				output+= '\n' + playlist;
+			}
+			output += '```';
+
+			return output;
+
+	}
+
+	this.currentSong = function(){
+		return current;
 	}
 
 	this.queuePlaylist = function(user, userID, ID, customPlaylistName, saveScope) {
@@ -376,13 +425,45 @@ var duration;
 
 			if (items.length === 0) {//items have finished being added.
 				notification('**Finished grabbing playlist.**');
-				console.log(saveScope);
+				//console.log(saveScope);
+				rebuildPlaylist(queue);//rebuild the playlist after everything has been added.
 
 				if (typeof saveScope !== 'undefined'){
 					//save the playlist;
 					//console.log(playlistArray);
-					savePlaylist(playlistArray, saveScope);
+					try {
+						//check if the playlist name already exists.
+						if (typeof soundlogFile.playlists.personal[userID] === 'undefined'){
+							//console.log('Soundlog personal playlists empty.')
+							savePlaylist(playlistArray, saveScope);
+						} else {//user has playlists saved, check to see if this exists.
+							if (soundlogFile.playlists.personal[userID].length === 0){
+								//console.log("Soundlog playlist above 0 items in length.");
+								savePlaylist(playlistArray, saveScope);
+							} else {//user contains saved playlists, loop through them and check to see if any of them have saved playlist.
+								try {
+									//console.log("Checking soundlog personal playlist for identical names");
+									var userPlaylists = soundlogFile.playlists.personal[userID];
+									var exists = false;
+									for (var i = 0; i < userPlaylists.length; i++){
+										//console.log(userPlaylists[i][0]["playlistName"]);
+										try {
+											if (userPlaylists[i][0]["playlistName"] === playlistName){
+												exists = true;
+												break;
+											}
+										} catch(e){ log(e); };
+									}// after the loop ends, check to see if exists is true, and act accordingly.
+									if (exists){
+										notify("I can't save your playlist: **" + playlistName + "**. Playlist already exists.");
+									} else {
+										savePlaylist(playlistArray, saveScope);
+									}
+								} catch(e){ savePlaylist(playlistArray, saveScope); log(e); console.log('Could not verify user playlist was already saved.');}
+							}
 
+						}
+					} catch(e){ log(e); };
 				}
 
 				return check();
@@ -390,7 +471,7 @@ var duration;
 			var ci = items.shift();
 			//console.log(items[0]);
 			ytdl.getInfo( "https://www.youtube.com/watch?v=" + ci.snippet.resourceId.videoId, function(err, info) {
-				//console.log(info);
+				console.log(info);
 				if (typeof info !== 'undefined'){
 				var f = info.formats;
 				var hb = 0;
@@ -403,6 +484,7 @@ var duration;
 				}
 
 				request (API.Youtube.ContentDetails(ci.snippet.resourceId.videoId), function(err, res, body2) {
+					console.log(body2);
 					if (err) return log('error', err);
 					body2 = JSON.parse(body2);
 					//console.log(body2);
@@ -454,11 +536,15 @@ var duration;
 			for (var i = 0; i < playlistArray.length; i++){
 				try {
 					var p = playlistArray[i]; // for the purpose of queueing playlist
-					queue.push(p);
+					//console.log(p.duration);
+					queue.push( new PlaylistItem(p.type, p.title, p.url, p.id, p.requesterID, p.requester, p.uID, p.duration, p.playlistName) );
 				}	catch(e){ log(e); };
 			}
-			//rebuildPlaylist();
+			current = queue[0];
+			notification("Queued playlist **" + playlistArray[0].playlistName + "** [" + playlistArray.length + " songs" + "]");
 			rebuildPlaylist(queue);
+			//rebuildPlaylist();
+			//rebuildPlaylist(queue);
 			setTimeout(check, 3000);
 
 		} catch(e){ log(e); };
@@ -539,7 +625,7 @@ var duration;
 						return self.enqueue(user, userID, body.items[i].id.videoId);
 					}
 				}
-			} catch(e){err(e);};
+			} catch(e){log(e);};
 		});
 	};
 
@@ -566,7 +652,7 @@ var duration;
 						})}, 3000);
 					});
 				} catch(e) {
-					err(e);
+					log(e);
 				}
 			} else {
 				notify("I'm having a little trouble skipping. Might have to leave and rejoin voice. (Working on a fix)");
@@ -624,7 +710,7 @@ var duration;
 							});
 
 						} catch(e) {
-							err(e);
+							log(e);
 						}
 					} else {
 						notify("I'm having a little trouble skipping. Might have to leave and rejoin voice. (Working on a fix)");
@@ -645,10 +731,10 @@ var duration;
 								messageID: response.id
 							})}, 3000)
 						});
-					} catch(e) { err(e); };
+					} catch(e) { log(e); };
 				}
 
-			} catch (e){ err(e); };
+			} catch (e){ log(e); };
 		}
 
 	};
@@ -657,7 +743,7 @@ var duration;
 		//for debugging purposes.
 		try {
 			eval(input);
-		} catch(e) {err(e); };
+		} catch(e) {log(e); };
 	}
 
 
@@ -734,7 +820,7 @@ var duration;
 
 		} catch(e){
 
-			err(e);
+			log(e);
 
 		}
 
@@ -772,7 +858,7 @@ var duration;
 					}
 			};
 
-		} catch(e) {  err(e); };
+		} catch(e) {  log(e); };
 		return output;
 	}
 	function turnStupidAssYoutubeShitIntoActualSeconds(input) {
@@ -831,6 +917,7 @@ var duration;
 		if (playing) { next = queue[0]; return log('warn', "Song already playing"); }
 		if (!playing && queue[0]) return play(queue[0]);
 		if (!playing && plQueue[0]) return playPlaylist(plQueue[0]);
+		console.log(current);
 	}
 	var currentSongTitle;
 	var requesterName;
@@ -862,7 +949,7 @@ var duration;
 		try {
 			var requester = queue[0].requester;
 			var currentPlayingSong = queue[0].title;
-		} catch(e) { err(e); };
+		} catch(e) { log(e); };
 
 		if (!plInterruption && playingPlaylist) return;
 		if (!ready) return log('warn', "Not ready to play audio");
@@ -870,7 +957,7 @@ var duration;
 		if (playingPlaylist) {
 			try {
 				plRef.kill();
-			} catch(e) {err(e); };
+			} catch(e) {log(e); };
 
 		}
 
@@ -914,7 +1001,7 @@ var duration;
 				try {
 					enc.kill();
 				} catch(e) {
-					err(e);
+					log(e);
 				}
 
 			} else {
@@ -938,8 +1025,9 @@ var duration;
 	function nowPlayingProgressBar(){
 		var channel = announcementChannel;
 		//convert duration to seconds left;
-		var secondsLeft = current.duration;
-
+		try {
+			var secondsLeft = current.duration;
+		} catch(e){ log(e); };
 		function updateTimeLeft(){
 				if (playing && secondsLeft > 0){
 
@@ -979,7 +1067,7 @@ var duration;
 					if (response !== 'undefined'){
 						try {
 							msgID = response.id;
-						} catch(e){err(e)};
+						} catch(e){log(e)};
 					} else {console.log('No response.')};
 
 								editMsgLoop(buildProgressBar)
@@ -1132,6 +1220,295 @@ var duration;
 
 
 	}
+
+	//getVideoIDFromSearch function
+	function getYTIDFromSearch(name, callback){
+
+		youTube.search(name, 5, function(error, results){
+			if (error !== null) console.log(error);
+			var amtOfResults = results.items.length;
+
+			//try{
+				var outputID = null;
+
+				for (var i = 0; i < amtOfResults; i++){
+					if (results.items[i].id.kind === 'youtube#video'){
+						outputID = results.items[i].id.videoId;
+						break;
+					}
+				}//end of the loop to check if items are videos and not other type of results.
+
+				return callback(outputID);
+				//} catch { log(e); };
+		});
+
+		/*var videoSearchQueryID;
+		try {
+			if (results.items.length > 0){//results obtained Successfully;
+				for (var i = 0; i < amtOfResults; i++){
+					if (results.items[i].id.kind === 'youtube#video'){
+						allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
+					}
+				};
+			} else { notify("Search results could not be obtained."); };
+		} catch(e){ err(e); }; */
+	}
+	//end get video id from search;
+
+
+	//make the youtube get id func available from main program;
+	this.getYTIDFromSearch = function(name){
+		return getYTIDFromSearch(name);
+	};
+	//end make getYTIDFromSearch accessible outside player.js file.
+
+	//plain text playlist handler.
+	this.plainTextPlaylistHandler = function(songArray, userID, user, saveScope, name){
+		var outputPlaylistReadyArray = [];
+		if (typeof name === 'undefined') name = 'Untitled Playlist';
+		var save = true;
+		if (typeof saveScope === 'undefined'){
+			save = false;
+		}//check if saving the playlist is desired.
+		//var collectedYTItems = collectYTItems(songArray);//collectedYTIDs function will push ID's to this array.
+		//console.log(collectedYTItems);
+
+		function collectYTItems(array){//takes an array of plain text song names, spits out item array that is queue-ready.
+			if (array.length === 0){
+				console.log('Completed collecting ' + outputPlaylistReadyArray.length + ' IDs. For ' + name);
+				//Save the playlist;
+				function checkAndSavePlaylist(playlistArray){
+					if (typeof saveScope !== 'undefined'){
+						//save the playlist;
+						//console.log(playlistArray);
+						try {
+							//check if the playlist name already exists.
+							if (typeof soundlogFile.playlists.personal[userID] === 'undefined'){
+								//console.log('Soundlog personal playlists empty.')
+								savePlaylist(playlistArray, saveScope);
+							} else {//user has playlists saved, check to see if this exists.
+								if (soundlogFile.playlists.personal[userID].length === 0){
+									//console.log("Soundlog playlist above 0 items in length.");
+									savePlaylist(playlistArray, saveScope);
+								} else {//user contains saved playlists, loop through them and check to see if any of them have saved playlist.
+									try {
+										//console.log("Checking soundlog personal playlist for identical names");
+										var userPlaylists = soundlogFile.playlists.personal[userID];
+										var exists = false;
+										for (var i = 0; i < userPlaylists.length; i++){
+											//console.log(userPlaylists[i][0]["playlistName"]);
+											try {
+												if (userPlaylists[i][0]["playlistName"] === playlistName){
+													exists = true;
+													break;
+												}
+											} catch(e){ log(e); };
+										}// after the loop ends, check to see if exists is true, and act accordingly.
+										if (exists){
+											notify("I can't save your playlist: **" + playlistName + "**. Playlist already exists.");
+										} else {
+											savePlaylist(playlistArray, saveScope);
+										}
+									} catch(e){ savePlaylist(playlistArray, saveScope); log(e); console.log('Could not verify user playlist was already saved.');}
+								}
+
+							}
+						} catch(e){ log(e); };
+					}
+				}
+
+				return checkAndSavePlaylist(outputPlaylistReadyArray); //Return function to stop more songs from being collected.
+			}//check if there are any items left in the array to be collected.
+			var currentItem = array.shift();
+			//console.log(currentItem);
+			//check if there are any items left in the array.
+			//var ytVidID = getYTIDFromSearch(currentItem);
+			getYTIDFromSearch(currentItem, function onceIDHasBeenObtained(ytVidID){
+				console.log('getting yt id: ' + ytVidID);
+				if (ytVidID !== null){//push to collected ID's if there is a response.
+					//collectedYTIDs.push(ytVidID);
+					//get extra details from the video, and push it to the collected items array.
+
+					var data = parseInput("https://www.youtube.com/watch?v=" + currentItem);
+					//don't need to check that the nature of the data is from youtube.
+					console.log(data.location);
+					request(API.Youtube.ContentDetails(ytVidID), function(err, res, body){
+						if (err) return log('error', err);
+						body = JSON.parse(body);
+						//console.log(body);
+						//check that the input link is somewhat valid.
+						try {
+							if (body.items.length === 0) { return log('warn', data.location + " details could not be retrieved."); }
+						} catch(e) { notify(e); };
+
+						//try converting the collected duration details into seconds;
+						try{
+							duration = turnStupidAssYoutubeShitIntoActualSeconds(body.items[0].contentDetails.duration);
+						} catch(e){ log(e); };
+
+						request(API.Youtube.Snippet(ytVidID), function(err, res, body){
+							if (err) return log('error', err);
+							body = JSON.parse(body);
+
+							//gather format and other information from the video;
+							ytdl.getInfo("https://www.youtube.com/watch?v=" + ytVidID, function(err, info){
+								if (err) return log('error', err);
+								var f = info.formats;
+
+								var selection, hb=0;
+
+								for (var i = 0; i < f.length; i++){
+									var current = f[i];
+									if (current.type){
+										if (Number(current.audioBitrate) > hb){
+											hb = Number(current.audioBitrate);
+											selection = current;
+										}
+									}
+								}// for loop to find the item with the highest bitrate.
+
+								if (!selection) return log('error', "Could not get stream info about song: " + data.type);
+
+								try {
+									title = body.items[0].snippet.title;
+									url = selection.url;
+									id = 0;
+									uID = ytVidID;
+									//console.log(title + url + id + uID);
+								} catch(e){ log(e); }; // attempt assigning the variables.
+								//need to pass in user & userID;
+
+								//push the items to the playlist-ready array.
+								outputPlaylistReadyArray.push( new PlaylistItem('spotify (YT)', title, url, id, userID, user, uID, duration, name) );
+								//console.log(outputPlaylistReadyArray);
+								collectYTItems(array);
+							});//end request for more specific format info & audio stream.
+						});// end of request some details like title etc;
+
+					})// end of request youtube content details
+				};
+
+			})//
+
+
+
+		}//collect Youtube id's from array of plain text video names.
+
+		collectYTItems(songArray);
+		//YouTube Id's have been collected into array: collectedYTIDs;
+
+		//Queue the collected ID's.
+
+		//define the addQItems function which will discover details for each individual video and push results to the active queue.
+		function addQItem(items) {
+
+			if (items.length === 0) {//items have finished being added.
+				notification('**Finished grabbing playlist.**');
+				//console.log(saveScope);
+				rebuildPlaylist(queue);//rebuild the playlist after everything has been added.
+
+				if (typeof saveScope !== 'undefined'){
+					//save the playlist;
+					//console.log(playlistArray);
+					try {
+						//check if the playlist name already exists.
+						if (typeof soundlogFile.playlists.personal[userID] === 'undefined'){
+							//console.log('Soundlog personal playlists empty.')
+							savePlaylist(playlistArray, saveScope);
+						} else {//user has playlists saved, check to see if this exists.
+							if (soundlogFile.playlists.personal[userID].length === 0){
+								//console.log("Soundlog playlist above 0 items in length.");
+								savePlaylist(playlistArray, saveScope);
+							} else {//user contains saved playlists, loop through them and check to see if any of them have saved playlist.
+								try {
+									//console.log("Checking soundlog personal playlist for identical names");
+									var userPlaylists = soundlogFile.playlists.personal[userID];
+									var exists = false;
+									for (var i = 0; i < userPlaylists.length; i++){
+										//console.log(userPlaylists[i][0]["playlistName"]);
+										try {
+											if (userPlaylists[i][0]["playlistName"] === playlistName){
+												exists = true;
+												break;
+											}
+										} catch(e){ log(e); };
+									}// after the loop ends, check to see if exists is true, and act accordingly.
+									if (exists){
+										notify("I can't save your playlist: **" + playlistName + "**. Playlist already exists.");
+									} else {
+										savePlaylist(playlistArray, saveScope);
+									}
+								} catch(e){ savePlaylist(playlistArray, saveScope); log(e); console.log('Could not verify user playlist was already saved.');}
+							}
+
+						}
+					} catch(e){ log(e); };
+				}
+
+				return check();
+			}
+			var ci = items.shift();
+			//console.log(items[0]);
+			ytdl.getInfo( "https://www.youtube.com/watch?v=" + ci, function(err, info) {
+				//console.log(info);
+				if (typeof info !== 'undefined'){
+				var f = info.formats;
+				var hb = 0;
+				var selection;
+				for (var i=0; i<f.length; i++) {
+					if ( (Number(f[i].audioBitrate)) && Number(f[i].audioBitrate) > hb ) {
+						hb = Number(f[i].audioBitrate);
+						selection = f[i];
+					}
+				}
+
+				request (API.Youtube.ContentDetails(ci), function(err, res, body2) {
+					if (err) return log('error', err);
+					body2 = JSON.parse(body2);
+					//console.log(body2);
+					//var duration = body2.items[0].contentDetails.duration;
+					var plDuration = turnStupidAssYoutubeShitIntoActualSeconds(body2.items[0].contentDetails.duration);
+
+
+					var type = 'YT';
+					var title = ci.snippet.title;
+					var url = selection.url;
+					var uID = ci.snippet.resourceId.videoId;
+					var id = pqID();
+					var plName = playlistName;
+					//var plItemDurr = ci.contentDetails.duration;
+
+					//console.log(ci.length);
+					//console.log(items.length);
+					try {
+				//	var percentageImportedC = originalItemLength / items.length;
+				//	var percentageImported = percentageImportedC * 100;
+
+					//notification('**' + percentageImported + '%**' + ' done importing');
+				} catch(e){ log(e); };
+					queue.push( new PlaylistItem(type, title, url, id, userID, user, uID, plDuration, plName) );
+					playlistArray.push( new PlaylistItem(type, title, url, id, userID, user, uID, plDuration, plName) );
+					addQItem(items);
+					rebuildPlaylist();
+			});
+
+				} else {
+				addQItem(items);
+			}
+			});
+		}
+
+
+	}
+	//end plain text playlist handler.
+
+	//playlist save handler.
+	this.savePlaylist = function(songArray, saveScope){
+		//savePlaylist()
+	}
+	//end playilst save function.
+
+
 	//end define progress bar func
 	function playPlaylist(currentSong) {
 		var selection; //removed enc from here.
@@ -1163,7 +1540,7 @@ var duration;
 				Bot.setPresence({game: {name: currentPlayingSong}});
 				nowPlayingProgressBar();
 				rebuildPlaylist(plQueue);
-			} catch(e) {err(e);};
+			} catch(e) {log(e);};
 		});
 
 		var notificationMsgId;
@@ -1178,7 +1555,7 @@ var duration;
 			check();
 			try {
 				rebuildPlaylist(plQueue);
-			} catch(e) {err(e);}; */
+			} catch(e) {log(e);}; */
 
 
 
@@ -1189,7 +1566,7 @@ var duration;
 				try {
 					enc.kill();
 				} catch(e) {
-					err(e);
+					log(e);
 				}
 
 			} else {
@@ -1276,9 +1653,16 @@ var duration;
 				if (soundlogFile.servers[guildID].announcementChannel.length === 0){
 				soundlogFile.servers[guildID].announcementChannel = announcementChannel;}
 
+				if (typeof current !== 'undefined'){
 				soundlogFile.servers[guildID].currentSong = current;
+				} else {
+				current = playlistQueue[0];
+				soundlogFile.servers[guildID].currentSong = current;
+				}
+
 				fs.writeFile('./soundlog.json', JSON.stringify(soundlogFile, null, 2), function callback(err){
           log('Queue log updated.');
+					console.log(current);
 					if (rebuildingPlaylist){
 						rebuildingPlaylist = false;
 					}
@@ -1301,7 +1685,7 @@ var duration;
 		this.uID = uID;
 		this.duration = duration;
 		this.itemType = 'manual';
-		rebuildPlaylist(queue);
+		//rebuildPlaylist(queue);
 	}
 	function PlaylistItem(type, title, url, id, requesterID, requester, uID, duration, plName) {
 		this.type = type;
@@ -1314,13 +1698,14 @@ var duration;
 		this.duration = duration;
 		this.itemType = 'playlist';
 		this.playlistName = plName;
-		rebuildPlaylist(queue);
+		//rebuildPlaylist(queue);
 	}
 	function err(error){
 		//deals with error msg by logging it to console & responding to user.
 		try {
-			logE('Error: ' + error);
-			notify('Error: ' + error);
+			//logE('Error: ' + error);
+			//notify('Error: ' + error);
+			console.log(error);
 		} catch (e){
 			console.log('Could not handle error: ' + e);
 		}
@@ -1335,10 +1720,10 @@ var duration;
 				var logChannel = configFile.serverSpecific[serverID].logChannel;
 			} else { serverID = '128319520497598464'};
 			//log('`' + Message + '`', logChannel);
-			Bot.sendMessage({
-				to: logChannel,
-				message: '`' + Message + '`'
-			})
+			//Bot.sendMessage({
+			//	to: logChannel,
+			//	message: '`' + Message + '`'
+			//})
 			console.log(Message);
 		} catch (e) {
 			console.log(e);
