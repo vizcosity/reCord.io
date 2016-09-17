@@ -883,6 +883,9 @@ var duration;
 		return a >= 40;
 	}
 	function log() {
+		try {
+			var thisline = (new Error).stack.split("\n")[4]
+		} catch(e) {};
 		var types = {
 			info: "[INFO]",
 			warn: "[WARN]",
@@ -896,7 +899,7 @@ var duration;
 				return false;
 				break;
 			case 1:
-				console.log(types.info + ": " + arguments[0]);
+				console.log(types.info + ": " + arguments[0] + ' at ' + thisline);
 				break;
 			case 2:
 				if (typeof(window) !== 'undefined') {
@@ -904,7 +907,7 @@ var duration;
 						window.console[arguments[0].toLowerCase()](arguments[1]);
 					}
 				} else {
-					console.log(types[arguments[0].toLowerCase()] + ": " + arguments[1]);
+					console.log(types[arguments[0].toLowerCase()] + ": " + arguments[1] + ' at ' + thisline);
 				}
 				break;
 		}
@@ -981,7 +984,9 @@ var duration;
 		enc.stdout.once('readable', function() {
 			//secondsLeft = duration;
 			streamReference.send(enc.stdout);
-			delete currentSong.id;
+			try {
+				delete currentSong.id;
+			} catch(e){ log(e + ' 989')};
 			current = currentSong;
 			next = queue[0];
 			currentSongTitle = currentPlayingSong;
@@ -1025,9 +1030,10 @@ var duration;
 	function nowPlayingProgressBar(){
 		var channel = announcementChannel;
 		//convert duration to seconds left;
+			var secondsLeft = 9999;
 		try {
 			var secondsLeft = current.duration;
-		} catch(e){ log(e); };
+		} catch(e){ log(e + ' 1036'); };
 		function updateTimeLeft(){
 				if (playing && secondsLeft > 0){
 
@@ -1201,10 +1207,14 @@ var duration;
 				var outputArray = [];
 				var incrementalLoadArray = [["", "────────────"], ["─", "───────────"], ["──", "──────────"], ["───", "─────────"], ["────", "────────"], ["─────", "───────"], ["──────", "──────"], ["───────", "─────"], ["────────", "────"], ["─────────", "───"], ["─────────", "───"], ["──────────", "──"], ["───────────", "─"], ["────────────", ""]];
 				var currentPlaceMarker = "🔘";
-				var incrementFactor = Math.floor(current.duration / 12);
+				try {
+					var incrementFactor = Math.floor(current.duration / 12);
+				} catch(e){ log(e); };
 				//console.log('incrementFactor: ' + incrementFactor);
-				var percentageOfSongPlayedCALC = secondsLeft / current.duration;
-				//console.log('percentage calculation: ' + percentageOfSongPlayedCALC);
+				try {
+					var percentageOfSongPlayedCALC = secondsLeft / current.duration;
+					//console.log('percentage calculation: ' + percentageOfSongPlayedCALC);
+				} catch(e) { log(e); };
 				var percentageOfSongPlayed = 1 - percentageOfSongPlayedCALC;
 				var arrayLength = incrementalLoadArray.length - 1;
 				var iTPBI = Math.floor(percentageOfSongPlayed * arrayLength);
@@ -1532,7 +1542,9 @@ var duration;
 			try {
 				streamReference.send(enc.stdout);
 				current = currentSong;
-				delete currentSong.id;
+				try {
+					delete currentSong.id;
+				} catch (e){ log(e + 'at once readable')}
 				current = currentSong;
 				next = queue[0];
 				currentSongTitle = currentPlayingSong;
@@ -1716,6 +1728,9 @@ var duration;
 	//logging:
 	function logE(Message){
 		try {
+			try {
+				var thisline = new Error().lineNumber
+			} catch(e) {};
 			if (typeof serverID !== 'undefined'){
 				var logChannel = configFile.serverSpecific[serverID].logChannel;
 			} else { serverID = '128319520497598464'};
@@ -1724,7 +1739,7 @@ var duration;
 			//	to: logChannel,
 			//	message: '`' + Message + '`'
 			//})
-			console.log(Message);
+			console.log(Message + ' at ' + thisline);
 		} catch (e) {
 			console.log(e);
 		}
