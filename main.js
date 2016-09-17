@@ -476,6 +476,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       newCommand('spotify', channelMsg, function(){
         try {
+          
         if (spotifyAuthenticatorRunning) { return notify("I'm already trying to grab another playlist from spotify. Can't do another one at the same time.")}
         var outputTracklist = [];
         var redirectURI = 'http://192.168.1.88:8888/callback';
