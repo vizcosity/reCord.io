@@ -1653,12 +1653,16 @@ bot.on('message', function(user, userID, channelID, message, event){
         to: channelID,
         message: msg
       }, function callback(err, response){
-        var previousMessageID =  response.id;
+		try {
+			var previousMessageID =  response.id;
+		} catch(e){ log(e); };
         setTimeout(function(){
+		try {
           bot.deleteMessage({
             channelID: response.channel_id,
             messageID: previousMessageID
           });
+		} catch(e){ log(e); };
         }, delay);
       });
     } catch (e) {log(e); };
