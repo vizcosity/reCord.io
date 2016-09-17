@@ -21,7 +21,7 @@ var spawn = require('child_process').spawn;
 var player = require('./Player.js');
 var Player = '';
 var osmosis = require('osmosis');
-var spotifyServer = require('./authorization_code/app.js');
+var spotifyServer = require('./authorization_code/app.js'), spotifyAuthenticatorRunning = false;
 var editLooper;
 
 var CLIArguments = process.argv[2];
@@ -476,6 +476,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       newCommand('spotify', channelMsg, function(){
         try {
+        if (spotifyAuthenticatorRunning) { return notify("I'm already trying to grab another playlist from spotify. Can't do another one at the same time.")}
         var outputTracklist = [];
         var redirectURI = 'http://192.168.1.88:8888/callback';
         var spotGrab = new spotifyServer('31e6e9b77b9747f0b9d56e7a7f94e075', 'edf8f3013a3e430f9505f6f7e47677d3', redirectURI);
@@ -489,6 +490,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           } catch(e){ console.log(e); };
         });
         spotGrab.start(function(){
+          spotifyAuthenticatorRunning = true;
           //grab the authenticated user information;
           spotGrab.getUserInfo(function callback(data){
             var spotifyUserID = data.id;
@@ -571,7 +573,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                     }); //delete playlist options once valid option has been recieved.
                     //Tracks have been collected.
                     //console.log(trackData);
-                        var stringedOutputTracklist = 'Tracks inside **' + playlistInfo[0].name + '**: \n\n';
+                        var stringedOutputTracklist = 'Tracks inside **' + playlistInfo[playlistIndex].name + '**: \n\n';
 
                           for (var i = 0; i < trackData.items.length; i++){
                             outputTracklist.push(trackData.items[i].track.artists[0].name + ' - ' + trackData.items[i].track.name)
@@ -583,11 +585,12 @@ bot.on('message', function(user, userID, channelID, message, event){
                             }
                           }//tracklist collected and parsed.
 
-                          notify(stringedOutputTracklist);
+                          //notify(stringedOutputTracklist, );
 
                           spotifyConvo.clear('both');
+                          spotifyAuthenticatorRunning = false;
                           spotGrab.stop();
-                          spotGrab = null;
+                          //spotGrab = null;
                           delete spotGrab;
                           // define youtube playlist builder from array of song titles
                           function youTubePlaylistBuilder(array, playlistInfo){
@@ -597,6 +600,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                             var playlistURL = playlistInfo.url;
                             var playlistUserID = playlistInfo.userID;
                             var playlistUsername = playlistInfo.user;
+                            //notify(stringedOutputTracklist + '\n\n' + array.length * 1.8);
                             notify("Attempting to resolve Spotify Playlist: **" + playlistName + "** [" + array.length + " songs] This could take a while. \n\n*Estimated wait time: " + 1.8 * array.length + " seconds*", 1.88 * array.length * 1000);
                             //check and prepare the player.
                             if (isPlayerLoaded()){//player is loaded, feed spotify playlist to player for YT collection.
