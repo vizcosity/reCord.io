@@ -302,7 +302,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           }
 
         } catch (e){
-          err(e);
+          log(e);
           reply('Sorry! I encountered an error: ' + e);
         }
 
@@ -476,7 +476,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       newCommand('spotify', channelMsg, function(){
         try {
-          
+
         if (spotifyAuthenticatorRunning) { return notify("I'm already trying to grab another playlist from spotify. Can't do another one at the same time.")}
         var outputTracklist = [];
         var redirectURI = 'http://192.168.1.88:8888/callback';
@@ -486,12 +486,9 @@ bot.on('message', function(user, userID, channelID, message, event){
           to: channelID,
           message: 'I need you to authenticate your Spotify account. Click here: http://192.168.1.88:8888'
         }, function(err, resp){
-          try {
-            authenticationMsgID = resp.id;
-          } catch(e){ console.log(e); };
+          authenticationMsgID = resp.id;
         });
         spotGrab.start(function(){
-          spotifyAuthenticatorRunning = true;
           //grab the authenticated user information;
           spotGrab.getUserInfo(function callback(data){
             var spotifyUserID = data.id;
@@ -512,9 +509,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                     "name": playlists[i].name,
                     "id": playlists[i].id,
                     "playlistOwner": playlists[i].owner.id,
-                    "playlistURL": playlists[i].tracks.href,
-                    "userID": userID,
-                    "user": user
+                    "playlistURL": playlists[i].tracks.href
                   });
 
                   if (i < playlists.length - 1){
@@ -555,27 +550,17 @@ bot.on('message', function(user, userID, channelID, message, event){
                   //index is larger than the amt of playlists;
                   notify('**' + user + '** I did not recognize that, are you sure you entered a valid available number?');
                 } else {
-
+                  bot.deleteMessage({
+                    channelID: channelID,
+                    messageID: outputPlaylistStringMsgID
+                  }); //delete playlist options.
                   //index selection is valid - playlistIndex is used to target the desired playlist.
                   var desiredPlaylistID = playlistInfo[playlistIndex].id;
                   spotGrab.getTracks(spotifyUserID, desiredPlaylistID, function(trackData, error){
                     if (error !== null) console.log(error);
-                    if (typeof trackData.items === 'undefined') {
-                      //abort collection
-                      //spotifyConvo.clear('both');
-                      //spotGrab.stop();
-                      //spotGrab = null;
-                      //delete spotGrab;
-                      return notify("Couldn't collect playlist. Are you sure it's a user playlist?");
-                    }
-                    bot.deleteMessage({
-                      channelID: channelID,
-                      messageID: outputPlaylistStringMsgID
-                    }); //delete playlist options once valid option has been recieved.
                     //Tracks have been collected.
                     //console.log(trackData);
-                        var stringedOutputTracklist = 'Tracks inside **' + playlistInfo[playlistIndex].name + '**: \n\n';
-
+                        var stringedOutputTracklist = 'Tracks inside **' + playlistInfo[0].name + '**: \n\n';
                           for (var i = 0; i < trackData.items.length; i++){
                             outputTracklist.push(trackData.items[i].track.artists[0].name + ' - ' + trackData.items[i].track.name)
                             if (i < trackData.items.length - 1){
@@ -586,42 +571,13 @@ bot.on('message', function(user, userID, channelID, message, event){
                             }
                           }//tracklist collected and parsed.
 
-                          //notify(stringedOutputTracklist, );
+                          notify(stringedOutputTracklist);
 
                           spotifyConvo.clear('both');
-                          spotifyAuthenticatorRunning = false;
                           spotGrab.stop();
-                          //spotGrab = null;
+                          spotGrab = null;
                           delete spotGrab;
-                          // define youtube playlist builder from array of song titles
-                          function youTubePlaylistBuilder(array, playlistInfo){
-                            var playlistName = playlistInfo.name;
-                            var playlistID = playlistInfo.id;
-                            var playlistOwnerID = playlistInfo.playlistOwner
-                            var playlistURL = playlistInfo.url;
-                            var playlistUserID = playlistInfo.userID;
-                            var playlistUsername = playlistInfo.user;
-                            //notify(stringedOutputTracklist + '\n\n' + array.length * 1.8);
-                            notify("Attempting to resolve Spotify Playlist: **" + playlistName + "** [" + array.length + " songs] This could take a while. \n\n*Estimated wait time: " + 1.8 * array.length + " seconds*", 1.88 * array.length * 1000);
-                            //check and prepare the player.
-                            if (isPlayerLoaded()){//player is loaded, feed spotify playlist to player for YT collection.
-
-                            } else {
-                              if (audioFilePlaying){
-                                notify("**I can't join voice while an audio file is playing.** I need to do that to collect your playlist. Sorry!\n\nReason: I need to load the Playlist Module.",20000)
-                              } else {
-                                Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
-                                //Player.setAnnouncementChannel(channelID)
-                                Player.plainTextPlaylistHandler(array, playlistUserID, playlistUsername, 'personal', playlistName);
-                                Player.setAnnouncementChannel(channelID);
-                              }
-                            }
-
-
-
-                          }
-                          //end youtube playlist builder
-                          return youTubePlaylistBuilder(outputTracklist, playlistInfo[playlistIndex]);
+                          return youTubePlaylistBuilder(outputTracklist);
                       });
                     }
 
@@ -637,7 +593,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           //end get userinfo
         });
         // end spotgrab start
-      } catch(e) {err(e); };
+      } catch(e) {log(e); };
       });//end new command
       var testArray;
       //view playlist
@@ -645,72 +601,34 @@ bot.on('message', function(user, userID, channelID, message, event){
         if (typeof arg === 'undefined'){
           generateSavedPlaylists(userID, true);
         } else {
-          var firstArg = arg.split(' ')[0].toLowerCase();
-          if (firstArg === 'remove'){//remove an item from playlist.
-            var availablePlaylists = generateSavedPlaylists(userID);//generates the available playlists.
-            //proceed to removal after playlists have been collected.
-            var thirdArg = arg.split(' ')[1]; // this is the number user will enter.
-            var indexPos = parseInt(thirdArg - 1);//this is the referrable index position of the array that will be targeted to remove playlist.
-            if (indexPos < availablePlaylists.length && indexPos >= 0){
-              //grab the name of the playlist;
-              try {
-                var playlistToRemoveName = availablePlaylists[indexPos][0].playlistName;
-                if (typeof playlistToRemoveName !== 'undefined'){//double check that playlist name was found.
-                  var UserPls = soundlog.playlists.personal[userID];
-                  var playlist;
-                  for (var i = 0; i < UserPls.length; i++){
-                    playlist = UserPls[i];
-                    //console.log(playlist[0].playlistName);
-                    if (playlist[0].playlistName === playlistToRemoveName){
-                      playlist = [];
-                      soundlog.playlists.personal[userID].splice(i, 1);
-                      //update the soundlog file.
-                      fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
-                        log(user + ' removed playlist: ' + playlistToRemoveName + ' from their personal library.');
-                        if (err !== null){err(err)};
-
-                      });//end update soundlog file
-                      break;
-                    }
-                  }//end the loop looking for the correct playlist and removing it.
-
-                  //check if the playlist is empty and respond to user accordingly.
-                  if (playlist.length !== 0){
-                    notify("I couldn't remove your playlist. This could be due to one of three things: \n\n**1).** You tried to remove a Global / Server Specific playlist that you don't have permission to remove.\n**2).** You entered the wrong number for the playlist id.\n**3).** I could not find the playlist.", 30000);
-
-                  } else {
-                    notify("Playlist: **" + playlistToRemoveName + "** removed successfully.");
-                  }
-
-                }
-              } catch(e){ err(e); };
-            } else {
-              notify('Could not find matching playlist for the number you entered. Are you sure you entered the right one?');
-            }
-          }
+          var firstArg = arg.split(' ')[0];
           if (isPlayerLoaded()){
             if (firstArg === 'info'){
               //Player.printPlaylist();
 
               notify('Are you looking for the list of queued songs? Just type ' + prefix + 'q on its own.');
+            } else if (firstArg === 'remove') {
+              var secondArg = arg.split(' ')[1];
+              secondArg = parseInt(secondArg);
+
+              Player.deleteSong(user, userID, secondArg);
             } else if (firstArg === 'add' || firstArg === 'queue'){
               var thirdArg = arg.split(' ')[1];//this is the link.
               queuePlaylist(thirdArg);
             }
           } else {//player not loaded
             //console.log(firstArg);
-            if (firstArg == 'add'){
+            if (firstArg == 'add' || firstArg == 'queue'){
               //queue a playlist but start player first.
               Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
               var thirdArg = arg.split(' ')[1];
-              //console.log(thirdArg);
+              console.log(thirdArg);
               queuePlaylist(thirdArg);
             }
 
           }
-          if (firstArg === 'q' || firstArg === 'queue'){
+          if (firstArg === 'q'){
             var availablePlaylists = generateSavedPlaylists(userID);
-            //console.log(availablePlaylists);
             var lastArgument = arg.substring('q'.length + 1, arg.length);
             if (lastArgument === ''){
               //no arguments for queue function, return generated list.
@@ -734,7 +652,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                   //console.log(availablePlaylists)
                   var selectedPlaylist = availablePlaylists[plIndex - 1];
                   //testArray = availablePlaylists;
-                  //console.log(selectedPlaylist);
+                  console.log(selectedPlaylist);
                   if (!isPlayerLoaded()){//load the player
                     if (!audioFilePlaying){
                       Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
@@ -754,14 +672,14 @@ bot.on('message', function(user, userID, channelID, message, event){
                 } else {//invalid index
                   notify("I can't queue that playlist. Invalid item number.");
                 }
-              } catch(e){ err(e); };
+              } catch(e){ log(e); };
             }
           }
         }
         //defined the generate saved playlist function
         function generateSavedPlaylists(userID, send){
           console.log('Generating playlists');
-          var output = "Here is a list of your available playlists:\n\n";
+          var output = "Here is a list of your available playlists:\n\nSave a playlist with " + prefix + "playlist add <link>\n\n";
           userID = userID.toString();
           //serverID = JSON.parse(serverID);
           var globalPlaylistsOutput = "Global Playlists: ";
@@ -770,7 +688,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             if (typeof soundlog.playlists.global[0] !== 'undefined'){
               globalPlaylists = soundlog.playlists.global[0];
             }
-          } catch(e){ err(e); };
+          } catch(e){ log(e); };
           var serverPlaylistsOutput = "Server Playlists: ";
           var serverPlaylists = [[{"playlistName": "No Playlists"}]];
           try {
@@ -782,9 +700,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           var personalPlaylists = [[{"playlistName": "No Playlists"}]];
           try {
             if (typeof soundlog.playlists.personal[userID] !== 'undefined'){
-              if (soundlog.playlists.personal[userID].length !== 0){
-                personalPlaylists = soundlog.playlists.personal[userID];
-              }
+              personalPlaylists = soundlog.playlists.personal[userID];
             }
           } catch(e){ log('No personal playlists'); };
           var availablePlaylists = [];
@@ -836,28 +752,21 @@ bot.on('message', function(user, userID, channelID, message, event){
             }
           }//build personal playlists;
 
-          output += globalPlaylistsOutput + '\n\n' + serverPlaylistsOutput + '\n\n' + personalPlaylistsOutput + '\n\n **Options:** `'+prefix+'playlist q <playlist ID>    |   '+prefix+'playlist add <link>   |   '+prefix+'playlist remove <playlist ID>`';
+          output += globalPlaylistsOutput + '\n\n' + serverPlaylistsOutput + '\n\n' + personalPlaylistsOutput + '\n\n **Queue a playlist with** `' + prefix + 'playlist q <playlist number>`';
 
           if (typeof send !== 'undefined'){
-            try {
-              bot.sendMessage({
-                to: channelID,
-                message: output
-              }, function(err, response){
-
-                if (err !== null) console.log(err);
-
-                setTimeout(function(){
-                  try {
-                    bot.deleteMessage({
-                      channelID: response.channel_id,
-                      messageID: response.id
-                    });
-                  } catch(e){ console.log(e); };
-                }, 30000);
-
-              });// end notification with custom duration.
-            } catch(e){ console.log(e); };
+            bot.sendMessage({
+              to: channelID,
+              message: output
+            }, function(err, response){
+              if (err !== null) console.log(err);
+              setTimeout(function(){
+                bot.deleteMessage({
+                  channelID: response.channel_id,
+                  messageID: response.id
+                });
+              }, 30000);
+            });// end notification with custom duration.
           }
           return availablePlaylists;
 
@@ -1003,7 +912,6 @@ bot.on('message', function(user, userID, channelID, message, event){
                       respond('**Playlist resume cancelled.**', channelID);
                       //continue to regular queue method.
                       queueMethod(link);
-                    resumePlaylistHandler.stop();
 
                   }
                   setTimeout(resumePlaylistHandler.clear, 15000);
@@ -1025,46 +933,15 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes', true);
       //end queue command function
 
-      newCommand('qgetinfo', channelMsg, function(pos){
-        if (isPlayerLoaded()){
-
-          if (typeof arg === 'undefined'){
-            var current = Player.currentSong();
-            reply(Player.getSongInfo(current) + '\n\n' + Player.getSongLink(current));
-          } else {
-            reply(Player.getSongInfo(queue[parseInt(pos)]) + '\n\n' + Player.getSongLink(queue[parseInt(pos)]));
-          }
-
-        } else {
-          notify("**Player is not loaded.");
-        }
-      }, 'yes', true);
-
       //setplaylist command
-      newCommand('youtube', channelMsg, function(arg){
-        //console.log('searching yt');
-        youTube.search(arg, 5, function(error, result){
-          if (error !== null) {
-            log(error);
-            notify("I couldn't search for that. YouTube gave me an error.");
-          };
-          //console.log(result.items);
-          //console.log(result.items.length);
-          for (var i = 0; i < result.items.length; i++){
-            if (result.items[i].id.kind === 'youtube#video'){
-              result.items[0] = result.items[i];
-              break;
-            }
-          };
-          try {
-            var title = result.items[0].snippet.title;
-            var desc = "```"+result.items[0].snippet.description+"```";
-            var url = "https://youtube.com/watch?v=" + result.items[0].id.videoId;
-
-            var output = "**" + title + "**\n" + "" + desc + "\n" + url;
-            reply(output);
-          } catch(e){ err(e); };
-        })
+      newCommand('setplaylist', channelMsg, function(arg){
+        try {
+          if (isPlayerLoaded()){
+            Player.queuePlaylist(arg);
+          } else {
+            reply("Can't set playlist until bot joins voice. Queue a random song and try again or use " + prefix + "joinvoice");
+          }
+        } catch(e) { error(e); };
       }, 'yes');
       //end setplaylist
 
@@ -1301,64 +1178,27 @@ bot.on('message', function(user, userID, channelID, message, event){
         try {
           if (isPlayerLoaded()){
             respond("I'm currently playing music. Would you like me to interrupt and force restart?", channelID);
-              /*bot.on('message', function (user, userID, channelID, message, event){
+            bot.on('message', function (user, userID, channelID, message, event){
 
-                if (message.toLowerCase() === 'yes' || message.toLowerCase() === 'y'){
-                  bot.setPresence({game: {name: 'Restarting...'}});
-                  bot.sendMessage({channelID: channelID, message: "Ok fam. Restarting."}, function (err){
-                    if (err !== null){log(err)};
-                    log(user + ' requested a hard restart.');
-                    console.log('/restartChild');
-                  });
-                } else if (message.toLowerCase() === 'no' || message.toLowerCase() === 'n'){
-                  respond("Alright. I'll wait till I leave voice then restart. If I don't leave automatically, use " + prefix + "lv or " + prefix + "leavevoice", channelID);
-                  setInterval(checkIfPlayerLoadedAndRestart, 6000);
-                  function checkIfPlayerLoadedAndRestart(){
-                    if (isPlayerLoaded() === false){
-                      respond("Finished playing through voice. Restarting now.", channelID);
-                      bot.setPresence({game: {name: 'Restarting...'}});
-                      console.log('/restartChild');
-                    }
-                  }
-                }//end check to force restart
-
-            });//end on message event.*/ //legacy on 'message' event.
-            var convo = new conversation(channelID, userID);
-
-            convo.start(function(channelID, message, userIDs, messageID){
-
-
-                if (message.toLowerCase() === 'yes' || message.toLowerCase() === 'y'){
+              if (message.toLowerCase() === 'yes' || message.toLowerCase() === 'y'){
+                bot.setPresence({game: {name: 'Restarting...'}});
+                bot.sendMessage({channelID: channelID, message: "Ok fam. Restarting."}, function (err){
+                  if (err !== null){log(err)};
+                  log(user + ' requested a hard restart.');
+                  console.log('/restartChild');
+                });
+              } else if (message.toLowerCase() === 'no' || message.toLowerCase() === 'n'){
+                respond("Alright. I'll wait till I leave voice then restart. If I don't leave automatically, use " + prefix + "lv or " + prefix + "leavevoice", channelID);
+                setInterval(checkIfPlayerLoadedAndRestart, 6000);
+                function checkIfPlayerLoadedAndRestart(){
+                  if (isPlayerLoaded() === false){
+                    respond("Finished playing through voice. Restarting now.", channelID);
                     bot.setPresence({game: {name: 'Restarting...'}});
-                    bot.sendMessage({channelID: channelID, message: "Ok fam. Restarting."}, function (err){
-                        if (err !== null){log(err)};
-                        log(user + ' requested a hard restart.');
-                        console.log('/restartChild');
-                        });
-                        convo.stop()
-                        convo.clear();
-                  } else if (message.toLowerCase() === 'no' || message.toLowerCase() === 'n'){
-                    respond("Alright. I'll wait till I leave voice then restart. If I don't leave automatically, use " + prefix + "lv or " + prefix + "leavevoice", channelID);
-                        convo.clear();
-                        convo.stop()
-
-                    setInterval(checkIfPlayerLoadedAndRestart, 6000);
-
-                    function checkIfPlayerLoadedAndRestart(){
-                      if (isPlayerLoaded() === false){
-                        respond("Finished playing through voice. Restarting now.", channelID);
-                          bot.setPresence({game: {name: 'Restarting...'}});
-                            console.log('/restartChild');
-                      }
-                    }
-                }//end check to force restart
-
-
-
-
-              //timeout listening to convo
-              setTimeout(convo.stop, 60000);
-            });
+                    console.log('/restartChild');
+                  }
+                }
+              }//end check to force restart
+            });//end on message event.
           } else {
 
             bot.setPresence({game: {name: 'Restarting...'}});
@@ -1406,7 +1246,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           } else {
             notify('**Cannot execute player console command. Player not running.');
           }
-        } catch(e){ err(e); };
+        } catch(e){ log(e); };
       }, 'yes');
       //end debug console player
 
@@ -1431,7 +1271,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
               try {
                 userQuoteID = array[0].mentions[0].id;
-              } catch(e){ err(e); };
+              } catch(e){ log(e); };
 
               try {
                 for (var i = 0; i < array.length; i++){
@@ -1439,7 +1279,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                     msgArray.push(array[i].content);
                   };
                 };
-              } catch(e) { err(e) };
+              } catch(e) { log(e) };
               if (msgArray.length > 0){
                 var randomNumber = randomIntFromInterval(0, msgArray.length - 1);
                 if (userQuoteID === '128307686340165632'){var randomQuote = "a lot of people think I'm GAYYY"} else {
@@ -1644,10 +1484,10 @@ bot.on('message', function(user, userID, channelID, message, event){
                     if (response[i].id === bot.id && response[i].content.substring(0, 'Now playing'.length) === 'Now playing'){/* do nothing */ } else {
                       deleteMsgArray.push(response[i].id);
                     }
-                  } catch(e){err(e); };
+                  } catch(e){log(e); };
 
                 }
-              } catch(e) { err(e); };
+              } catch(e) { log(e); };
 
 
 
@@ -1751,12 +1591,12 @@ bot.on('message', function(user, userID, channelID, message, event){
             //after 3 seconds, delete the user msg;
             try {
               setTimeout(clearLastMsg, 3000);
-            } catch(e) {err(e); };
+            } catch(e) {log(e); };
         }
 
       }
     } catch (e){
-      err(e);
+      log(e);
     }
   }
   //end new command function;
@@ -1771,9 +1611,8 @@ bot.on('message', function(user, userID, channelID, message, event){
   function error(error){
     //deals with error msg by logging it to console & responding to user.
     try {
-      //log('Error: ' + error);
-      //reply('Error: ' + error);
-      console.log(error);
+      log('Error: ' + error);
+      reply('Error: ' + error);
     } catch (e){
       console.log('Could not handle error: ' + e);
     }
@@ -1785,9 +1624,8 @@ bot.on('message', function(user, userID, channelID, message, event){
   function err(error){
     //deals with error msg by logging it to console & responding to user.
     try {
-      //log('Error: ' + error);
-      //reply('Error: ' + error);
-      console.log(error);
+      log('Error: ' + error);
+      reply('Error: ' + error);
     } catch (e){
       console.log('Could not handle error: ' + e);
     }
@@ -1817,19 +1655,19 @@ bot.on('message', function(user, userID, channelID, message, event){
         to: channelID,
         message: msg
       }, function callback(err, response){
-        try {
-          var previousMessageID =  response.id;
-          setTimeout(function(){
-            try {
-              bot.deleteMessage({
-                channelID: response.channel_id,
-                messageID: previousMessageID
-              });
-            } catch(e){ error(e); };
-          }, delay);
-        } catch(e){ error(e); };
+		try {
+			var previousMessageID =  response.id;
+		} catch(e){ log(e); };
+        setTimeout(function(){
+		try {
+          bot.deleteMessage({
+            channelID: response.channel_id,
+            messageID: previousMessageID
+          });
+		} catch(e){ log(e); };
+        }, delay);
       });
-    } catch (e) {error(e); };
+    } catch (e) {log(e); };
   }
   //notify end declaration
 
@@ -1896,7 +1734,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           coolDownResponder(channelID);
         }
       }
-    } catch (e) { err(e); };
+    } catch (e) { log(e); };
   }
   //end cooldownHandler
 
@@ -1970,7 +1808,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                 }
               };
             } else { notify("Search results could not be obtained."); };
-          } catch(e){ err(e); };
+          } catch(e){ log(e); };
 
           if (allowedResults.length > 0){ // results obtained.
             var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
@@ -1990,7 +1828,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             }, function(err, response){
               try {
                 searchQueryMsgID = response.id;
-              } catch(e){err(e);};
+              } catch(e){log(e);};
               log(searchQueryMsgID);
             });
             setTimeout(hasUserRespondedToYTSearchQuery, 8000);//wait 4 seconds for user response.
@@ -2050,7 +1888,7 @@ bot.on('message', function(user, userID, channelID, message, event){
               }//make sure you listen to the orgiginal requester only.
               try {
                 setTimeout(queryHandler.stop(), 10000) //stop convo automatically in 10 seconds.
-              } catch(e){ err(e); };
+              } catch(e){ log(e); };
             });
 
             function hasUserRespondedToYTSearchQuery(){
@@ -2144,9 +1982,8 @@ function log(Message){
 //error handler
 function error(error){
   //deals with error msg by logging it to console & responding to user.
-  //NOTE: CHANNEL LOGGING HAS BEEN REMOVED;
   try {
-    //log('Error: ' + error);
+    log('Error: ' + error);
     //reply('Error: ' + error);
     if (typeof serverID !== 'undefined'){
       var logChannel = config.serverSpecific[serverID].logChannel;
@@ -2154,10 +1991,10 @@ function error(error){
       serverID = '128319520497598464';
       var logChannel = config.serverSpecific[serverID].logChannel;
     };
-    //bot.sendMessage({
-    //  to: logChannel,
-    //  message: "Sorry fam but I error'd: " + error
-    //});
+    bot.sendMessage({
+      to: logChannel,
+      message: "Sorry fam but I error'd: " + error
+    });
   } catch(e){
     console.log('Could not handle error: ' + e);
   }
@@ -2206,7 +2043,7 @@ function conversation(ConvoChannel, userID){
     this.stop = function(){
       holdConversation = false;
       logicForMessageHandler = null;
-      console.log('No longer listening to user response for conversation.');
+      log('No longer listening to user response for conversation.');
       setTimeout(function(){
         conversationLog = [];
       }, 3000);
@@ -2272,7 +2109,7 @@ function conversation(ConvoChannel, userID){
             //messages deleted.
         }
 
-      } catch(e) { err(e); };
+      } catch(e) { log(e); };
     }
 
   } catch(e) { error(e); };
@@ -2414,15 +2251,8 @@ function getArg(cmd, msg, channelID){
 function cmdIs(cmdName, message){
   try {
     if (message.toLowerCase().substring(prefix.length, cmdName.length + 1) === cmdName) {
-      if (message.toLowerCase().length === prefix + cmdName.length){
-        return true; //this would be the command on its own.
-      } else if (message.toLowerCase().split(' ')[0] === prefix + cmdName.toLowerCase()){//checks to see if next index point is whitespace.
-        return true
-      } else {
-        return false;
-      }
 
-      //return true;
+      return true
 
     } else {return false};
   } catch(e) { error(e); };
@@ -2710,7 +2540,7 @@ function coolDownResponder(channel){
           if (response !== 'undefined'){
             try {
               msgID = response.id;
-            } catch(e){ err(e)};
+            } catch(e){ log(e)};
           } else {console.log('No response.')};
 
                 editMsgLoop(changingMessage)
@@ -2750,7 +2580,7 @@ function coolDownResponder(channel){
                     channelID: channel,
                     messageID: msgID
                   }, function(err){ if (err !== null) console.log('end loop delete err: ' + err)});
-                } catch (e) { err(e); };
+                } catch (e) { log(e); };
               }
 
               }//end define editmsg loop
@@ -2851,26 +2681,15 @@ function coolDownResponder(channel){
     editLooper = new BUDI(channel);
     editLooper.start(buildCooldownMessage);
 
-  } catch(e) { err(e); };
+  } catch(e) { log(e); };
 }
 //end define progress bar func
 
+//youtube playlist builder from array of song titles
+function youTubePlaylistBuilder(array){
 
-
-//easy youtube search function
-function getFirstYTResult(query){
-  youTube.search(query, 5, function(error, result){
-    if (error !== null){console.log(error)};
-    for (var i = 0; i < result.items.length; i++){
-      if (result.items[i].id.kind === 'youtube#video'){
-        return result.items[i];
-        break;
-      }
-    };
-
-  })
 }
-//end easy youtube search returner
+//end youtube playlist builder
 
 //check to see if Player not closed properly.
 function wasPlaylistRunning(serverID){
