@@ -556,8 +556,12 @@ var duration;
 
 	this.setAnnouncementChannel = function(ID) {
 		try {
+			var redirectFromChannel = null;
 			var sID = Bot.channels[ID].guild_id;
-
+			try {
+				redirectFromChannel = ID;
+				ID = configFile.serverSpecific[sID].playerChannel;
+			} catch(e){ log(e); };
 			if (!sID) return log('warn', "Cannot find server associated with: " + ID);
 			var cList = Bot.servers[sID].channels;
 		} catch(e) { err('anouncement set error: ' + e); };
@@ -971,9 +975,16 @@ var duration;
 		playing = true;
 
 		selection = choosePlayer(encs);
+		volume = 1;
+		try {
+			var guildID = Bot.channels[announcementChannel].guild_id;
+			volume = configFile.serverSpecific[guildID].volume;
+		} catch(e){ console.log(e); };
+		if (typeof currentSong === 'undefined') currentSong = current;
 		enc = childProc.spawn(selection, [
 			'-loglevel', '0',
 			'-i', currentSong.url,
+			'-af', 'volume=' + volume,
 			'-f', 's16le',
 			'-ar', '48000',
 			'-ac', '2',

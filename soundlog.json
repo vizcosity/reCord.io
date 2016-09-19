@@ -249,17 +249,7 @@
   "servers": {
     "128319520497598464": {
       "announcementChannel": "128319520497598464",
-      "queue": [],
-      "currentSong": {
-        "type": "YT",
-        "title": "Darude - Sandstorm",
-        "url": "https://r3---sn-p5qlsnsk.googlevideo.com/videoplayback?ei=tqzdV-nDHOri8gSktb3oCw&upn=FJPe5LjWUQs&id=o-AEeGpYrmjRn6M470vC8miPp822ClRnDuIr08d3KaN16S&dur=232.281&requiressl=yes&mm=31&pl=15&mn=sn-p5qlsnsk&source=youtube&ms=au&mt=1474144833&ip=54.172.184.70&lmt=1449634989903312&signature=7653DCD99BAB8582581502DFD1AFEBC0FF6F7229.B3C065EBEE7F94CD24DD1122FE87F72F4E5845A6&initcwndbps=8152500&sparams=clen%2Cdur%2Cei%2Cgir%2Cid%2Cinitcwndbps%2Cip%2Cipbits%2Citag%2Ckeepalive%2Clmt%2Cmime%2Cmm%2Cmn%2Cms%2Cmv%2Cnh%2Cpl%2Crequiressl%2Csource%2Cupn%2Cexpire&ipbits=0&expire=1474167062&clen=3673865&gir=yes&keepalive=yes&mime=audio%2Fwebm&key=yt6&itag=251&nh=IgpwcjAzLmlhZDI2Kg03Mi4xNC4yMDMuMTIx&mv=m&ratebypass=yes",
-        "requesterID": "128319285872427008",
-        "requester": "The Guy",
-        "uID": "y6120QOlsfU",
-        "duration": 233,
-        "itemType": "manual"
-      }
+      "queue": []
     }
   },
   "playlists": {

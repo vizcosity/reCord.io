@@ -9,7 +9,10 @@
   "attitude": false,
   "serverSpecific": {
     "128319520497598464": {
-      "logChannel": "219147409094213634"
+      "logChannel": "227131443120308224",
+      "publicLogChannel": "219147409094213634",
+      "playerChannel": "151051305295675395",
+      "volume": 0.5
     }
   },
   "filter": [

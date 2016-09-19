@@ -1,4 +1,5 @@
 var Discord = require('discord.io');
+var serverLog = require('./serverlog.js');
 var http = require('http');
 var b64encode = require('base64-stream').Encode;
 
@@ -56,6 +57,30 @@ var delay = 0, activeDelay = delay, cmdToCooldown = '', cooldown = false, cooldo
 bot.on('ready',function(){
   console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
   //check if bot username matches config filename;
+  serverLog(bot);
+
+  var changelog = require('./changelog.json');
+  if (!changelog.posted) {
+    var changesStringed = '';
+
+    for (var i = 0; i < changelog.additions.length; i++){
+      var x = changelog.additions[i];
+      if (i !== changelog.additions.length - 1){
+        changesStringed += '- ' + x + '\n';
+      } else {
+        changesStringed += '- ' + x;
+      }
+    }
+    respond(":bacon: __**"+bot.username+" updated!**__\nVersion: " + changelog.ver + " :fire:\n\nChanges:\n" + changesStringed, "128319520497598464");
+
+    changelog.posted = true;
+    fs.writeFile('./changelog.json', JSON.stringify(changelog, null, 2), function callback(err){
+      if (err !== null){log(err)};
+    });//end update soundlog file.
+
+
+  }
+
   if (bot.username !== config.name){
 
     bot.editUserInfo({
@@ -147,7 +172,6 @@ bot.on('ready',function(){
 var conversationHandlerLogic;
 
 bot.on('message', function(user, userID, channelID, message, event){
-
   /*try {//attempt to set voice channel
     voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
   } catch (e) {
@@ -159,8 +183,9 @@ bot.on('message', function(user, userID, channelID, message, event){
   //try setting serverID
   try {
     var serverID = bot.channels[channelID].guild_id;
+    var defaultMusicChannel = config.serverSpecific[serverID].playerChannel;
   } catch(e) {
-    error(e);
+    console.log(e);
   };
   //set serverID of message.
 
@@ -255,7 +280,7 @@ bot.on('message', function(user, userID, channelID, message, event){
         log('Responded to ' + user + ' with ' + chooseRandomResponse)
       })
     } catch(e) {
-      error(e);
+      console.log(e);
     };
   };
   //end cheeky check for other bot.
@@ -302,7 +327,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           }
 
         } catch (e){
-          err(e);
+          console.log(e);
           reply('Sorry! I encountered an error: ' + e);
         }
 
@@ -336,7 +361,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           }
 
         } catch (e) {
-          error(e);
+          console.log(e);
         }
       }, 'yes');
       //end purge execute command.
@@ -358,7 +383,7 @@ bot.on('message', function(user, userID, channelID, message, event){
               respond(outputHelpCmdText, channelID);
           }
         } catch(e) {
-          error(e);
+          console.log(e);
         }
       }
       //end help
@@ -368,7 +393,7 @@ bot.on('message', function(user, userID, channelID, message, event){
         try {
           setprefixCmd(user, userID, channelID, message);
         } catch (e) {
-          error(e);
+          console.log(e);
         };
       }
       //end set global cmd prefix
@@ -385,7 +410,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           });
 
           log('Status changed to: ' + newStatus);
-        } catch (e) { error(e) };
+        } catch (e) { console.log(e) };
       }
       //end change status
 
@@ -398,7 +423,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           }, function callback(err, array){
             log(array);
           })
-        } catch (e) { error(e) };
+        } catch (e) { console.log(e) };
       }
       //end get msg (Debug)
 
@@ -438,7 +463,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           } else {
             respond(help.anonmsg.usage, channelID);
           }
-        } catch (e) { error(e); };
+        } catch (e) { console.log(e); };
       }
       //end anonmsg
 
@@ -449,7 +474,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           audio(arg);} else {
             respond('Curently playing from playlist. Cannot play sound yet because it will override music and reset playlist. Please wait till playlist finishes and leave voice.', channelID);
           }
-        } catch (e) { error(e); };
+        } catch (e) { console.log(e); };
 
       }, 'yes');
       //end audio command.
@@ -476,6 +501,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       newCommand('spotify', channelMsg, function(){
         try {
+        checkForPlayerChannel();
         var outputTracklist = [];
         var redirectURI = 'http://192.168.1.88:8888/callback';
         var spotGrab = new spotifyServer('31e6e9b77b9747f0b9d56e7a7f94e075', 'edf8f3013a3e430f9505f6f7e47677d3', redirectURI);
@@ -632,11 +658,12 @@ bot.on('message', function(user, userID, channelID, message, event){
           //end get userinfo
         });
         // end spotgrab start
-      } catch(e) {err(e); };
+      } catch(e) {console.log(e); };
       });//end new command
       var testArray;
       //view playlist
       newCommand('playlist', channelMsg, function(arg){
+        checkForPlayerChannel();
         if (typeof arg === 'undefined'){
           generateSavedPlaylists(userID, true);
         } else {
@@ -678,7 +705,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                   }
 
                 }
-              } catch(e){ err(e); };
+              } catch(e){ console.log(e); };
             } else {
               notify('Could not find matching playlist for the number you entered. Are you sure you entered the right one?');
             }
@@ -749,7 +776,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                 } else {//invalid index
                   notify("I can't queue that playlist. Invalid item number.");
                 }
-              } catch(e){ err(e); };
+              } catch(e){ console.log(e); };
             }
           }
         }
@@ -765,7 +792,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             if (typeof soundlog.playlists.global[0] !== 'undefined'){
               globalPlaylists = soundlog.playlists.global[0];
             }
-          } catch(e){ err(e); };
+          } catch(e){ console.log(e); };
           var serverPlaylistsOutput = "Server Playlists: ";
           var serverPlaylists = [[{"playlistName": "No Playlists"}]];
           try {
@@ -918,7 +945,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           } else {
             respond('No song / playlist currently playing.', channelID);
           }
-        } catch (e) { error(e); };
+        } catch (e) { console.log(e); };
       },'yes');
       //end addmods
 
@@ -930,7 +957,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           } else {
             respond('No song / playlist currently playing.', channelID);
           }
-        } catch(e){ error(e); };
+        } catch(e){ console.log(e); };
       }, 'yes');
       //end remove mods
 
@@ -960,7 +987,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           }
           reply(prefix + 'request has been disabled (for now) while ' + mention('128319285872427008') + ' works on an ' + prefix + 'instaqueue command.\n Use ' + prefix + 'queue fam.');
 
-        }  catch (e) { error(e); };
+        }  catch (e) { console.log(e); };
       }, 'yes');
       //end request command function
 
@@ -982,7 +1009,7 @@ bot.on('message', function(user, userID, channelID, message, event){
               if (wasPlaylistRunning(serverID) && !isPlayerLoaded()){//a playlist was on, and the Player is currently off.
                 console.log('Detected playlist was running.')
                 var resumePlaylistHandler = new conversation(channelID, userID);
-                respond('It looks like a playlist was running before I left voice. Would you like to resume?', channelID);
+                respond(':warning: It looks like a playlist was running before I left voice. Would you like to resume?', channelID);
                 resumePlaylistHandler.start(function(channelID, message, userIDs, messageID){
 
                   var response = message.toLowerCase();
@@ -1013,7 +1040,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           }//end check for arguments to returrn the queue or not.
         }
 
-        } catch (e) { error(e); };
+        } catch (e) { console.log(e); };
 
 
 
@@ -1031,7 +1058,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           }
 
         } else {
-          notify("**Player is not loaded.");
+          notify(":exclamation: **Player not loaded.**");
         }
       }, 'yes', true);
 
@@ -1041,7 +1068,7 @@ bot.on('message', function(user, userID, channelID, message, event){
         youTube.search(arg, 5, function(error, result){
           if (error !== null) {
             log(error);
-            notify("I couldn't search for that. YouTube gave me an error.");
+            notify(":x: I couldn't search for that. YouTube gave me an error.");
           };
           //console.log(result.items);
           //console.log(result.items.length);
@@ -1058,10 +1085,48 @@ bot.on('message', function(user, userID, channelID, message, event){
 
             var output = "**" + title + "**\n" + "" + desc + "\n" + url;
             reply(output);
-          } catch(e){ err(e); };
+          } catch(e){ console.log(e); };
         })
       }, 'yes');
       //end setplaylist
+
+      //set volume
+      newCommand('volume', channelMsg, function(arg){
+        var newVolumeLvl = parseInt(arg);
+        if (newVolumeLvl > 200){
+          newVolumeLvl = 200;
+          notify(":warning: Max volume is 200.")
+        }
+
+        if (newVolumeLvl < 0 || isNaN(newVolumeLvl)){
+          notify(":x: **Please choose a valid number from 0 - 200.**");
+          return;
+        }
+        var volumeEmojis = [':mute:', ':speaker:', ':sound:', ':loud_sound:'];
+
+        var selectedEmoji = volumeEmojis[1];
+
+        if (newVolumeLvl === 0){
+          selectedEmoji = volumeEmojis[0];
+        } else if (newVolumeLvl < 10){
+          selectedEmoji = volumeEmojis[1];
+        } else if (newVolumeLvl >= 10 && newVolumeLvl < 100){
+          selectedEmoji = volumeEmojis[2];
+        } else if (newVolumeLvl >= 100){
+          selectedEmoji = volumeEmojis[3];
+        }
+
+        config.serverSpecific[serverID].volume = newVolumeLvl/100;
+        //update config file
+        fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+          if (err !== null){log(err)};
+          log(user + " set the volume to " + newVolumeLvl);
+          notify(selectedEmoji + " Volume set to **" + newVolumeLvl + "%**\nChanges will take effect next track that plays.", 10000);
+        });
+
+
+      }, 'yes')
+      //end set volume.
 
       newCommand('queue', channelMsg, function(){
 
@@ -1099,11 +1164,11 @@ bot.on('message', function(user, userID, channelID, message, event){
                   stringedOutput += '"' + config.filter[i] + '"';
                 }
               }
-            } catch(e) { error(e); };
+            } catch(e) { console.log(e); };
 
             try {
               reply(stringedOutput);
-            } catch(e){ error(e); };
+            } catch(e){ console.log(e); };
 
           }
 
@@ -1141,7 +1206,7 @@ bot.on('message', function(user, userID, channelID, message, event){
               });
             }
           }
-        } catch(e) { error(e); };
+        } catch(e) { console.log(e); };
 
         function filterExists(filter){
           var output = false;
@@ -1160,7 +1225,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       newCommand('randomsound', channelMsg, function playRandomSound(){
         try {
         audio(soundlog['audio'][randomIntFromInterval(0, soundlog['audio'].length - 1)]);
-      } catch(e) { error(e); };
+      } catch(e) { console.log(e); };
       });
       //end randomsound method
 
@@ -1186,7 +1251,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
             });
           }
-        }   catch(e) { error(e); };
+        }   catch(e) { console.log(e); };
       });
       //end annoyance command
 
@@ -1194,18 +1259,19 @@ bot.on('message', function(user, userID, channelID, message, event){
       newCommand('soundboard', channelMsg, function(){
         try {
           audio('./audio/' + soundlog.soundboard[randomIntFromInterval(0,soundlog.soundboard.length)]);
-        } catch(e) { error(e); };
+        } catch(e) { console.log(e); };
       });
       //end soundboard command
 
       //joinvoice:
       newCommand('joinvoice', channelMsg, function(){
         try {
+          checkForPlayerChannel();
           //Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
           if (wasPlaylistRunning(serverID) && !isPlayerLoaded()){//a playlist was on, and the Player is currently off.
             console.log('Detected playlist was running.')
             var resumePlaylistHandler = new conversation(channelID, userID);
-            respond('It looks like a playlist was running before I left voice. Would you like to resume?', channelID);
+            respond(':warning: It looks like a playlist was running before I left voice. Would you like to resume?', channelID);
             resumePlaylistHandler.start(function(channelID, message, userIDs, messageID){
 
               var response = message.toLowerCase();
@@ -1240,7 +1306,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
           }
 
-        } catch(e) { error(e); };
+        } catch(e) { console.log(e); };
       });
       //end join voice method
 
@@ -1256,7 +1322,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             }
           })
           Player = '';
-        } catch(e){ error(e); };
+        } catch(e){ console.log(e); };
       });
       //end leave voice method
 
@@ -1295,7 +1361,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       if (channelMsg.substring(0, message.length) === prefix + 'restart'){
         try {
           if (isPlayerLoaded()){
-            respond("I'm currently playing music. Would you like me to interrupt and force restart?", channelID);
+            respond(":warning: I'm currently playing music. Would you like me to interrupt and force restart?", channelID);
               /*bot.on('message', function (user, userID, channelID, message, event){
 
                 if (message.toLowerCase() === 'yes' || message.toLowerCase() === 'y'){
@@ -1360,7 +1426,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
             console.log('/restartChild');
           }
-        } catch(e){ error(e); };
+        } catch(e){ console.log(e); };
       }
       //end restart bot method
 
@@ -1401,7 +1467,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           } else {
             notify('**Cannot execute player console command. Player not running.');
           }
-        } catch(e){ err(e); };
+        } catch(e){ console.log(e); };
       }, 'yes');
       //end debug console player
 
@@ -1426,7 +1492,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
               try {
                 userQuoteID = array[0].mentions[0].id;
-              } catch(e){ err(e); };
+              } catch(e){ console.log(e); };
 
               try {
                 for (var i = 0; i < array.length; i++){
@@ -1434,7 +1500,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                     msgArray.push(array[i].content);
                   };
                 };
-              } catch(e) { err(e) };
+              } catch(e) { console.log(e) };
               if (msgArray.length > 0){
                 var randomNumber = randomIntFromInterval(0, msgArray.length - 1);
                 if (userQuoteID === '128307686340165632'){var randomQuote = "a lot of people think I'm GAYYY"} else {
@@ -1454,7 +1520,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             respond('Please mention a user to quote from.', channelID)
           }
 
-        } catch(e) { error(e); };
+        } catch(e) { console.log(e); };
       }
       //end quote method;
 
@@ -1565,14 +1631,18 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       //set sitcom simulator
       var currentlyLaughing = false;
-      newCommand('sitcom', channelMsg, function(){
+      newCommand('sitcom', channelMsg, function(args){
+          var sitcomUserID = userID;
+          try {
+            if (typeof arg !== 'undefined'){
+            var sitcomUserID = event.d.mentions[0];
+          }
+          } catch(e){ console.log(e); };
           if (audioFilePlaying === false && isPlayerLoaded() === false){
           try {
             voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
             if (sitcom){
-              sitcom = false;
-              notify('**Sitcom now disabled.**');
-              sitcomStop();
+
             } else {
               sitcom = true;
               notify('**Sitcom started.**');
@@ -1582,16 +1652,14 @@ bot.on('message', function(user, userID, channelID, message, event){
             function sitcomStart(){
               audioFilePlaying = true;
               if (sitcom){
-                bot.joinVoiceChannel(voiceChannelID, function(){
+                bot.joinVoiceChannel(voiceChannelID, function(error, events){
                   bot.getAudioContext({channel: voiceChannelID, stereo: true}, function(error, stream){
                     if (error !== null){ err(error); };
 
-                     bot.on('incomingAudio', function(){
-                       console.log('received!');
-                       //console.log(ssrc.toString() + stream.toString());
-                      //sound incoming, proceed to randomly playback sitcom sounds.
+                    events.on('speaking', function(sitcomUserID, SSRC, speaking){
                       var chanceNumber = randomIntFromInterval(0,1);
-                      if (chanceNumber === 1 && currentlyLaughing === false){
+                      chanceNumber = 1;
+                      if (chanceNumber === 1 && currentlyLaughing === false && speaking){
                         currentlyLaughing = true;
                         stream.playAudioFile(soundlog.sitcom.path + soundlog.sitcom.files[randomIntFromInterval(0, soundlog.sitcom.files.length)]);
                         stream.on('fileEnd', function(){
@@ -1599,6 +1667,8 @@ bot.on('message', function(user, userID, channelID, message, event){
                         });
                       }
                     });
+
+
                   });
                 });
               }
@@ -1606,19 +1676,26 @@ bot.on('message', function(user, userID, channelID, message, event){
             };
             //define sitcom start
 
-            function sitcomStop(){
-              if (sitcom !== false) sitcom = false;
-              bot.leaveVoiceChannel(voiceChannelID);
-              audioFilePlaying = false;
-            }
-            //define sitcom stop
 
-          } catch(e) { err(e); };
+          } catch(e) { console.log(e); };
         } else {
-          if (audioFilePlaying){ err('Local audio is already playing, I cannot interrupt! Cannot start sitcom until bot leaves voice.'); };
-          if (isPlayerLoaded()){ err('Currently streaming music from web, cannot interrupt. Try starting sitcom again when bot is not in voice.'); };
+          if (sitcom){
+              notify('**Sitcom now disabled.**');
+
+              function sitcomStop(){
+                if (sitcom !== false) sitcom = false;
+                bot.leaveVoiceChannel(voiceChannelID);
+                audioFilePlaying = false;
+              }
+                          //define sitcom stop
+              sitcomStop();
+              sitcom = false;
+              return;
+          }
+          if (!sitcom && audioFilePlaying){ err('Local audio is already playing, I cannot interrupt! Cannot start sitcom until bot leaves voice.'); };
+          if (!sitcom && isPlayerLoaded()){ err('Currently streaming music from web, cannot interrupt. Try starting sitcom again when bot is not in voice.'); };
         }
-      });
+      }, 'yes', 'yes');
       //end sitcom simulator
 
       //clean chat: Cleans chat from command spam.
@@ -1639,10 +1716,10 @@ bot.on('message', function(user, userID, channelID, message, event){
                     if (response[i].id === bot.id && response[i].content.substring(0, 'Now playing'.length) === 'Now playing'){/* do nothing */ } else {
                       deleteMsgArray.push(response[i].id);
                     }
-                  } catch(e){err(e); };
+                  } catch(e){console.log(e); };
 
                 }
-              } catch(e) { err(e); };
+              } catch(e) { console.log(e); };
 
 
 
@@ -1662,7 +1739,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             }
 
           });
-        } catch(e) { error(e); };
+        } catch(e) { console.log(e); };
 
       });
       //end clean chat
@@ -1677,7 +1754,7 @@ bot.on('message', function(user, userID, channelID, message, event){
     }//end conditional for checking command prefix, other messages ignored.
 
 
-  //functions that require on message scope:
+  //FUNCTIONS THAT REQUIRE MESSAGE SCOPE;
 
   //joins voice channel and plays audio file;
   function audio(arg){
@@ -1693,7 +1770,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           var extraArguments = arg.split(' ')[1];
           try {
             var serverID = bot.channels[channelID].guild_id;
-          } catch(e) { error(e); };
+          } catch(e) { console.log(e); };
           //  var voiceChannelID = bot.servers[serverID].members[userID]
           //get msg
           bot.joinVoiceChannel(voiceChannelID, function callback(){
@@ -1746,15 +1823,27 @@ bot.on('message', function(user, userID, channelID, message, event){
             //after 3 seconds, delete the user msg;
             try {
               setTimeout(clearLastMsg, 3000);
-            } catch(e) {err(e); };
+            } catch(e) {console.log(e); };
         }
 
       }
     } catch (e){
-      err(e);
+      console.log(e);
     }
   }
   //end new command function;
+
+  //check that Player commands are in the right text-channel;
+  function checkForPlayerChannel(){
+    if (channelID === defaultMusicChannel){
+      return;
+    } else {//text channel is not music channel, offer a redirect.
+      var notification = "Hey **" + user + "** my response is in #bot-chat";
+      notify("Hey **" + user + "** my response is in #bot-chat", 10000);
+      clearLastMsg();
+      return channelID = defaultMusicChannel;
+    }
+  }
 
   //quick reply
   function reply(msg){
@@ -1796,7 +1885,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       if (typeof serverID !== 'undefined'){
         var logChannel = config.serverSpecific[serverID].logChannel;
       } else { serverID = '128319520497598464'};
-      respond('`' + Message + '`', logChannel);
+      //respond(Message, logChannel);
       console.log(Message);
     } catch (e) {
       console.log(e);
@@ -1820,11 +1909,11 @@ bot.on('message', function(user, userID, channelID, message, event){
                 channelID: response.channel_id,
                 messageID: previousMessageID
               });
-            } catch(e){ error(e); };
+            } catch(e){ console.log(e); };
           }, delay);
-        } catch(e){ error(e); };
+        } catch(e){ console.log(e); };
       });
-    } catch (e) {error(e); };
+    } catch (e) {console.log(e); };
   }
   //notify end declaration
 
@@ -1891,7 +1980,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           coolDownResponder(channelID);
         }
       }
-    } catch (e) { err(e); };
+    } catch (e) { console.log(e); };
   }
   //end cooldownHandler
 
@@ -1908,6 +1997,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
   //queue method
   function queueMethod(link){
+    checkForPlayerChannel();
     console.log('Proceeding to queue function.');
     if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
       var requestURL = link.split(' ')[0];
@@ -1965,7 +2055,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                 }
               };
             } else { notify("Search results could not be obtained."); };
-          } catch(e){ err(e); };
+          } catch(e){ console.log(e); };
 
           if (allowedResults.length > 0){ // results obtained.
             var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
@@ -1985,7 +2075,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             }, function(err, response){
               try {
                 searchQueryMsgID = response.id;
-              } catch(e){err(e);};
+              } catch(e){console.log(e);};
               log(searchQueryMsgID);
             });
             setTimeout(hasUserRespondedToYTSearchQuery, 8000);//wait 4 seconds for user response.
@@ -2045,7 +2135,7 @@ bot.on('message', function(user, userID, channelID, message, event){
               }//make sure you listen to the orgiginal requester only.
               try {
                 setTimeout(queryHandler.stop(), 10000) //stop convo automatically in 10 seconds.
-              } catch(e){ err(e); };
+              } catch(e){ console.log(e); };
             });
 
             function hasUserRespondedToYTSearchQuery(){
@@ -2111,10 +2201,10 @@ function filter(msg, eventINF){
                     channelID: response.channel_id,
                     messageID: response.id
                   });
-                } catch(e){error(e); };
+                } catch(e){console.log(e); };
               }, 2000);
             })
-          } catch(e){error(e);};
+          } catch(e){console.log(e);};
           break;
         }
       }
@@ -2128,7 +2218,7 @@ function log(Message){
     if (typeof serverID !== 'undefined'){
       var logChannel = config.serverSpecific[serverID].logChannel;
     } else { serverID = '128319520497598464'};
-    respond(Message, logChannel);
+    //respond(Message, logChannel);
     console.log(Message);
   } catch (e) {
     console.log(e);
@@ -2180,7 +2270,7 @@ function messageHandler(channelID, message, userID, messageID, userType){
         } else {log('Message not part of desired response channel.')};
       }
   } catch(error){
-    log('Message Handler Err: ' + error);
+    console.log('Message Handler Err: ' + error);
   }
 
 }
@@ -2267,10 +2357,10 @@ function conversation(ConvoChannel, userID){
             //messages deleted.
         }
 
-      } catch(e) { err(e); };
+      } catch(e) { console.log(e); };
     }
 
-  } catch(e) { error(e); };
+  } catch(e) { console.log(e); };
 }
 //end conversation
 
@@ -2279,7 +2369,7 @@ function isPlayerLoaded(){
   try {
     if (Player !== ''){return true} else {return false};
   } catch(e) {
-    error(e);
+    console.log(e);
   };
 };
 
@@ -2294,7 +2384,7 @@ function respond(msg, channelID, user, userID){
             log(error)
           }
         })
-      } catch(e) { error(e); };
+      } catch(e) { console.log(e); };
 }
 //end respond logic
 
@@ -2367,7 +2457,7 @@ function purgeCmd(message, channelID, user, userID){
               respond('```Please enter a number between 2 and 100. Entries greater than 100 are not supported by the Discord BOT Api (Too resource intensive). emplan sorry guys.```', channelID);
             }
           };
-        } catch(e) { error(e); };
+        } catch(e) { console.log(e); };
       }
 //finish purge method
 
@@ -2385,7 +2475,7 @@ function setprefixCmd(user, userID, channelID, message){
           respond('New prefix: ' + newPrefix + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
         });
       })
-    } catch (e) { error(e); };
+    } catch (e) { console.log(e); };
   }
 //end set prefix method;
 
@@ -2401,7 +2491,7 @@ function getArg(cmd, msg, channelID){
         message: help.usage[cmd]
       })
     }
-  } catch(e) {error(e); };
+  } catch(e) {console.log(e); };
 }
 //end get command arguments function
 
@@ -2420,7 +2510,7 @@ function cmdIs(cmdName, message){
       //return true;
 
     } else {return false};
-  } catch(e) { error(e); };
+  } catch(e) { console.log(e); };
   }
 //end check if command function;
 
@@ -2444,7 +2534,7 @@ function generateHelp(){
     }
 
     return fullHelp;
-  } catch(e){ error(e); };
+  } catch(e){ console.log(e); };
 }
 //end generate help function;
 
@@ -2470,7 +2560,7 @@ function hasArgs(cmd, message, type){
       log(cmd + ' has no arguments. Returning false');
       return false
     }
-  } catch(e){ error(e); };
+  } catch(e){ console.log(e); };
 }
 //end check to see if cmd has arguments function
 
@@ -2628,7 +2718,7 @@ function BUDI(channel){
         log('no loop running');
       }
     }
-  } catch(e) { error(e); };
+  } catch(e) { console.log(e); };
   };
 //end define budi
 
@@ -2642,7 +2732,7 @@ function isLastMessage(msgID, channelIDCODE){
       if (error !== null){console.log(error)};
       if (messageArr[0].id === msgID){ return true } else {return false}
     });
-  } catch(e){error(e);};
+  } catch(e){console.log(e);};
 }
 //end is last message
 
@@ -2651,7 +2741,7 @@ function mention(userID){
   try {
     return '<@' + userID + '>';
   } catch(e) {
-    error(e);
+    console.log(e);
   }
 }
 //mention the user in chat
@@ -2705,7 +2795,7 @@ function coolDownResponder(channel){
           if (response !== 'undefined'){
             try {
               msgID = response.id;
-            } catch(e){ err(e)};
+            } catch(e){ console.log(e)};
           } else {console.log('No response.')};
 
                 editMsgLoop(changingMessage)
@@ -2745,7 +2835,7 @@ function coolDownResponder(channel){
                     channelID: channel,
                     messageID: msgID
                   }, function(err){ if (err !== null) console.log('end loop delete err: ' + err)});
-                } catch (e) { err(e); };
+                } catch (e) { console.log(e); };
               }
 
               }//end define editmsg loop
@@ -2846,7 +2936,7 @@ function coolDownResponder(channel){
     editLooper = new BUDI(channel);
     editLooper.start(buildCooldownMessage);
 
-  } catch(e) { err(e); };
+  } catch(e) { console.log(e); };
 }
 //end define progress bar func
 
