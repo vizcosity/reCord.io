@@ -3,7 +3,7 @@ A discord bot built with [discord.io](https://github.com/izy521/discord.io) API 
 
 The premise of this bot is to do everything that most others can, but with some added unique features, namely, voice record functionality and some other related features, such as upcoming voice control.
 
-Interesting features:
+At present the core functionality is still being built (Basic commands, music playback, logging, games & some personality). After this has been implemented, the unique 'reCord' features will be implemented:
 - Persistent music progress bar [✔]
 - Has attitude toward other bots [-]
 - Voice control [Upcoming]
