@@ -1,4 +1,4 @@
-﻿{
+{
   "tuturu": "audio sample.mp3",
   "cenafy": "audio http://picosong.com/cdn/ac3046eb41dd60b2483137138067bcb7.mp3",
   "test1": "audio sample.mp3",
@@ -25,11 +25,10 @@
   "meme": "q https://www.youtube.com/watch?v=rLWAlWfgivA",
   "running": "q https://www.youtube.com/watch?v=DNKu3-FdZdA",
   "amiafaggot": "dc var response = ['Yes', 'No']; reply(response[randomIntFromInterval(0,response.length - 1)] + ', **' + user + '**.' );",
-  "roll": "dc notify('🎲 **' + user + '** rolled a **' + randomIntFromInterval(1,100) + '**! 🎲' );",
   "theory": "q https://www.youtube.com/watch?v=LLY9r1Y9aIU",
   "pong": "ping",
   "larrygofuckyourself": "q www.meatspin.com",
   "!theory": "q https://www.youtube.com/watch?v=LLY9r1Y9aIU",
-  "liar": "q https://www.youtube.com/watch?v=IqISdNIveF0"
-
+  "liar": "q https://www.youtube.com/watch?v=IqISdNIveF0",
+  "smug": "imgur anime smug"
 }

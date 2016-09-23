@@ -1,5 +1,5 @@
 var Discord = require('discord.io');
-var serverLog = require('./serverlog.js');
+var serverLog = require('./snippets/serverlog.js');
 var http = require('http');
 var b64encode = require('base64-stream').Encode;
 
@@ -16,10 +16,11 @@ var config = require('./config.json');
 //var toWav = require('audiobuffer-to-wav')
 var help = require('./help.json');
 var alias = require('./alias.json');
-var soundlog = require('./soundlog.json');
+var soundlog = require('./log/soundlog.json');
+var commandList = require('./commands/commands.js'), commands;
 var Lame = require('lame');
 var spawn = require('child_process').spawn;
-var player = require('./Player.js');
+var player = require('./snippets/Player.js');
 var Player = '';
 var osmosis = require('osmosis');
 var spotifyServer = require('./authorization_code/app.js');
@@ -47,6 +48,8 @@ var currentStatus = config.status;
 
 var randomSoundboard = config.randomSoundboard;
 var randomSoundDelay = parseInt(config.randomSoundDelay);
+
+//Some global variables
 var holdConversation = false, conversationLog = []; //variables for conversation handler.
 var desiredResponseChannel;
 var audioFilePlaying = false;
@@ -55,11 +58,19 @@ var attitude = config.attitude;
 var delay = 0, activeDelay = delay, cmdToCooldown = '', cooldown = false, cooldownResponse = 'Loading...', delayCountdown, cdCount = 0;
 
 bot.on('ready',function(){
+
+  //set up a new commandlist instance.
+  commands = new commandList(bot);
+  //this passes the bot object so that it is accessible in the speerate commands.js file.
+
+  //anounce to conosle that bot has successfully loaded.
   console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
-  //check if bot username matches config filename;
+
+  //server logging
   serverLog(bot);
 
-  var changelog = require('./changelog.json');
+  //check for any changes that need to be presented.
+  var changelog = require('./log/changelog.json');
   if (!changelog.posted) {
     var changesStringed = '';
 
@@ -74,13 +85,15 @@ bot.on('ready',function(){
     respond(":bacon: __**"+bot.username+" updated!**__\nVersion: " + changelog.ver + " :fire:\n\nChanges:\n" + changesStringed, "128319520497598464");
 
     changelog.posted = true;
-    fs.writeFile('./changelog.json', JSON.stringify(changelog, null, 2), function callback(err){
+    fs.writeFile('./log/changelog.json', JSON.stringify(changelog, null, 2), function callback(err){
       if (err !== null){log(err)};
     });//end update soundlog file.
 
 
   }
 
+
+  //change the username if it is set in config.
   if (bot.username !== config.name){
 
     bot.editUserInfo({
@@ -92,6 +105,7 @@ bot.on('ready',function(){
 
   };
 
+  //anounce that the bot has loaded.
   bot.sendMessage({
     to: config.serverSpecific['128319520497598464'].logChannel,
     message: config.name + ' Successfully loaded.'
@@ -141,7 +155,7 @@ bot.on('ready',function(){
                 bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
 
                 soundlog['audio'].push(arg);
-                fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
+                fs.writeFile('./log/soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
                   if (err !== null){log(err)};
                 });//end update soundlog file.
               })
@@ -303,6 +317,41 @@ bot.on('message', function(user, userID, channelID, message, event){
 
   //main command list methods;
 
+      //create command object with useful about the current message and the type.
+      var cmd = {
+        sID: serverID,
+        message: channelMsg,
+        rawMessage: message,
+        arg: null, //this will be changed when passed into the neCommand function.
+        user: user,
+        uID: userID,
+        channelID: channelID //channelID origin for the command message.
+      };
+
+      //MISC COMNMANDS
+
+        //GAMES & OTHER
+
+        //roll
+        newCommand('roll', channelMsg, function(args){
+          cmd.arg = args;
+          //setting the cmd.arg attribute.
+          commands.execute.roll(cmd);
+        }, 'yes');
+        //end roll
+
+        //smug
+        newCommand('smug', channelMsg, function(arg){
+          cmd.arg = arg;
+          commands.execute.smug(cmd);
+        }, 'yes');
+
+        //imgur random & search
+        newCommand('imgur', channelMsg, function(arg){
+          cmd.arg = arg;
+          commands.execute.imgur(cmd);
+        }, 'yes');
+
       //setAlias method:
       newCommand('shortcut', message, function setAlias(arg){
         try {
@@ -366,7 +415,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes');
       //end purge execute command.
 
-      //help method
+      //legacy help method
       if(cmdIs('help', channelMsg)){
         try {
           var cmd = help;
@@ -479,26 +528,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes');
       //end audio command.
 
-      //play web streaming link (not raw MP3) command:
-      newCommand('playsong', channelMsg, function playWeb(link){
-        //check to see if site is supported;
-        /*var baseUrl = link.split('/')[2];
-        var extraArgs = link.split(' ')[1];
-        var supportedSites = {
-          "www.youtube.com": "yes"
-        };
-        var requestURL = link.split(' ')[0];
-        var videoID = link.split('=')[1];
-        Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
-        Player.setAnnouncementChannel(channelID);
-        Player.enqueue(user, userID, link); */
-
-        reply('Use ' + prefix + 'queue instead.');
-
-
-      }, 'yes');
-      //end web streaming command function.
-
+      //experimental spotify playlist import
       newCommand('spotify', channelMsg, function(){
         try {
         checkForPlayerChannel();
@@ -687,7 +717,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                       playlist = [];
                       soundlog.playlists.personal[userID].splice(i, 1);
                       //update the soundlog file.
-                      fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
+                      fs.writeFile('./log/soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
                         log(user + ' removed playlist: ' + playlistToRemoveName + ' from their personal library.');
                         if (err !== null){err(err)};
 
@@ -964,24 +994,6 @@ bot.on('message', function(user, userID, channelID, message, event){
       //request song
       newCommand('request', channelMsg, function(link){
         try   {
-          /*
-          voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
-          if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
-            var requestURL = link.split(' ')[0];
-            //console.log(requestURL.split('/')[0]);
-            if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
-            Player.setAnnouncementChannel(channelID);
-            Player.enqueue(user, userID, requestURL);
-          } else {//no link, search instead
-            var query = link;
-            log("Attempting to queue: " + query);
-            youTube.search(query, 2, function(error, results){
-              var videoSearchQueryID = results.items[0].id.videoId;
-              var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
-              Player.setAnnouncementChannel(channelID);
-              Player.enqueue(user, userID, requestURLFromQuery);
-            });//end yt search query.
-          } */
           if (userID === '165570868355792897'){
             reply(mention('165570868355792897') + ' david pls can u not thx')
           }
@@ -1287,7 +1299,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                   soundlog.servers[serverID].queue = [];
                   soundlog.servers[serverID].currentSong = [];
 
-                  fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
+                  fs.writeFile('./log/soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
                     if (err !== null){console.log(err)};
                     log(user + ' cleared the active queue.');
                     notify('**Playlist resume cancelled.**');
@@ -1329,18 +1341,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       //record from voice channel.
       newCommand('rec', channelMsg, function(name){
         respond('Command disabled. Currenlty in development.', channelID);
-
-        /*  bot.joinVoiceChannel(voiceChannelID, function callback(){
-          bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
-
-              stream.on('incoming', function(ssrc){
-
-              });
-
-            }); //end get audio context
-          }); //end join voice */
-
-        }, 'yes');//end join voice method
+        }, 'yes');
       //stop record method.
 
       //basic responses;
@@ -1431,8 +1432,14 @@ bot.on('message', function(user, userID, channelID, message, event){
       //end restart bot method
 
       //set username method;
-      if (cmdIs('setusername', channelMsg) && getArg(prefix + 'setusername', channelMsg, channelID).length > 0){
-        var newUsername = getArg(prefix + 'setusername', channelMsg);
+      newCommand('setusername', channelMsg, function(arg){
+        if (userID !== '128319285872427008'){
+          notify('Sorry ' + user + ' but only ' + mention('128319285872427008') + ' can change the username.');
+          return;
+        };
+
+        //declare the newUsername variable.
+        var newUsername = arg;
         config.name = newUsername;
         log('Bot Username changing to: ' + newUsername + '.')
         fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
@@ -1440,8 +1447,8 @@ bot.on('message', function(user, userID, channelID, message, event){
           log('File write completed Successfully. New username: ' + newUsername + ' now applied.');
           respond('New username: ' + newUsername + ' now applied. Changes will take effect on bot reboot. _do ' + prefix + 'restart_', channelID);
         });
-      }
-      //end set username method;
+      }, 'yes');
+      //end set username method.
 
       //debug console method;
       newCommand('dc', channelMsg, function dc(arg){
@@ -1462,20 +1469,19 @@ bot.on('message', function(user, userID, channelID, message, event){
       //debug console player
       newCommand('dcp', channelMsg, function(arg){
         try {
+          if (userID !== '128319285872427008'){
+            notify('Sorry, ' + user + ' but only ' + mention('128319285872427008') + ' can use the direct console.');
+            return;
+          }
+
           if (isPlayerLoaded()) {
             Player.evaluate(arg);
           } else {
-            notify('**Cannot execute player console command. Player not running.');
+            notify(':x: **Cannot execute player console command.** Player not running.');
           }
         } catch(e){ console.log(e); };
       }, 'yes');
       //end debug console player
-
-      //get info
-      newCommand('getserverinf', channelMsg, function callback(cmdArg){
-        log(bot)
-      }, 'yes');
-      //end get info method
 
       //quote method;
       if (cmdIs('quote', channelMsg, channelID)){
@@ -1744,12 +1750,6 @@ bot.on('message', function(user, userID, channelID, message, event){
       });
       //end clean chat
 
-
-
-
-
-
-
     }//end check to see if sender is not bot.
     }//end conditional for checking command prefix, other messages ignored.
 
@@ -1788,7 +1788,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                   bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
                   audioFilePlaying = false;
                   soundlog['audio'].push(arg);
-                  fs.writeFile('./soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
+                  fs.writeFile('./log/soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
                     if (err !== null){log(err)};
                   });//end update soundlog file.
                 })
@@ -2176,7 +2176,7 @@ bot.on('disconnect', function(errMsg, code){
 //end reconnect
 
 
-//FUNCTIONS;
+//GLOBAL FUNCTIONS;
 
 //filtering
 function filter(msg, eventINF){
@@ -2486,10 +2486,12 @@ function getArg(cmd, msg, channelID){
     if (args.length > 0){//arguments exist;
       return args;
     } else {// no arguments, return usage.
-      bot.sendMessage({
-        to: channelID,
-        message: help.usage[cmd]
-      })
+      try {
+        bot.sendMessage({
+          to: channelID,
+          message: help.usage[cmd]
+        });
+      } catch(e){ console.log("Couldn't send usage message for command: " + cmd)};
     }
   } catch(e) {console.log(e); };
 }

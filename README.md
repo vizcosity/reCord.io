@@ -12,6 +12,6 @@ At present the core functionality is still being built (Basic commands, music pl
 - Plays Google Feud [Upcoming]
 - Web control panel [Upcoming]
 
-Still early stages which is why code is so messy (I'm also a beginner), and unstable.
+Code is messy and noobish (I'm a beginner with JS). As I get better I'll clean stuff up and make it look more presentable.
 
-On release I plan to add an easy-to-use GUI installer so you can run your own instance of reCord, or add my instance to your server, albeit with limited reCord functionality.
+On release I plan to add an easy-to-use GUI installer so you can run your own instance of reCord, or add my instance to your server, albeit with more limited functionality.

@@ -1,7 +1,12 @@
+//PUBLIC SERVER LOGGING FUNCTION
+//Takes event info and prints voice channel joins
+//as well as leeaves, nickname changes, server
+//joins and server leaves to the log channel.
+
 function logging(bot){
 //list current user information.
 
-var config = require('./config.json');
+var config = require('../config.json');
 
 var logChannels = {
   '128319520497598464': config.serverSpecific['128319520497598464'].publicLogChannel
@@ -117,7 +122,7 @@ bot.on('any', function(event){
 
         if (!isPrivate){
           //anounce a new channel has been made.
-          
+
         }
         break;
       default:

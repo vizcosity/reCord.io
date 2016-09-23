@@ -13,12 +13,12 @@ function Player(Bot, YTKey, SCInfo, channel) {
 
 
 	var killing = false;
-	var soundlogFile = require('./soundlog.json');
+	var soundlogFile = require('../log/soundlog.json');
 	var holdConversation = false, conversationLog = []; //variables for conversation handler.
 	var voiceChannel = channel;
 	var editLooper;
 	var enc;
-	var configFile = require('./config.json');
+	var configFile = require('../config.json');
 	var currentStatus = configFile.status;
 	var defaultMusicChannel = configFile.defaultMusicChannel;
 	var rebuildingPlaylist = false;
@@ -791,7 +791,7 @@ var duration;
 
 				function updateSoundlogWithPlaylist(){
 					try 	{
-						fs.writeFile('./soundlog.json', JSON.stringify(soundlogFile, null, 2), function callback(err){
+						fs.writeFile('../log/soundlog.json', JSON.stringify(soundlogFile, null, 2), function callback(err){
 							log('Saved playlist ' + playlistName);
 							notify('Playlist: **' + playlistName + '** successfully saved. Request it again with the playlist command.');
 						});
@@ -1683,7 +1683,7 @@ var duration;
 				soundlogFile.servers[guildID].currentSong = current;
 				}
 
-				fs.writeFile('./soundlog.json', JSON.stringify(soundlogFile, null, 2), function callback(err){
+				fs.writeFile('../log/soundlog.json', JSON.stringify(soundlogFile, null, 2), function callback(err){
           log('Queue log updated.');
 					console.log(current);
 					if (rebuildingPlaylist){
