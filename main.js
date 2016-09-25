@@ -541,12 +541,12 @@ bot.on('message', function(user, userID, channelID, message, event){
         try {
         checkForPlayerChannel();
         var outputTracklist = [];
-        var redirectURI = 'http://192.168.1.88:8888/callback';
-        var spotGrab = new spotifyServer('31e6e9b77b9747f0b9d56e7a7f94e075', 'edf8f3013a3e430f9505f6f7e47677d3', redirectURI);
+        var redirectURI = 'http://54.172.184.70:8888/callback';
+        var spotGrab = new spotifyServer('ecd271b45f9048ac88a217eaaed2f7f0', '206e720ec6314ed3b96c139d6205720c', redirectURI);
         var authenticationMsgID;
         bot.sendMessage({
           to: channelID,
-          message: 'I need you to authenticate your Spotify account. Click here: http://192.168.1.88:8888'
+          message: 'I need you to authenticate your Spotify account. Click here: http://54.172.184.70:8888/'
         }, function(err, resp){
           try {
             authenticationMsgID = resp.id;

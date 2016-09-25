@@ -1,6 +1,6 @@
 var spotifyWeb = require('./app.js');
 
-var spotGrab = new spotifyWeb('31e6e9b77b9747f0b9d56e7a7f94e075', 'edf8f3013a3e430f9505f6f7e47677d3', 'http://192.168.1.88:8888/callback');
+var spotGrab = new spotifyWeb('ecd271b45f9048ac88a217eaaed2f7f0', '206e720ec6314ed3b96c139d6205720c', 'http://54.172.184.70:8888/callback');
 
 spotGrab.start(function(){
 
