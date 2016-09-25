@@ -33,6 +33,7 @@ var prefix = config.prefix;
 if (CLIArguments === 'dev'){
   console.log('Starting Developer mode.')
   token = "MjE4NzcyNzg0MDU3Mjg2NjU2.CqIH_w.pnZbF7HqN1-ciwO_5PD8S0Dz6pQ";
+  //token = "MjI4OTYxMzE2MzY1MTM5OTY4.CscUWg.2mkVao-sAJHi0u7_JRCJxJRlBYE"; //record d-zone
   prefix = '+';
 };
 
@@ -325,7 +326,8 @@ bot.on('message', function(user, userID, channelID, message, event){
         arg: null, //this will be changed when passed into the neCommand function.
         user: user,
         uID: userID,
-        channelID: channelID //channelID origin for the command message.
+        channelID: channelID, //channelID origin for the command message.
+        event: event
       };
 
       //MISC COMNMANDS
@@ -350,6 +352,12 @@ bot.on('message', function(user, userID, channelID, message, event){
         newCommand('imgur', channelMsg, function(arg){
           cmd.arg = arg;
           commands.execute.imgur(cmd);
+        }, 'yes');
+
+        //experimental cleverbot command.
+        newCommand('talk', channelMsg, function(arg){
+          cmd.arg = arg;
+          commands.execute.talk(cmd);
         }, 'yes');
 
       //setAlias method:

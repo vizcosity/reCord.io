@@ -1,0 +1,1556 @@
+{
+  "presenceStatus": "online",
+  "connected": true,
+  "inviteURL": "https://discordapp.com/oauth2/authorize?client_id=218772784057286656&scope=bot",
+  "servers": {
+    "128319520497598464": {
+      "verification_level": 1,
+      "unavailable": false,
+      "splash": null,
+      "roles": {
+        "128319520497598464": {
+          "position": 0,
+          "name": "@everyone",
+          "mentionable": false,
+          "managed": false,
+          "id": "128319520497598464",
+          "hoist": false,
+          "color": 0,
+          "_permissions": 36701185
+        },
+        "128672592503504896": {
+          "position": 10,
+          "name": "🌠 Virgins",
+          "mentionable": true,
+          "managed": false,
+          "id": "128672592503504896",
+          "hoist": true,
+          "color": 2123412,
+          "_permissions": 536345663
+        },
+        "160458179761668096": {
+          "position": 3,
+          "name": "STM",
+          "mentionable": false,
+          "managed": false,
+          "id": "160458179761668096",
+          "hoist": false,
+          "color": 0,
+          "_permissions": 37215233
+        },
+        "209689081905545216": {
+          "position": 5,
+          "name": "Rank 1 Virgin",
+          "mentionable": true,
+          "managed": false,
+          "id": "209689081905545216",
+          "hoist": true,
+          "color": 3066993,
+          "_permissions": 536345663
+        },
+        "214435758176468992": {
+          "position": 4,
+          "name": "🔌 Bots",
+          "mentionable": false,
+          "managed": false,
+          "id": "214435758176468992",
+          "hoist": true,
+          "color": 5533306,
+          "_permissions": 536345657
+        },
+        "219486429452042251": {
+          "position": 2,
+          "name": "SkipPower",
+          "mentionable": true,
+          "managed": false,
+          "id": "219486429452042251",
+          "hoist": false,
+          "color": 0
+        },
+        "223914970142736387": {
+          "position": 1,
+          "name": "virgin",
+          "mentionable": false,
+          "managed": true,
+          "id": "223914970142736387",
+          "hoist": false,
+          "color": 0,
+          "_permissions": 67365888
+        },
+        "229271472709959690": {
+          "position": 9,
+          "name": "✨ Wizard",
+          "mentionable": true,
+          "managed": false,
+          "id": "229271472709959690",
+          "hoist": true,
+          "color": 1752220,
+          "_permissions": 37211137
+        },
+        "229271558521225216": {
+          "position": 8,
+          "name": "👓 Regular",
+          "mentionable": true,
+          "managed": false,
+          "id": "229271558521225216",
+          "hoist": true,
+          "color": 8573939,
+          "_permissions": 37215233
+        },
+        "229271826742771712": {
+          "position": 7,
+          "name": "👌 Normie",
+          "mentionable": true,
+          "managed": false,
+          "id": "229271826742771712",
+          "hoist": true,
+          "color": 16552851,
+          "_permissions": 37063681
+        },
+        "229271979696324609": {
+          "position": 6,
+          "name": "👢 Pleb",
+          "mentionable": true,
+          "managed": false,
+          "id": "229271979696324609",
+          "hoist": true,
+          "color": 0,
+          "_permissions": 36801537
+        },
+        "229274589778149380": {
+          "position": 11,
+          "name": "Admin",
+          "mentionable": false,
+          "managed": false,
+          "id": "229274589778149380",
+          "hoist": false,
+          "color": 0,
+          "_permissions": 536345663
+        }
+      },
+      "region": "eu-west",
+      "owner_id": "128319285872427008",
+      "name": "Brexit gr8 idea",
+      "mfa_level": 0,
+      "members": {
+        "220644146841518081": {
+          "id": "220644146841518081",
+          "joined_at": 1472676134664,
+          "roles": [],
+          "mute": false,
+          "deaf": false,
+          "status": "online",
+          "nick": null
+        },
+        "159801081071665152": {
+          "id": "159801081071665152",
+          "joined_at": 1458169946696,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "219311240558804992": {
+          "id": "219311240558804992",
+          "joined_at": 1472361329292,
+          "roles": [],
+          "nick": "Valerie",
+          "mute": false,
+          "deaf": false
+        },
+        "132993360834068480": {
+          "id": "132993360834068480",
+          "joined_at": 1451778488147,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "200611844140957697": {
+          "id": "200611844140957697",
+          "joined_at": 1468255985977,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "188118877777952770": {
+          "id": "188118877777952770",
+          "joined_at": 1467382085574,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "134704287501516800": {
+          "id": "134704287501516800",
+          "joined_at": 1452186404845,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "155833230098956289": {
+          "id": "155833230098956289",
+          "joined_at": 1457223966536,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "134769238349971456": {
+          "id": "134769238349971456",
+          "joined_at": 1452202084773,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "205391126293774336": {
+          "id": "205391126293774336",
+          "joined_at": 1471205176991,
+          "roles": [
+            "214435758176468992"
+          ],
+          "nick": null,
+          "mute": false,
+          "deaf": false,
+          "status": "online",
+          "voice_channel_id": "128319522443624448"
+        },
+        "130755854172422145": {
+          "id": "130755854172422145",
+          "joined_at": 1451245025026,
+          "roles": [],
+          "nick": "Patrick",
+          "mute": false,
+          "deaf": false
+        },
+        "162377752312283147": {
+          "id": "162377752312283147",
+          "joined_at": 1473354927538,
+          "roles": [],
+          "mute": false,
+          "deaf": false
+        },
+        "161512263759429632": {
+          "id": "161512263759429632",
+          "joined_at": 1472817774782,
+          "roles": [],
+          "mute": false,
+          "deaf": false
+        },
+        "149277741718437888": {
+          "id": "149277741718437888",
+          "joined_at": 1455661088451,
+          "roles": [],
+          "nick": "Jack",
+          "mute": false,
+          "deaf": false
+        },
+        "129223741120053248": {
+          "id": "129223741120053248",
+          "joined_at": 1450879740765,
+          "roles": [],
+          "nick": "Brandon",
+          "mute": false,
+          "deaf": false
+        },
+        "136574659696001024": {
+          "id": "136574659696001024",
+          "joined_at": 1472758577809,
+          "roles": [],
+          "nick": "Jared",
+          "mute": false,
+          "deaf": false
+        },
+        "202076349475717121": {
+          "id": "202076349475717121",
+          "joined_at": 1468249157173,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "220994973062004736": {
+          "id": "220994973062004736",
+          "joined_at": 1472759929795,
+          "roles": [],
+          "nick": "Jordan",
+          "mute": false,
+          "deaf": false,
+          "status": "offline"
+        },
+        "134718710190440448": {
+          "id": "134718710190440448",
+          "joined_at": 1452190569735,
+          "roles": [],
+          "nick": "William",
+          "mute": false,
+          "deaf": false,
+          "status": "online",
+          "voice_channel_id": "128319522443624448"
+        },
+        "179276392666497024": {
+          "id": "179276392666497024",
+          "joined_at": 1462813222819,
+          "roles": [
+            "229271979696324609"
+          ],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "128307686340165632": {
+          "id": "128307686340165632",
+          "joined_at": 1471180440775,
+          "roles": [
+            "128672592503504896",
+            "160458179761668096",
+            "209689081905545216"
+          ],
+          "nick": "Leroy",
+          "mute": false,
+          "deaf": false,
+          "status": "idle",
+          "voice_channel_id": "128319522443624448"
+        },
+        "166590060618186752": {
+          "id": "166590060618186752",
+          "joined_at": 1459788585676,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "132993936544235522": {
+          "id": "132993936544235522",
+          "joined_at": 1451778625433,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "128944108596101120": {
+          "id": "128944108596101120",
+          "joined_at": 1450813071190,
+          "roles": [
+            "128672592503504896",
+            "160458179761668096"
+          ],
+          "nick": "Denzel",
+          "mute": false,
+          "deaf": false,
+          "status": "idle",
+          "voice_channel_id": "128319522443624448"
+        },
+        "167980985261096961": {
+          "id": "167980985261096961",
+          "joined_at": 1464214197652,
+          "roles": [],
+          "nick": "Vico",
+          "mute": false,
+          "deaf": false
+        },
+        "155873985756790786": {
+          "id": "155873985756790786",
+          "joined_at": 1457233654311,
+          "roles": [
+            "229271979696324609"
+          ],
+          "nick": null,
+          "mute": false,
+          "deaf": false,
+          "status": "online"
+        },
+        "151044359502954505": {
+          "id": "151044359502954505",
+          "joined_at": 1456082356240,
+          "roles": [
+            "160458179761668096"
+          ],
+          "nick": "Rakesh",
+          "mute": false,
+          "deaf": false
+        },
+        "132994464334479360": {
+          "id": "132994464334479360",
+          "joined_at": 1451778935689,
+          "roles": [],
+          "nick": "Adri",
+          "mute": false,
+          "deaf": false
+        },
+        "135190753793146881": {
+          "id": "135190753793146881",
+          "joined_at": 1452303450259,
+          "roles": [],
+          "nick": "Will",
+          "mute": false,
+          "deaf": false
+        },
+        "129016328026718208": {
+          "id": "129016328026718208",
+          "joined_at": 1468156993051,
+          "roles": [
+            "128672592503504896"
+          ],
+          "nick": "Christian",
+          "mute": false,
+          "deaf": false
+        },
+        "159800228088774656": {
+          "id": "159800228088774656",
+          "joined_at": 1459956197108,
+          "roles": [
+            "214435758176468992"
+          ],
+          "nick": "Excel Spreadsheet",
+          "mute": false,
+          "deaf": false,
+          "status": "online"
+        },
+        "165570868355792897": {
+          "id": "165570868355792897",
+          "joined_at": 1469550426010,
+          "roles": [
+            "219486429452042251"
+          ],
+          "nick": "David",
+          "mute": false,
+          "deaf": false
+        },
+        "128903989432418304": {
+          "id": "128903989432418304",
+          "joined_at": 1450803506036,
+          "roles": [
+            "128672592503504896",
+            "160458179761668096",
+            "219486429452042251"
+          ],
+          "nick": "Michael",
+          "mute": false,
+          "deaf": false
+        },
+        "128319285872427008": {
+          "id": "128319285872427008",
+          "joined_at": 1450664158204,
+          "roles": [
+            "128672592503504896",
+            "160458179761668096",
+            "219486429452042251",
+            "229274589778149380"
+          ],
+          "nick": "Aaron",
+          "mute": false,
+          "deaf": false,
+          "status": "online",
+          "voice_channel_id": "128319522443624448"
+        },
+        "218772784057286656": {
+          "id": "218772784057286656",
+          "joined_at": 1472230871552,
+          "roles": [
+            "214435758176468992"
+          ],
+          "nick": "[DEVBOT]",
+          "mute": true,
+          "deaf": false,
+          "status": "online"
+        },
+        "153938619453669376": {
+          "id": "153938619453669376",
+          "joined_at": 1456772226937,
+          "roles": [],
+          "nick": null,
+          "mute": false,
+          "deaf": false
+        },
+        "136107769680887808": {
+          "id": "136107769680887808",
+          "joined_at": 1473455889038,
+          "roles": [
+            "214435758176468992",
+            "223914970142736387"
+          ],
+          "nick": "weeb bot",
+          "mute": false,
+          "deaf": false,
+          "status": "online"
+        },
+        "173915941384486922": {
+          "id": "173915941384486922",
+          "joined_at": 1470664321129,
+          "roles": [],
+          "mute": false,
+          "deaf": false
+        },
+        "110462073074388992": {
+          "id": "110462073074388992",
+          "joined_at": 1470149857049,
+          "roles": [
+            "214435758176468992"
+          ],
+          "nick": null,
+          "mute": false,
+          "deaf": false,
+          "status": "online"
+        },
+        "228961316365139968": {
+          "id": "228961316365139968",
+          "joined_at": 1474659348476,
+          "roles": [
+            "214435758176468992"
+          ],
+          "nick": "D-Zone",
+          "mute": false,
+          "deaf": false,
+          "status": "online"
+        }
+      },
+      "member_count": 40,
+      "large": false,
+      "joined_at": "2016-08-26T17:01:11.552000+00:00",
+      "id": "128319520497598464",
+      "icon": "cfc09aed85612a652b6fc34e9b2a4586",
+      "features": [],
+      "emojis": [],
+      "default_message_notifications": 0,
+      "channels": {
+        "128319520497598464": {
+          "members": {},
+          "permissions": {
+            "user": {
+              "129223741120053248": {
+                "allow": 67584,
+                "deny": 4096
+              },
+              "151044359502954505": {
+                "allow": 2048,
+                "deny": 0
+              },
+              "134718710190440448": {
+                "allow": 2048,
+                "deny": 0
+              }
+            },
+            "role": {
+              "128319520497598464": {
+                "allow": 12288,
+                "deny": 0
+              }
+            }
+          },
+          "guild_id": "128319520497598464",
+          "type": "text",
+          "topic": "Visit the D-Zone: http://dzone.aaronbaw.com/ This is Generalchat. Please keep it SFW. ",
+          "position": 0,
+          "name": "generalchat-sfw",
+          "last_pin_timestamp": "2016-09-22T09:15:43.651000+00:00",
+          "last_message_id": "229287604674232324",
+          "id": "128319520497598464"
+        },
+        "128319522443624448": {
+          "members": {
+            "205391126293774336": {
+              "user_id": "205391126293774336",
+              "suppress": false,
+              "session_id": "ce8ea72faed418a45eb0b1a58a805b2f",
+              "self_mute": false,
+              "self_deaf": false,
+              "mute": false,
+              "deaf": false,
+              "channel_id": "128319522443624448"
+            },
+            "134718710190440448": {
+              "user_id": "134718710190440448",
+              "suppress": false,
+              "session_id": "bf34065a834f544793dbe8ff77c225c6",
+              "self_mute": true,
+              "self_deaf": true,
+              "mute": false,
+              "guild_id": "128319520497598464",
+              "deaf": false,
+              "channel_id": "128319522443624448"
+            },
+            "128944108596101120": {
+              "user_id": "128944108596101120",
+              "suppress": false,
+              "session_id": "bf6c8c4be6e81b471453fc6265312e8d",
+              "self_mute": true,
+              "self_deaf": true,
+              "mute": false,
+              "guild_id": "128319520497598464",
+              "deaf": false,
+              "channel_id": "128319522443624448"
+            },
+            "128307686340165632": {
+              "user_id": "128307686340165632",
+              "suppress": false,
+              "session_id": "a4c585957186ff651b451e9f45a6020a",
+              "self_mute": true,
+              "self_deaf": true,
+              "mute": false,
+              "guild_id": "128319520497598464",
+              "deaf": false,
+              "channel_id": "128319522443624448"
+            },
+            "128319285872427008": {
+              "user_id": "128319285872427008",
+              "suppress": false,
+              "session_id": "fe3ed5ea0fbf6716a1a3cdb131f133e5",
+              "self_mute": false,
+              "self_deaf": false,
+              "mute": false,
+              "guild_id": "128319520497598464",
+              "deaf": false,
+              "channel_id": "128319522443624448"
+            }
+          },
+          "permissions": {
+            "user": {},
+            "role": {
+              "128319520497598464": {
+                "allow": 0,
+                "deny": 24
+              },
+              "128672592503504896": {
+                "allow": 0,
+                "deny": 0
+              }
+            }
+          },
+          "guild_id": "128319520497598464",
+          "user_limit": 99,
+          "type": "voice",
+          "position": 0,
+          "name": "🛋 Lobby",
+          "id": "128319522443624448",
+          "bitrate": 96000
+        },
+        "134296082179031040": {
+          "members": {},
+          "permissions": {
+            "user": {},
+            "role": {}
+          },
+          "guild_id": "128319520497598464",
+          "user_limit": 0,
+          "type": "voice",
+          "position": 3,
+          "name": "⏰ AFK (Auto-Move)",
+          "id": "134296082179031040",
+          "bitrate": 64000
+        },
+        "151051305295675395": {
+          "members": {},
+          "permissions": {
+            "user": {},
+            "role": {
+              "128319520497598464": {
+                "allow": 8192,
+                "deny": 0
+              }
+            }
+          },
+          "guild_id": "128319520497598464",
+          "type": "text",
+          "topic": "This is where you can use bots. ",
+          "position": 1,
+          "name": "bot-chat",
+          "last_pin_timestamp": "2016-09-24T09:19:40.544000+00:00",
+          "last_message_id": "229268913219698689",
+          "id": "151051305295675395"
+        },
+        "160429865495953408": {
+          "members": {},
+          "permissions": {
+            "user": {},
+            "role": {
+              "160458179761668096": {
+                "allow": 66060313,
+                "deny": 0
+              },
+              "128319520497598464": {
+                "allow": 0,
+                "deny": 66060313
+              }
+            }
+          },
+          "guild_id": "128319520497598464",
+          "user_limit": 2,
+          "type": "voice",
+          "position": 1,
+          "name": "⏩ STM",
+          "id": "160429865495953408",
+          "bitrate": 96000
+        },
+        "187259883291148288": {
+          "members": {},
+          "permissions": {
+            "user": {},
+            "role": {}
+          },
+          "guild_id": "128319520497598464",
+          "user_limit": 5,
+          "type": "voice",
+          "position": 2,
+          "name": "🎮 Competitive",
+          "id": "187259883291148288",
+          "bitrate": 62671
+        },
+        "202870772610367488": {
+          "members": {},
+          "permissions": {
+            "user": {
+              "128319285872427008": {
+                "allow": 0,
+                "deny": 523264
+              },
+              "129223741120053248": {
+                "allow": 1024,
+                "deny": 446464
+              },
+              "130755854172422145": {
+                "allow": 0,
+                "deny": 268958737
+              }
+            },
+            "role": {
+              "128319520497598464": {
+                "allow": 0,
+                "deny": 268958737
+              }
+            }
+          },
+          "guild_id": "128319520497598464",
+          "type": "text",
+          "topic": "NOT SAFE FOR WORK\n",
+          "position": 4,
+          "name": "nsfw",
+          "last_pin_timestamp": "2016-09-24T16:18:16.297105+00:00",
+          "last_message_id": "229275320929222658",
+          "id": "202870772610367488"
+        },
+        "209321397590294528": {
+          "members": {},
+          "permissions": {
+            "user": {},
+            "role": {
+              "128319520497598464": {
+                "allow": 0,
+                "deny": 268958737
+              },
+              "160458179761668096": {
+                "allow": 1024,
+                "deny": 0
+              }
+            }
+          },
+          "guild_id": "128319520497598464",
+          "type": "text",
+          "topic": "Discussion channel for SurfTheMusic channel. We share songs and talk about other stuff related to it. If you're in this group and not interested feel free to mute",
+          "position": 3,
+          "name": "stm",
+          "last_message_id": "228908062377771010",
+          "id": "209321397590294528"
+        },
+        "219147409094213634": {
+          "members": {},
+          "permissions": {
+            "user": {},
+            "role": {
+              "128319520497598464": {
+                "allow": 66560,
+                "deny": 268892177
+              },
+              "128672592503504896": {
+                "allow": 0,
+                "deny": 0
+              }
+            }
+          },
+          "guild_id": "128319520497598464",
+          "type": "text",
+          "topic": "This is the log for reCord.\n\nIt is recommended you mute this chat.",
+          "position": 1,
+          "name": "log",
+          "last_message_id": "229285381630197761",
+          "id": "219147409094213634"
+        },
+        "225326025301688321": {
+          "members": {},
+          "permissions": {
+            "user": {},
+            "role": {
+              "128319520497598464": {
+                "allow": 0,
+                "deny": 1024
+              }
+            }
+          },
+          "guild_id": "128319520497598464",
+          "type": "text",
+          "topic": "",
+          "position": 5,
+          "name": "dogs",
+          "last_message_id": "229255705230704641",
+          "id": "225326025301688321"
+        },
+        "227131443120308224": {
+          "members": {},
+          "permissions": {
+            "user": {},
+            "role": {
+              "128319520497598464": {
+                "allow": 0,
+                "deny": 1024
+              },
+              "128672592503504896": {
+                "allow": 1024,
+                "deny": 0
+              }
+            }
+          },
+          "guild_id": "128319520497598464",
+          "type": "text",
+          "topic": "Private logging.",
+          "position": 2,
+          "name": "private-log",
+          "last_message_id": "229256432485138432",
+          "id": "227131443120308224"
+        },
+        "227413202735071233": {
+          "members": {},
+          "permissions": {
+            "user": {},
+            "role": {
+              "128319520497598464": {
+                "allow": 65536,
+                "deny": 268893201
+              }
+            }
+          },
+          "guild_id": "128319520497598464",
+          "type": "text",
+          "topic": "",
+          "position": 6,
+          "name": "welcome",
+          "last_message_id": "229275432791310346",
+          "id": "227413202735071233"
+        }
+      },
+      "afk_timeout": 3600,
+      "afk_channel_id": "134296082179031040"
+    }
+  },
+  "channels": {
+    "128319520497598464": {
+      "members": {},
+      "permissions": {
+        "user": {
+          "129223741120053248": {
+            "allow": 67584,
+            "deny": 4096
+          },
+          "151044359502954505": {
+            "allow": 2048,
+            "deny": 0
+          },
+          "134718710190440448": {
+            "allow": 2048,
+            "deny": 0
+          }
+        },
+        "role": {
+          "128319520497598464": {
+            "allow": 12288,
+            "deny": 0
+          }
+        }
+      },
+      "guild_id": "128319520497598464",
+      "type": "text",
+      "topic": "Visit the D-Zone: http://dzone.aaronbaw.com/ This is Generalchat. Please keep it SFW. ",
+      "position": 0,
+      "name": "generalchat-sfw",
+      "last_pin_timestamp": "2016-09-22T09:15:43.651000+00:00",
+      "last_message_id": "229287604674232324",
+      "id": "128319520497598464"
+    },
+    "128319522443624448": {
+      "members": {
+        "205391126293774336": {
+          "user_id": "205391126293774336",
+          "suppress": false,
+          "session_id": "ce8ea72faed418a45eb0b1a58a805b2f",
+          "self_mute": false,
+          "self_deaf": false,
+          "mute": false,
+          "deaf": false,
+          "channel_id": "128319522443624448"
+        },
+        "134718710190440448": {
+          "user_id": "134718710190440448",
+          "suppress": false,
+          "session_id": "bf34065a834f544793dbe8ff77c225c6",
+          "self_mute": true,
+          "self_deaf": true,
+          "mute": false,
+          "guild_id": "128319520497598464",
+          "deaf": false,
+          "channel_id": "128319522443624448"
+        },
+        "128944108596101120": {
+          "user_id": "128944108596101120",
+          "suppress": false,
+          "session_id": "bf6c8c4be6e81b471453fc6265312e8d",
+          "self_mute": true,
+          "self_deaf": true,
+          "mute": false,
+          "guild_id": "128319520497598464",
+          "deaf": false,
+          "channel_id": "128319522443624448"
+        },
+        "128307686340165632": {
+          "user_id": "128307686340165632",
+          "suppress": false,
+          "session_id": "a4c585957186ff651b451e9f45a6020a",
+          "self_mute": true,
+          "self_deaf": true,
+          "mute": false,
+          "guild_id": "128319520497598464",
+          "deaf": false,
+          "channel_id": "128319522443624448"
+        },
+        "128319285872427008": {
+          "user_id": "128319285872427008",
+          "suppress": false,
+          "session_id": "fe3ed5ea0fbf6716a1a3cdb131f133e5",
+          "self_mute": false,
+          "self_deaf": false,
+          "mute": false,
+          "guild_id": "128319520497598464",
+          "deaf": false,
+          "channel_id": "128319522443624448"
+        }
+      },
+      "permissions": {
+        "user": {},
+        "role": {
+          "128319520497598464": {
+            "allow": 0,
+            "deny": 24
+          },
+          "128672592503504896": {
+            "allow": 0,
+            "deny": 0
+          }
+        }
+      },
+      "guild_id": "128319520497598464",
+      "user_limit": 99,
+      "type": "voice",
+      "position": 0,
+      "name": "🛋 Lobby",
+      "id": "128319522443624448",
+      "bitrate": 96000
+    },
+    "134296082179031040": {
+      "members": {},
+      "permissions": {
+        "user": {},
+        "role": {}
+      },
+      "guild_id": "128319520497598464",
+      "user_limit": 0,
+      "type": "voice",
+      "position": 3,
+      "name": "⏰ AFK (Auto-Move)",
+      "id": "134296082179031040",
+      "bitrate": 64000
+    },
+    "151051305295675395": {
+      "members": {},
+      "permissions": {
+        "user": {},
+        "role": {
+          "128319520497598464": {
+            "allow": 8192,
+            "deny": 0
+          }
+        }
+      },
+      "guild_id": "128319520497598464",
+      "type": "text",
+      "topic": "This is where you can use bots. ",
+      "position": 1,
+      "name": "bot-chat",
+      "last_pin_timestamp": "2016-09-24T09:19:40.544000+00:00",
+      "last_message_id": "229268913219698689",
+      "id": "151051305295675395"
+    },
+    "160429865495953408": {
+      "members": {},
+      "permissions": {
+        "user": {},
+        "role": {
+          "160458179761668096": {
+            "allow": 66060313,
+            "deny": 0
+          },
+          "128319520497598464": {
+            "allow": 0,
+            "deny": 66060313
+          }
+        }
+      },
+      "guild_id": "128319520497598464",
+      "user_limit": 2,
+      "type": "voice",
+      "position": 1,
+      "name": "⏩ STM",
+      "id": "160429865495953408",
+      "bitrate": 96000
+    },
+    "187259883291148288": {
+      "members": {},
+      "permissions": {
+        "user": {},
+        "role": {}
+      },
+      "guild_id": "128319520497598464",
+      "user_limit": 5,
+      "type": "voice",
+      "position": 2,
+      "name": "🎮 Competitive",
+      "id": "187259883291148288",
+      "bitrate": 62671
+    },
+    "202870772610367488": {
+      "members": {},
+      "permissions": {
+        "user": {
+          "128319285872427008": {
+            "allow": 0,
+            "deny": 523264
+          },
+          "129223741120053248": {
+            "allow": 1024,
+            "deny": 446464
+          },
+          "130755854172422145": {
+            "allow": 0,
+            "deny": 268958737
+          }
+        },
+        "role": {
+          "128319520497598464": {
+            "allow": 0,
+            "deny": 268958737
+          }
+        }
+      },
+      "guild_id": "128319520497598464",
+      "type": "text",
+      "topic": "NOT SAFE FOR WORK\n",
+      "position": 4,
+      "name": "nsfw",
+      "last_pin_timestamp": "2016-09-24T16:18:16.297105+00:00",
+      "last_message_id": "229275320929222658",
+      "id": "202870772610367488"
+    },
+    "209321397590294528": {
+      "members": {},
+      "permissions": {
+        "user": {},
+        "role": {
+          "128319520497598464": {
+            "allow": 0,
+            "deny": 268958737
+          },
+          "160458179761668096": {
+            "allow": 1024,
+            "deny": 0
+          }
+        }
+      },
+      "guild_id": "128319520497598464",
+      "type": "text",
+      "topic": "Discussion channel for SurfTheMusic channel. We share songs and talk about other stuff related to it. If you're in this group and not interested feel free to mute",
+      "position": 3,
+      "name": "stm",
+      "last_message_id": "228908062377771010",
+      "id": "209321397590294528"
+    },
+    "219147409094213634": {
+      "members": {},
+      "permissions": {
+        "user": {},
+        "role": {
+          "128319520497598464": {
+            "allow": 66560,
+            "deny": 268892177
+          },
+          "128672592503504896": {
+            "allow": 0,
+            "deny": 0
+          }
+        }
+      },
+      "guild_id": "128319520497598464",
+      "type": "text",
+      "topic": "This is the log for reCord.\n\nIt is recommended you mute this chat.",
+      "position": 1,
+      "name": "log",
+      "last_message_id": "229285381630197761",
+      "id": "219147409094213634"
+    },
+    "225326025301688321": {
+      "members": {},
+      "permissions": {
+        "user": {},
+        "role": {
+          "128319520497598464": {
+            "allow": 0,
+            "deny": 1024
+          }
+        }
+      },
+      "guild_id": "128319520497598464",
+      "type": "text",
+      "topic": "",
+      "position": 5,
+      "name": "dogs",
+      "last_message_id": "229255705230704641",
+      "id": "225326025301688321"
+    },
+    "227131443120308224": {
+      "members": {},
+      "permissions": {
+        "user": {},
+        "role": {
+          "128319520497598464": {
+            "allow": 0,
+            "deny": 1024
+          },
+          "128672592503504896": {
+            "allow": 1024,
+            "deny": 0
+          }
+        }
+      },
+      "guild_id": "128319520497598464",
+      "type": "text",
+      "topic": "Private logging.",
+      "position": 2,
+      "name": "private-log",
+      "last_message_id": "229256432485138432",
+      "id": "227131443120308224"
+    },
+    "227413202735071233": {
+      "members": {},
+      "permissions": {
+        "user": {},
+        "role": {
+          "128319520497598464": {
+            "allow": 65536,
+            "deny": 268893201
+          }
+        }
+      },
+      "guild_id": "128319520497598464",
+      "type": "text",
+      "topic": "",
+      "position": 6,
+      "name": "welcome",
+      "last_message_id": "229275432791310346",
+      "id": "227413202735071233"
+    }
+  },
+  "users": {
+    "220644146841518081": {
+      "username": "JewishMegaman",
+      "id": "220644146841518081",
+      "discriminator": "0796",
+      "avatar": "e4e8b78df5549987b10c9d7786ac36d2",
+      "bot": false,
+      "game": null
+    },
+    "159801081071665152": {
+      "username": "GI in the G1J0",
+      "id": "159801081071665152",
+      "discriminator": "5172",
+      "avatar": null,
+      "bot": false
+    },
+    "219311240558804992": {
+      "username": "Valerieeeeeeeeeeeee",
+      "id": "219311240558804992",
+      "discriminator": "1186",
+      "avatar": "87d543e4bf9ec86db78a9119db2415d1",
+      "bot": false
+    },
+    "132993360834068480": {
+      "username": "Gian",
+      "id": "132993360834068480",
+      "discriminator": "2364",
+      "avatar": "f5ff555ee1514f6f9f0920398619e15d",
+      "bot": false
+    },
+    "200611844140957697": {
+      "username": "el hajab",
+      "id": "200611844140957697",
+      "discriminator": "3312",
+      "avatar": null,
+      "bot": false
+    },
+    "188118877777952770": {
+      "username": "GIBz",
+      "id": "188118877777952770",
+      "discriminator": "2819",
+      "avatar": null,
+      "bot": false
+    },
+    "134704287501516800": {
+      "username": "Gijo is life",
+      "id": "134704287501516800",
+      "discriminator": "5905",
+      "avatar": null,
+      "bot": false
+    },
+    "155833230098956289": {
+      "username": "Satan",
+      "id": "155833230098956289",
+      "discriminator": "1228",
+      "avatar": "49e9f62a893c249a59c18ec94bd083e7",
+      "bot": false
+    },
+    "134769238349971456": {
+      "username": "Dreampuffs",
+      "id": "134769238349971456",
+      "discriminator": "4895",
+      "avatar": null,
+      "bot": false
+    },
+    "205391126293774336": {
+      "username": "reCord",
+      "id": "205391126293774336",
+      "discriminator": "8940",
+      "bot": true,
+      "avatar": "5a1f6294b9b1f6887b3c24840487a766",
+      "game": {
+        "url": null,
+        "type": null,
+        "name": "Ready."
+      }
+    },
+    "130755854172422145": {
+      "username": "Hot Pocket Potential (HPP)",
+      "id": "130755854172422145",
+      "discriminator": "3760",
+      "avatar": "d61fb0fa1c180e3b96b943256366f934",
+      "bot": false
+    },
+    "162377752312283147": {
+      "username": "Respects Bot",
+      "id": "162377752312283147",
+      "discriminator": "1112",
+      "bot": true,
+      "avatar": "803769cdd6c789631d68aae9a83ac63b"
+    },
+    "161512263759429632": {
+      "username": "jaojake1804",
+      "id": "161512263759429632",
+      "discriminator": "4720",
+      "avatar": null,
+      "bot": false
+    },
+    "149277741718437888": {
+      "username": "KoneKtilingo",
+      "id": "149277741718437888",
+      "discriminator": "8194",
+      "avatar": "bde26be245df136b513dc44118c69649",
+      "bot": false
+    },
+    "129223741120053248": {
+      "username": "Zoom",
+      "id": "129223741120053248",
+      "discriminator": "0272",
+      "avatar": "29685f26687e3c8f55dd8ad8657e4e4c",
+      "bot": false
+    },
+    "136574659696001024": {
+      "username": "Jared030997",
+      "id": "136574659696001024",
+      "discriminator": "7849",
+      "avatar": "690da75ccc70d7a7d3c1731d2957dca4",
+      "bot": false
+    },
+    "202076349475717121": {
+      "username": "ainsley harriott",
+      "id": "202076349475717121",
+      "discriminator": "7274",
+      "avatar": null,
+      "bot": false
+    },
+    "220994973062004736": {
+      "username": "Bwekfast",
+      "id": "220994973062004736",
+      "discriminator": "4665",
+      "avatar": null,
+      "bot": false,
+      "game": null
+    },
+    "134718710190440448": {
+      "username": "Mr.Appeal",
+      "id": "134718710190440448",
+      "discriminator": "6044",
+      "avatar": "74337abbb89effa6b67e36ca639535f8",
+      "bot": false,
+      "game": {
+        "type": 0,
+        "name": "Rocket League"
+      }
+    },
+    "179276392666497024": {
+      "username": "Db0",
+      "id": "179276392666497024",
+      "discriminator": "0513",
+      "avatar": null,
+      "bot": false
+    },
+    "128307686340165632": {
+      "username": "LeroySlade",
+      "id": "128307686340165632",
+      "discriminator": "5529",
+      "avatar": "99bda06037426b9147fcc1c929dd79c8",
+      "bot": false,
+      "game": null
+    },
+    "166590060618186752": {
+      "username": "abi-d",
+      "id": "166590060618186752",
+      "discriminator": "8515",
+      "avatar": null,
+      "bot": false
+    },
+    "132993936544235522": {
+      "username": "Joanna",
+      "id": "132993936544235522",
+      "discriminator": "4990",
+      "avatar": null,
+      "bot": false
+    },
+    "128944108596101120": {
+      "username": "¯\\_(ツ)_/¯",
+      "id": "128944108596101120",
+      "discriminator": "8986",
+      "avatar": "2e2c44072f2a6bf45d8bd1ffd5726095",
+      "bot": false,
+      "game": null
+    },
+    "167980985261096961": {
+      "username": "Redlonewolf",
+      "id": "167980985261096961",
+      "discriminator": "1967",
+      "avatar": "5be61121ed2a6ea1cdd71d70e1e02eed",
+      "bot": false
+    },
+    "155873985756790786": {
+      "username": "SneakingBush",
+      "id": "155873985756790786",
+      "discriminator": "2220",
+      "avatar": null,
+      "bot": false,
+      "game": {
+        "type": 0,
+        "name": "Heroes of the Storm"
+      }
+    },
+    "151044359502954505": {
+      "username": "rakesh",
+      "id": "151044359502954505",
+      "discriminator": "8191",
+      "avatar": "aac0ccf16b5632978a5e1eea8371a1cf",
+      "bot": false
+    },
+    "132994464334479360": {
+      "username": "itsadriibitch",
+      "id": "132994464334479360",
+      "discriminator": "1599",
+      "avatar": null,
+      "bot": false
+    },
+    "135190753793146881": {
+      "username": "Chinchilla",
+      "id": "135190753793146881",
+      "discriminator": "5338",
+      "avatar": "6ace8dac14dd07da9c9d7fa0108f4d97",
+      "bot": false
+    },
+    "129016328026718208": {
+      "username": "The SlasherZ",
+      "id": "129016328026718208",
+      "discriminator": "5746",
+      "avatar": null,
+      "bot": false
+    },
+    "159800228088774656": {
+      "username": "AIRHORN SOLUTIONS",
+      "id": "159800228088774656",
+      "discriminator": "6723",
+      "bot": true,
+      "avatar": "96be9927ca947a75021db568485612fc",
+      "game": {
+        "url": "",
+        "type": 0,
+        "name": "airhornbot.com"
+      }
+    },
+    "165570868355792897": {
+      "username": "CosmicAlian",
+      "id": "165570868355792897",
+      "discriminator": "4104",
+      "avatar": "ecfc869f70341118dd6cab7ee174312d",
+      "bot": false
+    },
+    "128903989432418304": {
+      "username": "Aquouzeus",
+      "id": "128903989432418304",
+      "discriminator": "2651",
+      "avatar": "6b88e03c8fe311f4b811d0ebf7557960",
+      "bot": false
+    },
+    "128319285872427008": {
+      "username": "The Guy",
+      "id": "128319285872427008",
+      "discriminator": "2723",
+      "avatar": "cfc09aed85612a652b6fc34e9b2a4586",
+      "bot": false,
+      "game": null
+    },
+    "218772784057286656": {
+      "username": "reCord",
+      "id": "218772784057286656",
+      "discriminator": "4163",
+      "bot": true,
+      "avatar": null,
+      "game": null
+    },
+    "153938619453669376": {
+      "username": "Super borgiea",
+      "id": "153938619453669376",
+      "discriminator": "9474",
+      "avatar": null,
+      "bot": false
+    },
+    "136107769680887808": {
+      "username": "Yuki-chan",
+      "id": "136107769680887808",
+      "discriminator": "9979",
+      "bot": true,
+      "avatar": "402b72fea411bd89b74bcb1896bf6f82",
+      "game": {
+        "name": "Haikyuu!!"
+      }
+    },
+    "173915941384486922": {
+      "username": "straight",
+      "id": "173915941384486922",
+      "discriminator": "3164",
+      "avatar": null,
+      "bot": false
+    },
+    "110462073074388992": {
+      "username": "WildBot",
+      "id": "110462073074388992",
+      "discriminator": "3942",
+      "bot": true,
+      "avatar": "f8143e56615e2107d9cc1ef35c0dfa9e",
+      "game": null
+    },
+    "228961316365139968": {
+      "username": "reCord - D-Zone",
+      "id": "228961316365139968",
+      "discriminator": "6831",
+      "bot": true,
+      "avatar": "2dbf01da548a22a10c7b0e391b97a851",
+      "game": null
+    }
+  },
+  "directMessages": {
+    "218777729074462722": {
+      "type": "text",
+      "recipient": {
+        "username": "The Guy",
+        "id": "128319285872427008",
+        "discriminator": "2723",
+        "avatar": "cfc09aed85612a652b6fc34e9b2a4586"
+      },
+      "last_message_id": "228935305485352960",
+      "id": "218777729074462722"
+    },
+    "219300582609911808": {
+      "type": "text",
+      "recipient": {
+        "username": "Redlonewolf",
+        "id": "167980985261096961",
+        "discriminator": "1967",
+        "avatar": "5be61121ed2a6ea1cdd71d70e1e02eed"
+      },
+      "last_message_id": "219300595540951040",
+      "id": "219300582609911808"
+    }
+  },
+  "internals": {
+    "oauth": {
+      "description": "",
+      "rpc_origins": [],
+      "name": "reCord - [DEV]",
+      "flags": 0,
+      "owner": {
+        "username": "The Guy",
+        "discriminator": "2723",
+        "id": "128319285872427008",
+        "avatar": "cfc09aed85612a652b6fc34e9b2a4586"
+      },
+      "id": "218772784057286656",
+      "icon": null
+    },
+    "version": "2.1.3",
+    "settings": {
+      "status": "online",
+      "locale": "en-US",
+      "enable_tts_command": true,
+      "restricted_guilds": [],
+      "inline_embed_media": true,
+      "detect_platform_accounts": true,
+      "message_display_compact": false,
+      "developer_mode": false,
+      "convert_emoticons": true,
+      "guild_positions": [],
+      "theme": "dark",
+      "friend_source_flags": {
+        "all": true
+      },
+      "render_embeds": true,
+      "show_current_game": true,
+      "inline_attachment_media": true
+    },
+    "token": "MjE4NzcyNzg0MDU3Mjg2NjU2.CqIH_w.pnZbF7HqN1-ciwO_5PD8S0Dz6pQ",
+    "gatewayUrl": "wss://gateway.discord.gg/?encoding=json&v=5",
+    "sequence": 1153,
+    "sessionID": "8a7c88be6131d2b695486ce510543313"
+  },
+  "_events": {},
+  "_eventsCount": 4,
+  "verified": true,
+  "username": "reCord",
+  "mfa_enabled": false,
+  "id": "218772784057286656",
+  "email": null,
+  "discriminator": "4163",
+  "bot": true,
+  "avatar": null
+}

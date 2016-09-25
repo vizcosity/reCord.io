@@ -12,6 +12,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 
 
 
+	var voiceCheck = require('./voicecheck.js'); //snippet to check if the bot is in a voice channel.
 	var killing = false;
 	var soundlogFile = require('../log/soundlog.json');
 	var holdConversation = false, conversationLog = []; //variables for conversation handler.
@@ -64,12 +65,18 @@ function Player(Bot, YTKey, SCInfo, channel) {
 		uri: SCInfo.uri,
 		accessToken: SCInfo.accessToken
 	});
-	Bot.joinVoiceChannel(channel, function() {
-		Bot.getAudioContext({channel: channel, stereo: true}, function(err, stream) {
-			ready = true;
-			streamReference = stream;
+
+	function joinVoice(){
+		Bot.joinVoiceChannel(channel, function() {
+			Bot.getAudioContext({channel: channel, stereo: true}, function(err, stream) {
+				ready = true;
+				streamReference = stream;
+			});
 		});
-	});
+	}
+
+	joinVoice();
+
 
 var duration;
 	this.enqueue = function(user, userID, link) {
@@ -921,6 +928,13 @@ var duration;
 	}
 
 	function check() {
+		if (!voiceCheck(Bot, channel)){
+			//Bot is not connected to channel.
+			try {
+				joinVoice(); //Joins the vioce channel.
+			} catch(e){ console.log('[JOIN VOICE] ' + e);};
+		}
+
 		if (playing) { next = queue[0]; return log('warn', "Song already playing"); }
 		if (!playing && queue[0]) return play(queue[0]);
 		if (!playing && plQueue[0]) return playPlaylist(plQueue[0]);

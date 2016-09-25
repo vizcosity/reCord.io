@@ -1,0 +1,167 @@
+{
+  "rank":{
+      "1": {
+        "defaultRank": true,
+        "xp": "0"
+      },
+      "2": {
+        "xp": "5760"
+      },
+      "3": {
+        "xp": "20000"
+      },
+      "4": {
+        "xp": "40000"
+      },
+      "5": {
+        "xp": "260000"
+      },
+      "6": {
+        "admin-level": true
+      }
+    },
+
+  "commands": {
+    "help": {
+      "access": 0,
+      "scope": "none"
+    },
+    "ping": {
+      "access": 1,
+      "scope": "none"
+    },
+    "quote": {
+      "access": 2,
+      "scope": "none"
+    },
+    "anonmsg": {
+      "access": 3,
+      "scope": "none"
+    },
+    "nickname": {
+      "access": 3,
+      "scope": {
+        "3": "self",
+        "4": "other",
+        "5": "other quiet"
+      }
+    },
+    "restart": {
+      "access": 4,
+      "scope": {
+        "4": "soft",
+        "5": "hard"
+      }
+    },
+    "audio": {
+      "access": 2,
+      "scope": "none"
+    },
+    "shortcut": {
+      "access": 2,
+      "scope": {
+        "2": "use",
+        "3": "create",
+        "5": "delete"
+      }
+    },
+    "q": {
+      "access": 2,
+      "scope": "none"
+    },
+    "playlist": {
+      "access": 2,
+      "scope": {
+        "2": "view personal",
+        "3": "manage personal",
+        "4": "manage server",
+        "5": "manage global"
+      }
+    },
+    "volume": {
+      "access": 3,
+      "scope": {
+        "3": "50",
+        "4": "100",
+        "5": "200"
+      }
+    },
+    "setsurprise": {
+      "access": 5,
+      "scope": "none"
+    },
+    "skip": {
+      "access": 1,
+      "scope": {
+        "1": "vote",
+        "5": "instant"
+      }
+    },
+    "filter": {
+      "access": 4,
+      "scope": {
+        "4": "add",
+        "5": "manage"
+      }
+    },
+    "attitude": {
+      "access": 5,
+      "scope": "none"
+    },
+    "clean": {
+      "access": 3,
+      "scope": "none"
+    },
+    "roll": {
+      "access": 0,
+      "scope": "none"
+    },
+    "imgur": {
+      "access": 3,
+      "scope": "none"
+    },
+    "dc": {
+      "access": 6,
+      "scope": "none"
+    },
+    "dcp": {
+      "access": 6,
+      "scope": "none"
+    }
+  },
+  "servers": {
+    "128319520497598464": {
+      "permissionsEnabled": true,
+      "assignment":{
+        "0": {
+          "id": "128319520497598464",
+          "name": "@everyone"
+        },
+        "1": {
+          "id": "229271979696324609",
+          "name": "👢 Pleb"
+        },
+        "2": {
+          "id": "229271826742771712",
+          "name": "👌 Normie"
+        },
+        "3": {
+          "id": "229271558521225216",
+          "name": "👓 Regular"
+        },
+        "4": {
+          "id": "229271472709959690",
+          "name": "✨ Wizard"
+        },
+        "5": {
+          "id": "128672592503504896",
+          "name": "🌠 Virgins"
+        },
+        "6": {
+          "id": "229274589778149380",
+          "name": "Admin"
+        }
+      }
+    }
+  }
+}
