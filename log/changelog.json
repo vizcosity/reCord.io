@@ -1,11 +1,7 @@
 {
   "posted": true,
-  "ver": 0.5,
+  "ver": 0.51,
   "additions": [
-    "Server Logging Added! [Voice Channels, Nicknames, Join/Kick] (Upcoming: Roles & Channels)",
-    "Facelift - more emojis! :100:",
-    "Sitcom! Do !sitcom to make me laugh at y'all.",
-    "Volume control! Do !volume.",
-    "Upcoming: Spotify integration, Welcome dashboard, fixed playlists & playlist management (shuffle, remove etc)"
+    "Fixed issue where saved playlists would skip every song and not play among other stability improvements."
   ]
 }

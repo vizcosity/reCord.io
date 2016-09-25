@@ -10,8 +10,6 @@ function Player(Bot, YTKey, SCInfo, channel) {
 		childProc = require('child_process'),
 		SC = require('node-soundcloud');
 
-
-
 	var voiceCheck = require('./voicecheck.js'); //snippet to check if the bot is in a voice channel.
 	var killing = false;
 	var soundlogFile = require('../log/soundlog.json');
@@ -26,7 +24,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 	var fs = require('fs');
 	var YouTube = require('youtube-node');
 	var youTube = new YouTube(); // require other youtube API for better search.
-	youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU');
+	youTube.setKey('AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ');
 
 
 	//if (announcementChannel !== defaultMusicChannel){notify("I'll take your request fam but please hop on over to #bot-chat so that generalchat doesn't get congested with music requests.")};
@@ -68,17 +66,17 @@ function Player(Bot, YTKey, SCInfo, channel) {
 
 	function joinVoice(){
 		Bot.joinVoiceChannel(channel, function() {
+			if (playing) playing = false;
 			Bot.getAudioContext({channel: channel, stereo: true}, function(err, stream) {
 				ready = true;
 				streamReference = stream;
 			});
 		});
 	}
-
 	joinVoice();
 
 
-var duration;
+	var duration;
 	this.enqueue = function(user, userID, link) {
 		try {
 		var data = parseInput(link);
@@ -496,9 +494,9 @@ var duration;
 					body2 = JSON.parse(body2);
 					//console.log(body2);
 					//var duration = body2.items[0].contentDetails.duration;
-					var plDuration = turnStupidAssYoutubeShitIntoActualSeconds(body2.items[0].contentDetails.duration);
-
-
+					try {
+						var plDuration = turnStupidAssYoutubeShitIntoActualSeconds(body2.items[0].contentDetails.duration);
+					} catch(e){ console.log('[PLAYER > 499] ' + e)}
 					var type = 'YT';
 					var title = ci.snippet.title;
 					var url = selection.url;
@@ -539,14 +537,97 @@ var duration;
 	}
 
 	this.queueLocalPlaylist = function(playlistArray, user, userID){
+		//The saved playlists have temporary playback url's, these need to be updated.
+		//This is why previously old local playlists would skip through every song and not play.
+		var playlistName = "untitled";
 		try {
+			var playlistName = playlistArray[0].playlistName;
+		} catch(e){ console.log('[Player.js > Queue local playlist] Could not assign playlist name. ' + e)}
+
+
+		try {/*
 			for (var i = 0; i < playlistArray.length; i++){
 				try {
 					var p = playlistArray[i]; // for the purpose of queueing playlist
 					//console.log(p.duration);
-					queue.push( new PlaylistItem(p.type, p.title, p.url, p.id, p.requesterID, p.requester, p.uID, p.duration, p.playlistName) );
-				}	catch(e){ log(e); };
-			}
+						console.log('before ytdl ' + p.uID);
+					ytdl.getInfo("https://www.youtube.com/watch?v=" + playlistArray[i].uID, function(err, info){
+						console.log(p.uID);
+						if (err) return log('error', err);
+						var f = info.formats;
+
+						var selection, hb=0;
+
+						//assign the right temp playback url.
+						for (var i = 0; i < f.length; i++){
+							var current = f[i];
+							if (current.type){
+								if (Number(current.audioBitrate) > hb){
+									hb = Number(current.audioBitrate);
+									selection = current;
+								}
+							}
+						}// for loop to find the item with the highest bitrate.
+
+						if (!selection) {
+							try {
+								return log('error', "Could not get stream info about song: " + p.title);
+							} catch(e){ console.log(e); };
+						}
+						var newTempUrl = selection.url;
+
+						queue.push( new PlaylistItem(p.type, p.title, newTempUrl, p.id, p.requesterID, p.requester, p.uID, p.duration, p.playlistName) );
+
+					});//end request for more specific format info & audio stream.
+
+				}	catch(e){ log(e); }; */
+
+				try {
+					updateURLandQueue(playlistArray);
+					function updateURLandQueue(array){
+						if (array.length === 0) {
+							rebuildPlaylist(queue);
+							return notify('Playlist **' + playlistName + '** successfully queued.');
+						}
+						var p = array.shift();
+						ytdl.getInfo("https://www.youtube.com/watch?v=" + p.uID, function(err, info){
+							if (err) return log('error', err);
+							var f = info.formats;
+
+							var selection, hb=0;
+
+							//assign the right temp playback url.
+							for (var i = 0; i < f.length; i++){
+								var current = f[i];
+								if (current.type){
+									if (Number(current.audioBitrate) > hb){
+										hb = Number(current.audioBitrate);
+										selection = current;
+										p.url = selection.url;
+									}
+								}
+							}// for loop to find the item with the highest bitrate.
+
+							if (!selection) {
+								try {
+									return log('error', "Could not get stream info about song: " + p.title);
+								} catch(e){ console.log(e); };
+							}
+							queue.push( new PlaylistItem(p.type, p.title, p.url, p.id, p.requesterID, p.requester, p.uID, p.duration, p.playlistName) );
+							check();
+							updateURLandQueue(array);
+
+						});//end request for more specific format info & audio stream.
+
+					}
+				} catch(e){console.log('[Player.js > Local Playlist Queue] ' + e)}
+
+			//}
+
+
+
+
+
 			current = queue[0];
 			notification("Queued playlist **" + playlistArray[0].playlistName + "** [" + playlistArray.length + " songs" + "]");
 			rebuildPlaylist(queue);
@@ -894,9 +975,6 @@ var duration;
 		return a >= 40;
 	}
 	function log() {
-		try {
-			var thisline = (new Error).stack.split("\n")[4]
-		} catch(e) {};
 		var types = {
 			info: "[INFO]",
 			warn: "[WARN]",
@@ -910,7 +988,7 @@ var duration;
 				return false;
 				break;
 			case 1:
-				console.log(types.info + ": " + arguments[0] + ' at ' + thisline);
+				console.log(types.info + ": " + arguments[0]);
 				break;
 			case 2:
 				if (typeof(window) !== 'undefined') {
@@ -918,7 +996,7 @@ var duration;
 						window.console[arguments[0].toLowerCase()](arguments[1]);
 					}
 				} else {
-					console.log(types[arguments[0].toLowerCase()] + ": " + arguments[1] + ' at ' + thisline);
+					console.log(types[arguments[0].toLowerCase()] + ": " + arguments[1]);
 				}
 				break;
 		}
@@ -928,17 +1006,13 @@ var duration;
 	}
 
 	function check() {
-		if (!voiceCheck(Bot, channel)){
-			//Bot is not connected to channel.
-			try {
-				joinVoice(); //Joins the vioce channel.
-			} catch(e){ console.log('[JOIN VOICE] ' + e);};
-		}
+
 
 		if (playing) { next = queue[0]; return log('warn', "Song already playing"); }
 		if (!playing && queue[0]) return play(queue[0]);
 		if (!playing && plQueue[0]) return playPlaylist(plQueue[0]);
-		console.log(current);
+		//console.log(current);
+
 	}
 	var currentSongTitle;
 	var requesterName;
@@ -990,6 +1064,13 @@ var duration;
 
 		selection = choosePlayer(encs);
 		volume = 1;
+		console.log('[VOICE CHECK] ' + voiceCheck(Bot, channel));
+		if (!voiceCheck(Bot, channel)){
+			//Bot is not connected to channel.
+			try {
+				joinVoice(); //Joins the vioce channel.
+			} catch(e){ console.log('[JOIN VOICE] ' + e);};
+		}
 		try {
 			var guildID = Bot.channels[announcementChannel].guild_id;
 			volume = configFile.serverSpecific[guildID].volume;
@@ -1058,7 +1139,7 @@ var duration;
 			var secondsLeft = 9999;
 		try {
 			var secondsLeft = current.duration;
-		} catch(e){ log(e + ' 1036'); };
+		} catch(e){ console.log('[PLAYER > function nowPlayingProgressBar() > 1057]'+e); };
 		function updateTimeLeft(){
 				if (playing && secondsLeft > 0){
 
@@ -1233,16 +1314,16 @@ var duration;
 				var incrementalLoadArray = [["", "────────────"], ["─", "───────────"], ["──", "──────────"], ["───", "─────────"], ["────", "────────"], ["─────", "───────"], ["──────", "──────"], ["───────", "─────"], ["────────", "────"], ["─────────", "───"], ["─────────", "───"], ["──────────", "──"], ["───────────", "─"], ["────────────", ""]];
 				var currentPlaceMarker = "🔘";
 				try {
-					var incrementFactor = Math.floor(current.duration / 12);
-				} catch(e){ log(e); };
+					var incrementFactor = typeof current !== 'undefined' ? Math.floor(current.duration / 12) : 0;
+				} catch(e){ console.log('[Player.js >buildProgressBar() > 1233] '+e); };
 				//console.log('incrementFactor: ' + incrementFactor);
 				try {
-					var percentageOfSongPlayedCALC = secondsLeft / current.duration;
+					var percentageOfSongPlayedCALC = typeof current !== 'undefined' ? secondsLeft / current.duration : 0;
 					//console.log('percentage calculation: ' + percentageOfSongPlayedCALC);
-				} catch(e) { log(e); };
+				} catch(e) { console.log('[Player.js > buildProgressBar() > 1238] '+e); };
 				var percentageOfSongPlayed = 1 - percentageOfSongPlayedCALC;
 				var arrayLength = incrementalLoadArray.length - 1;
-				var iTPBI = Math.floor(percentageOfSongPlayed * arrayLength);
+				var iTPBI = typeof percentageOfSongPlayed !== 'undefined' && typeof arrayLength !== 'undefined' ? Math.floor(percentageOfSongPlayed * arrayLength) : 0;
 				//if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
 
 					return '**Now playing:** ' + currentSongTitle + ' _requested by ' + requesterName + '_' + '\n\n' + "▶ " + incrementalLoadArray[iTPBI][0] + currentPlaceMarker + incrementalLoadArray[iTPBI][1] + ' [' + timeLeft + ']' ;
@@ -1699,7 +1780,7 @@ var duration;
 
 				fs.writeFile('../log/soundlog.json', JSON.stringify(soundlogFile, null, 2), function callback(err){
           log('Queue log updated.');
-					console.log(current);
+					//console.log(current);
 					if (rebuildingPlaylist){
 						rebuildingPlaylist = false;
 					}
@@ -1720,7 +1801,7 @@ var duration;
 		this.requesterID = requesterID;
 		this.requester = requester;
 		this.uID = uID;
-		this.duration = duration;
+		this.duration = typeof duration !== 'undefined' ? duration : 0;
 		this.itemType = 'manual';
 		//rebuildPlaylist(queue);
 	}
@@ -1732,7 +1813,7 @@ var duration;
 		this.requesterID = requesterID;
 		this.requester = requester;
 		this.uID = uID;
-		this.duration = duration;
+		this.duration = typeof duration !== 'undefined' ? duration : 0;
 		this.itemType = 'playlist';
 		this.playlistName = plName;
 		//rebuildPlaylist(queue);
@@ -1753,9 +1834,7 @@ var duration;
 	//logging:
 	function logE(Message){
 		try {
-			try {
-				var thisline = new Error().lineNumber
-			} catch(e) {};
+
 			if (typeof serverID !== 'undefined'){
 				var logChannel = configFile.serverSpecific[serverID].logChannel;
 			} else { serverID = '128319520497598464'};
@@ -1764,7 +1843,7 @@ var duration;
 			//	to: logChannel,
 			//	message: '`' + Message + '`'
 			//})
-			console.log(Message + ' at ' + thisline);
+			console.log(Message);
 		} catch (e) {
 			console.log(e);
 		}

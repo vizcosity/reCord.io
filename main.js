@@ -2028,7 +2028,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             console.log(playlistID);
             if (!isPlayerLoaded()){
               if (!audioFilePlaying){
-                Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+                Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
               } else {
                 notify("I can't start queueing when a local audio file is playing. Leave voice and try again.");
               } //start the player.
@@ -2056,13 +2056,24 @@ bot.on('message', function(user, userID, channelID, message, event){
           var allowedResults = [];
           var videoSearchQueryID;
           try {
-            if (results.items.length > 0){//results obtained Successfully;
-              for (var i = 0; i < amtOfResults; i++){
-                if (results.items[i].id.kind === 'youtube#video'){
-                  allowedResults.push({title: results.items[i].snippet.title, id:results.items[i].id.videoId});
-                }
-              };
-            } else { notify("Search results could not be obtained."); };
+            if (typeof items === 'undefined') {
+              //no items have been found
+              //check for the reason that this happened.
+              var reason = error !== null ? "\n\n**Reason: **"+error.errors[0].reason + "\n\nThis is unfortunately caused by the YouTube API. If the quota is exceeded, there's nothing I can do. You need to wait till it resets." : '';
+              console.log('No items were found. Reason: '+ error.errors[0].reason);
+              return notify("I couldn't find any results."+reason, 15000);
+            } else {
+              if (results.items.length > 0){//results obtained Successfully;
+                for (var i = 0; i < amtOfResults; i++){
+                  if (results.items[i].id.kind === 'youtube#video') {
+                    allowedResults.push({
+                      title: results.items[i].snippet.title,
+                      id:results.items[i].id.videoId
+                    });
+                  }
+                };
+              } else { notify("Search results could not be obtained."); };
+            }
           } catch(e){ console.log(e); };
 
           if (allowedResults.length > 0){ // results obtained.
