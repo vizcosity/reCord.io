@@ -420,7 +420,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 					body = JSON.parse(body);
 					playlistName = body.items[0].snippet.title;
 					playlistDesc = body.items[0].snippet.description;
-					console.log(body.items[0].snippet);
+					//console.log(body.items[0].snippet);
 				} catch(e){ log(e); };
 				notification('**Detected ' + originalItemLength + ' songs** for playlist: **' + playlistName + '**. Attempting to collect them. This might take a bit.');
 				addQItem(items);
@@ -476,7 +476,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 			var ci = items.shift();
 			//console.log(items[0]);
 			ytdl.getInfo( "https://www.youtube.com/watch?v=" + ci.snippet.resourceId.videoId, function(err, info) {
-				console.log(info);
+				//console.log(info);
 				if (typeof info !== 'undefined'){
 				var f = info.formats;
 				var hb = 0;
@@ -489,7 +489,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 				}
 
 				request (API.Youtube.ContentDetails(ci.snippet.resourceId.videoId), function(err, res, body2) {
-					console.log(body2);
+					//console.log(body2);
 					if (err) return log('error', err);
 					body2 = JSON.parse(body2);
 					//console.log(body2);
@@ -516,7 +516,8 @@ function Player(Bot, YTKey, SCInfo, channel) {
 					queue.push( new PlaylistItem(type, title, url, id, userID, user, uID, plDuration, plName) );
 					playlistArray.push( new PlaylistItem(type, title, url, id, userID, user, uID, plDuration, plName) );
 					addQItem(items);
-					rebuildPlaylist();
+					rebuildPlaylist(queue);
+					check();
 			});
 
 				} else {

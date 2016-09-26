@@ -10,7 +10,7 @@ var YouTube = require('youtube-node');
 var youTube = new YouTube();
 //var countdown = require('countdownjs');
 
-youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU');
+youTube.setKey('AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ');
 
 var config = require('./config.json');
 //var toWav = require('audiobuffer-to-wav')
@@ -65,7 +65,7 @@ bot.on('ready',function(){
   //this passes the bot object so that it is accessible in the speerate commands.js file.
 
   //anounce to conosle that bot has successfully loaded.
-  console.log("Successfully logged in as " + bot.username + ' - ' + bot.id);
+  console.log("Successfully logged in as " + bot.username + ' - ID: ' + bot.id);
 
   //server logging
   serverLog(bot);
@@ -301,7 +301,7 @@ bot.on('message', function(user, userID, channelID, message, event){
   //end cheeky check for other bot.
 
   //prefix & alias check:
-  if (message.substring(0,1) === prefix){//message contains cmd prefix, proceed to cmd methods;
+  if (message.substring(0,1) === prefix) {//message contains cmd prefix, proceed to cmd methods;
     //aliascheck
     var aliasCheck = message.substring(prefix.length, message.length);
     //check for alias and apply msg swap.
@@ -359,6 +359,14 @@ bot.on('message', function(user, userID, channelID, message, event){
           cmd.arg = arg;
           commands.execute.talk(cmd);
         }, 'yes');
+
+        //ping command with a tad more character.
+        newCommand('ping', channelMsg, function(arg){
+          //shouldn't return usage.
+
+          cmd.arg = arg;
+          commands.execute.ping(cmd);
+        }, 'yes', 'yes');
 
       //setAlias method:
       newCommand('shortcut', message, function setAlias(arg){
@@ -1011,7 +1019,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes');
       //end request command function
 
-      //request song
+      //queueing songs.
       newCommand('q', channelMsg, function(link){
         try {
           if (typeof link === "undefined"){
@@ -1067,6 +1075,7 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes', true);
       //end queue command function
 
+      //request information about the current playing video / song.
       newCommand('qgetinfo', channelMsg, function(pos){
         if (isPlayerLoaded()){
 
@@ -1082,7 +1091,7 @@ bot.on('message', function(user, userID, channelID, message, event){
         }
       }, 'yes', true);
 
-      //setplaylist command
+      //search youtube.
       newCommand('youtube', channelMsg, function(arg){
         //console.log('searching yt');
         youTube.search(arg, 5, function(error, result){
@@ -1110,8 +1119,24 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes');
       //end setplaylist
 
-      //set volume
-      newCommand('volume', channelMsg, function(arg){
+      //change the volume.
+      newCommand('volume', channelMsg, function(arg) {
+
+
+
+        if (typeof arg === 'undefined') {
+          //when no arguments are passed, spit the current volume level.
+
+          //read the config file for the current volume level.
+          return fs.readFile('./config.json', function(error, data){
+            if (error) console.log(error);
+
+            var cachedConfig = JSON.parse(data.toString());
+            var cachedVolume = cachedConfig.serverSpecific[serverID].volume * 100;
+
+            return notify('Current volume level is at **' + cachedVolume + '%** ' + volumeEmoji(cachedVolume), 10000);
+          });
+        }
         var newVolumeLvl = parseInt(arg);
         if (newVolumeLvl > 200){
           newVolumeLvl = 200;
@@ -1122,30 +1147,38 @@ bot.on('message', function(user, userID, channelID, message, event){
           notify(":x: **Please choose a valid number from 0 - 200.**");
           return;
         }
-        var volumeEmojis = [':mute:', ':speaker:', ':sound:', ':loud_sound:'];
 
-        var selectedEmoji = volumeEmojis[1];
-
-        if (newVolumeLvl === 0){
-          selectedEmoji = volumeEmojis[0];
-        } else if (newVolumeLvl < 10){
-          selectedEmoji = volumeEmojis[1];
-        } else if (newVolumeLvl >= 10 && newVolumeLvl < 100){
-          selectedEmoji = volumeEmojis[2];
-        } else if (newVolumeLvl >= 100){
-          selectedEmoji = volumeEmojis[3];
-        }
 
         config.serverSpecific[serverID].volume = newVolumeLvl/100;
+
         //update config file
         fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
           if (err !== null){log(err)};
           log(user + " set the volume to " + newVolumeLvl);
-          notify(selectedEmoji + " Volume set to **" + newVolumeLvl + "%**\nChanges will take effect next track that plays.", 10000);
+          notify(volumeEmoji(newVolumeLvl) + " Volume set to **" + newVolumeLvl + "%**\nChanges will take effect next track that plays.", 10000);
         });
 
+        //define a function that will spit out a volume emoji
+        //based on the magnitude of the volume.
+        function volumeEmoji(volumelvl){
+          var volumeEmojis = [':mute:', ':speaker:', ':sound:', ':loud_sound:'];
 
-      }, 'yes')
+          var selectedEmoji = volumeEmojis[1];
+
+          if (newVolumeLvl === 0){
+            selectedEmoji = volumeEmojis[0];
+          } else if (newVolumeLvl < 10){
+            selectedEmoji = volumeEmojis[1];
+          } else if (newVolumeLvl >= 10 && newVolumeLvl < 100){
+            selectedEmoji = volumeEmojis[2];
+          } else if (newVolumeLvl >= 100){
+            selectedEmoji = volumeEmojis[3];
+          }
+
+          return selectedEmoji;
+        }
+
+      }, 'yes', 'yes')
       //end set volume.
 
       newCommand('queue', channelMsg, function(){
@@ -1354,10 +1387,6 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       //basic responses;
       switch (channelMsg) {
-          case prefix + 'ping':
-            respond('pong',channelID);
-            break;
-
           case prefix + 'channelid':
             respond('ChannelID: ' + channelID, channelID)
             break;
@@ -2056,7 +2085,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           var allowedResults = [];
           var videoSearchQueryID;
           try {
-            if (typeof items === 'undefined') {
+            if (typeof results === 'undefined' && typeof results.items === 'undefined') {
               //no items have been found
               //check for the reason that this happened.
               var reason = error !== null ? "\n\n**Reason: **"+error.errors[0].reason + "\n\nThis is unfortunately caused by the YouTube API. If the quota is exceeded, there's nothing I can do. You need to wait till it resets." : '';

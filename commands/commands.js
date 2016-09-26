@@ -102,6 +102,21 @@ function commandList(bot){
           } catch(e){ log('Problem with talk command: ' + e)}
         },
 
+        ping: function(cmd) {
+          msg.setCID(cmd.channelID);
+          var responses = [
+            ":ping_pong: pong!",
+            ":ping_pong: **Ouch!** That one actually stung a bit.",
+            ":ping_pong: I'm not a ping pong ball!",
+            ":ping_pong: YES I'M STILL HERE",
+            ":ping_pong: Please be more careful with that. Almost hit me in the eye!"
+          ];
+
+          msg.notify(responses[Math.floor(Math.random() * responses.length)]);
+
+
+        },
+
       //Administration
 
         //edit nickname
