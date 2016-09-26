@@ -649,7 +649,8 @@ function Player(Bot, YTKey, SCInfo, channel) {
 			var sID = Bot.channels[ID].guild_id;
 			try {
 				redirectFromChannel = ID;
-				ID = configFile.serverSpecific[sID].playerChannel;
+				var playerChannel = configFile.serverSpecific[sID].playerChannel;
+				ID = playerChannel !== null ? playerChannel : ID;
 			} catch(e){ log(e); };
 			if (!sID) return log('warn', "Cannot find server associated with: " + ID);
 			var cList = Bot.servers[sID].channels;
@@ -1073,6 +1074,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 			} catch(e){ console.log('[JOIN VOICE] ' + e);};
 		}
 		try {
+			console.log(announcementChannel);
 			var guildID = Bot.channels[announcementChannel].guild_id;
 			volume = configFile.serverSpecific[guildID].volume;
 		} catch(e){ console.log(e); };
@@ -1327,7 +1329,25 @@ function Player(Bot, YTKey, SCInfo, channel) {
 				var iTPBI = typeof percentageOfSongPlayed !== 'undefined' && typeof arrayLength !== 'undefined' ? Math.floor(percentageOfSongPlayed * arrayLength) : 0;
 				//if (secondsLeft !== 0 && secondsLeft % incrementFactor === 0){incrementer += 2};
 
-					return '**Now playing:** ' + currentSongTitle + ' _requested by ' + requesterName + '_' + '\n\n' + "▶ " + incrementalLoadArray[iTPBI][0] + currentPlaceMarker + incrementalLoadArray[iTPBI][1] + ' [' + timeLeft + ']' ;
+				//volume emoji selector.
+				function volumeEmoji(newVolumeLvl){
+					var volumeEmojis = [':mute:', ':speaker:', ':sound:', ':loud_sound:'];
+
+					var selectedEmoji = volumeEmojis[1];
+
+					if (newVolumeLvl === 0){
+						selectedEmoji = volumeEmojis[0];
+					} else if (newVolumeLvl < 10){
+						selectedEmoji = volumeEmojis[1];
+					} else if (newVolumeLvl >= 10 && newVolumeLvl < 100){
+						selectedEmoji = volumeEmojis[2];
+					} else if (newVolumeLvl >= 100){
+						selectedEmoji = volumeEmojis[3];
+					}
+					return selectedEmoji;
+				}
+					var volumePercentage = volume*100;
+					return '**Now playing:** ' + currentSongTitle + ':musical_note:\n**Requested by:** ' + requesterName + '' + '\n\n' + "▶ " + incrementalLoadArray[iTPBI][0] + currentPlaceMarker + incrementalLoadArray[iTPBI][1] + ' [' + timeLeft + '] | '+volumeEmoji(volume) + ' [**'+volumePercentage+'%**]';
 				} catch(e){ log(e); };
 
 		}

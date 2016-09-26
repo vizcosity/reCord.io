@@ -64,8 +64,12 @@ bot.on('ready',function(){
   commands = new commandList(bot);
   //this passes the bot object so that it is accessible in the speerate commands.js file.
 
+  var servers = '';
+  for (var key in bot.servers){
+    servers+= '\n'+bot.servers[key].name+': ' + key + ' [' + Object.keys(bot.servers[key].members).length + ']';
+  }
   //anounce to conosle that bot has successfully loaded.
-  console.log("Successfully logged in as " + bot.username + ' - ID: ' + bot.id);
+  console.log("Successfully logged in as " + bot.username + ' - ID: ' + bot.id+servers);
 
   //server logging
   serverLog(bot);
@@ -187,17 +191,41 @@ bot.on('ready',function(){
 var conversationHandlerLogic;
 
 bot.on('message', function(user, userID, channelID, message, event){
-  /*try {//attempt to set voice channel
-    voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
-  } catch (e) {
-    log('Could not set voice channel of user. Using default channel: ' + e);
-  };*/
 
-  if (userID !== bot.id && userID !== '218772784057286656' && userID !== '205391126293774336'){//ignore record & record dev.
+  if (userID !== bot.id && userID !== '218772784057286656' && userID !== '205391126293774336') {//ignore record & record dev.
 
-  //try setting serverID
+  if (!bot.channels[channelID]) return console.log('[Main.js > Channel Check] Rejected channel. Likely a DM instance.');
+
+  // Attempt to set ServerID.
   try {
     var serverID = bot.channels[channelID].guild_id;
+  } catch(e){ console.log('[Main.js > Set ServerID] ' +e)}
+
+  // Check if the server has been configured
+  // If not, then set it up in config.json.
+  try {
+    if (typeof config.serverSpecific[serverID] === 'undefined'){
+      // Server is not set up. Add server entry to config.json.
+      config.serverSpecific[serverID] = {
+        "logChannel": null,
+        "publicLogChannel": null,
+        "playerChannel": null,
+        "volume": 0.1
+      };
+
+      //updateJSON(config, './config.json');
+
+      fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+        if (err !== null){log(err)};
+        console.log('Configured '+bot.servers[serverID].name + ': ' + serverID);
+      });
+
+      config = require('./config.json');
+    }
+  } catch(e){ console.log('[Main.js > Initial server check] '+e)};
+
+  // Attempt to find music channel.
+  try {
     var defaultMusicChannel = config.serverSpecific[serverID].playerChannel;
   } catch(e) {
     console.log(e);
@@ -437,9 +465,13 @@ bot.on('message', function(user, userID, channelID, message, event){
           var cmd = help;
           if ( hasArgs('help', channelMsg) === false ) {
             //no arguments so generate normal help and send to DM for user;
+            console.log(generateHelp());
             bot.sendMessage({
               to: userID,
               message: generateHelp()
+            }, function(err, resp){
+              if (err !== null) console.log(err);
+
             })
           } else {//command has arguments
           //  console.log(getArg(prefix + 'help', message))
@@ -1160,7 +1192,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
         //define a function that will spit out a volume emoji
         //based on the magnitude of the volume.
-        function volumeEmoji(volumelvl){
+        function volumeEmoji(newVolumeLvl){
           var volumeEmojis = [':mute:', ':speaker:', ':sound:', ':loud_sound:'];
 
           var selectedEmoji = volumeEmojis[1];
@@ -1872,6 +1904,12 @@ bot.on('message', function(user, userID, channelID, message, event){
 
   //check that Player commands are in the right text-channel;
   function checkForPlayerChannel(){
+
+    // Check that the server has a default music channel.
+    if (!defaultMusicChannel || config.serverSpecific[serverID].playerChannel === null) {
+      return console.log('No default music channel set for ' + bot.servers[serverID].name);
+    }
+
     if (channelID === defaultMusicChannel){
       return;
     } else {//text channel is not music channel, offer a redirect.
@@ -3009,10 +3047,22 @@ function getFirstYTResult(query){
 
 //check to see if Player not closed properly.
 function wasPlaylistRunning(serverID){
+  if (!soundlog.servers[serverID]) return false; //No entry exists for the current server (Could be new add.);
   if (soundlog.servers[serverID].queue.length > 0){
     return true;
   } else if (soundlog.servers[serverID].queue.length === 0){
     return false;
   }
+
 }
 //end check for Player closure.
+
+// Update JSON files.
+function updateJSON(cacheObj, path, callback){
+  try {
+    fs.writeFile(path, JSON.stringify(cacheObj, null, 2), function callback(err){
+      if (err !== null){console.log(err)};
+      if (callback) callback();
+    });
+  } catch(e){ console.log('[Main.js > updateJSON > '+cacheObj+'] ' + e)};
+}

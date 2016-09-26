@@ -2,62 +2,63 @@
   "commands": ["purge", "setusername", "help", "ping", "quote", "restart", "anonmsg", "status", "audio", "shortcut", "q", "request", "setsurprise", "skip", "filter", "attitude", "clean", "playlist", "volume", "roll", "imgur"],
 
   "purge" : {
-    "desc": "Removes a specified amount of messages from the chat.",
-    "usage": "purge <amount of messages to remove>. Keep in mind this happens instantly."
+    "desc": "Removes messages from chat.",
+    "usage": "purge <amount of messages to remove>. Keep in mind this happens instantly.",
+    "group": "Administration :tools:"
   },
 
   "setusername" : {
-    "desc": "Changes the username of the bot. Do not spam this command or discord servers will block future namechange.",
+    "desc": "Changes my username.",
     "usage": "setusername <newUserName>"
   },
 
   "help": {
-    "desc": "Shows this list of useful info.",
-    "usage": "help"
+    "desc": "Shows this list or displays command usage.",
+    "usage": "help <blank / command name> "
   },
 
   "ping": {
-    "desc": "Call ping command for an incredible response. (Mostly used for debugging / to check if bot is alive)",
+    "desc": "Call this for an amazing response.",
     "usage": "ping"
   },
 
   "quote": {
-    "desc": "Finds a random, non-link message from the user specified and re-sends it as a quote back to the chat channel.",
+    "desc": "Quotes a recent message from the mentioned user.",
     "usage": "quote <@username>"
   },
 
   "restart": {
-    "desc": "Restarts the bot. Useful for applying changes. When called, bot should respond with status if succeeded.",
+    "desc": "Restarts the bot. Useful in case of issues.",
     "usage": "restart"
   },
 
   "anonmsg": {
-    "desc": "Sends a DM to a specified user from this bot without any possible trace. They won't know its you unless you're an idiot.",
+    "desc": "I will DM the mentioned user anonymously with your message.",
     "usage": "anonmsg <user> <message>"
   },
 
   "status": {
-    "desc": "Changes the 'Playing' status underneath my name",
+    "desc": "Changes my status.",
     "usage": "status <new status>"
   },
 
   "audio": {
-    "desc": "Joins the voice channel and plays an audio file. Useful for giggles and soundboard stuffs. \n Might be useful to set an alias with this command for quicker access.",
+    "desc": "Joins voice and plays an MP3 File specified.",
     "usage": "audio <audiofilename>"
   },
 
   "shortcut": {
-    "desc": "Create shortcut commands / aliases. E.g. you can do !audio tuturu.mp3 with !tuturu. This is useful for soundboard-like functionality or quick access to those critical sounds.",
+    "desc": "Create custom server-specific shortcuts / mini commands / aliases.",
     "usage": "shortcut <shortcut name> <command to execute>"
   },
 
   "q": {
-    "desc": "Plays songs from YouTube. Accepts either links or search queries.",
+    "desc": "Streams audio from YouTube. Accepts either links or search queries.",
     "usage": "q <link / search query>"
   },
 
   "volume":{
-    "desc": "Change the volume (percentage) for songs that are queued.",
+    "desc": "Change the volume for the active queue.",
     "usage": "volume <0-200>"
   },
 
@@ -67,7 +68,7 @@
   },
 
   "playlist": {
-    "desc": "Queue, add and manage saved playlists. Use the command for options info.",
+    "desc": "Queue, add and manage saved playlists. Use the command for more info.",
     "usage": "playlist <q / add / remove> <id / link / id>\nIf you're confused, launch the command. Options are also available there."
   },
 
@@ -77,7 +78,7 @@
   },
 
   "skip": {
-    "desc": "skips the currently playing song. (Requires that audio is streaming to voice channel.)",
+    "desc": "skips the currently playing song. (Only for active queue)",
     "usage": "skip"
   },
 
@@ -87,7 +88,7 @@
   },
 
   "attitude": {
-    "desc": "Pesters you about using wildbot. Shows some real attitude yo.",
+    "desc": "Pesters you about using other bots.",
     "usage": "attitude"
   },
 
@@ -103,6 +104,6 @@
 
   "imgur": {
     "desc": "Search imgur or leave empty to return a completely random image.",
-    "usage": "imgur <query / empty>"
+    "usage": "imgur <query / blank>"
   }
 }

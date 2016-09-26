@@ -12,6 +12,12 @@
       "logChannel": "227131443120308224",
       "publicLogChannel": "219147409094213634",
       "playerChannel": "151051305295675395",
+      "volume": 0.5
+    },
+    "229594445547438081": {
+      "logChannel": null,
+      "publicLogChannel": null,
+      "playerChannel": null,
       "volume": 0.1
     }
   },
