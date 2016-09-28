@@ -1,0 +1,174 @@
+{
+    "help": {
+      "access": 0,
+      "scope": "none",
+      "desc": "Shows this list or displays command usage.",
+      "usage": "help <blank / command name> ",
+      "group": "general"
+    },
+    "ping": {
+      "access": 1,
+      "scope": "none",
+      "desc": "Call this for an amazing response.",
+      "usage": "ping",
+      "group": "general"
+    },
+    "quote": {
+      "access": 2,
+      "scope": "none",
+      "desc": "Quotes a recent message from the mentioned user.",
+      "usage": "quote <@username>",
+      "group": "general"
+    },
+    "anonmsg": {
+      "access": 3,
+      "scope": "none",
+      "desc": "I will DM the mentioned user anonymously with your message.",
+      "usage": "anonmsg <user> <message>",
+      "group": "general"
+    },
+    "nick": {
+      "access": 3,
+      "scope": {
+        "3": "self",
+        "4": "other",
+        "5": "other quiet"
+      },
+      "desc": "Change a user's nickname.",
+      "usage": "nick <user> <new nickname>",
+      "group": "general"
+    },
+    "restart": {
+      "access": 4,
+      "scope": {
+        "4": "soft",
+        "5": "hard",
+        "desc": "Restarts the bot. Useful in case of issues.",
+        "usage": "restart",
+        "group": "admin"
+      }
+    },
+    "audio": {
+      "access": 2,
+      "scope": "none",
+      "desc": "Joins voice and plays an MP3 File specified.",
+      "usage": "audio <audiofilename>",
+      "group": "playback"
+    },
+    "shortcut": {
+      "access": 2,
+      "scope": {
+        "2": "use",
+        "3": "create",
+        "5": "delete"
+      },
+      "desc": "Create custom server-specific shortcuts / mini commands / aliases.",
+      "usage": "shortcut <shortcut name> <command to execute>",
+      "group": "general"
+    },
+    "q": {
+      "access": 2,
+      "scope": {
+        "2": "links",
+        "3": "search",
+        "4": "playlists",
+        "5": "unlimited"
+      },
+      "desc": "Streams audio from YouTube. Accepts either links or search queries.",
+      "usage": "q <link / search query>",
+      "group": "playback"
+
+    },
+    "playlist": {
+      "access": 2,
+      "scope": {
+        "2": "view personal",
+        "3": "manage personal",
+        "4": "manage server",
+        "5": "manage global"
+      },
+      "desc": "Queue, add and manage saved playlists. Use the command for more info.",
+      "usage": "playlist <q / add / remove> <id / link / id>\nIf you're confused, launch the command. Options are also available there.",
+      "group": "playback"
+    },
+    "volume": {
+      "access": 3,
+      "scope": {
+        "3": "50",
+        "4": "100",
+        "5": "200"
+      },
+      "desc": "Change the volume for the active queue.",
+      "usage": "volume <0-200>",
+      "group": "playback"
+    },
+    "setsurprise": {
+      "access": 5,
+      "scope": "none",
+      "desc": "Joins the voice channel every now and then to play some dank sounds.",
+      "usage": "setsurprise",
+      "group": "general"
+    },
+    "skip": {
+      "access": 1,
+      "scope": {
+        "1": "vote",
+        "2": "self",
+        "5": "instant"
+      },
+      "desc": "skips the currently playing song. (Only for active queue)",
+      "usage": "skip",
+      "group": "playback"
+    },
+    "filter": {
+      "access": 4,
+      "scope": {
+        "4": "add",
+        "5": "manage"
+      },
+      "desc": "Filters out words from chat.",
+      "usage": "filter <add / list / remove>",
+      "group": "admin"
+    },
+    "attitude": {
+      "access": 5,
+      "scope": "none",
+      "desc": "Pesters you about using other bots.",
+      "usage": "attitude",
+      "group": "general"
+    },
+    "clean": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Cleans the chat of commands and other gunk.",
+      "usage": "clean",
+      "group": "admin"
+    },
+    "roll": {
+      "access": 0,
+      "scope": "none",
+      "desc": "Returns a random number from 1-100",
+      "usage": "roll",
+      "group": "general"
+    },
+    "imgur": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Search imgur or leave empty to return a completely random image.",
+      "usage": "imgur <query / blank>",
+      "group": "general"
+    },
+    "dc": {
+      "access": 6,
+      "scope": "none",
+      "desc": "Access to the direct-console. (Admin only)",
+      "usage": "dc <JS to evaluate>"
+    },
+    "dcp": {
+      "access": 6,
+      "scope": "none",
+      "desc": "Player module-level direct-console. (Admin only)",
+      "usage": "dcp <JS to evaluate>"
+    }
+
+}

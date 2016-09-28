@@ -24,7 +24,7 @@
   "servers": {
     "128319520497598464": {
       "permissionsEnabled": true,
-      "assignment":{
+      "assignment": {
         "0": {
           "id": "128319520497598464",
           "name": "@everyone"
