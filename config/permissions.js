@@ -98,18 +98,25 @@ function permissionHandler(bot, serverID){
     if (commandScopes === 'none' || !commandScopes) return {result: true, reason: 'No scopes set for command.'};
 
     // Check available scopes;
-    var usersRole =
+    var usersRole = bot.servers
     var usersAccessLevel =
   }
 
   function hasRole(userID, role){
     try {
-      if (typeof bot.servers[serverID].members[userID].roles[role] !== 'undefined'){
-        // User has the role.
-        return true;
-      } else {
-        return false;
-      }
+      var userRoles = bot.servers[serverID].members[userID].roles;
+
+      // Loop through the roles array and check if the desired role exists.
+      for (var i = 0; i < userRoles.length; i++){
+        var cr = userRoles[i];
+        if (cr === role){
+          return true;
+          break;
+        }
+      }// Finish loop.
+
+      // If role is not found, return false.
+      return false;
     } catch(e){ log('Role Checking: '+e) return false;}
   }
 
