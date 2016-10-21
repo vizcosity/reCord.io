@@ -900,7 +900,9 @@ bot.on('message', function(user, userID, channelID, message, event){
               pos++;
             } else {
               //no playlists
-              globalPlaylistsOutput += '**' + globalPlaylists[0][0].playlistName + '**';
+              try {
+                globalPlaylistsOutput += '**' + globalPlaylists[0][0].playlistName + '**';
+              } catch(e){ console.log('[Playlist Generation] Error appending playlist: ' + e)}
             }
 
           }//build global playlists
@@ -908,15 +910,21 @@ bot.on('message', function(user, userID, channelID, message, event){
           for (var i = 0; i < serverPlaylists.length; i++){
             if (serverPlaylists[0][0].playlistName !== 'No Playlists'){
               if (i !== serverPlaylists.length - 1){
-                serverPlaylistsOutput += pos + '. **' + serverPlaylists[i][0].playlistName + '**\n';
+                try {
+                  serverPlaylistsOutput += pos + '. **' + serverPlaylists[i][0].playlistName + '**\n';
+                } catch(e){};
               } else {
-                serverPlaylistsOutput += pos + '. **' + serverPlaylists[i][0].playlistName + '**';
+                try {
+                  serverPlaylistsOutput += pos + '. **' + serverPlaylists[i][0].playlistName + '**';
+                } catch(e){ };
               }
               availablePlaylists.push(serverPlaylists[i]);
               pos++;
             } else {
               //no playlists
-              serverPlaylistsOutput += '**' + serverPlaylists[0][0].playlistName + '**';
+              try {
+                serverPlaylistsOutput += '**' + serverPlaylists[0][0].playlistName + '**';
+              } catch(e){};
             }
           }//build server-specific.
 
@@ -924,15 +932,21 @@ bot.on('message', function(user, userID, channelID, message, event){
             if (personalPlaylists[0][0].playlistName !== 'No Playlists'){
               //console.log(personalPlaylists[i][0].playlistName);
               if (i !== personalPlaylists.length - 1){
-                personalPlaylistsOutput += pos + '. **' + personalPlaylists[i][0].playlistName + '**\n';
+                try {
+                  personalPlaylistsOutput += pos + '. **' + personalPlaylists[i][0].playlistName + '**\n';
+                } catch(e){};
               } else {
-                personalPlaylistsOutput += pos + '. **' + personalPlaylists[i][0].playlistName + '**';
+                try {
+                  personalPlaylistsOutput += pos + '. **' + personalPlaylists[i][0].playlistName + '**';
+                } catch(e){};
               }
               availablePlaylists.push(personalPlaylists[i]);
               pos++;
             } else {
               //no personal playlists
-              personalPlaylistsOutput += '**' + personalPlaylists[0][0].playlistName + '**';
+              try {
+                personalPlaylistsOutput += '**' + personalPlaylists[0][0].playlistName + '**';
+              } catch(e){};
             }
           }//build personal playlists;
 
