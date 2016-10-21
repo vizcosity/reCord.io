@@ -709,7 +709,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                               if (audioFilePlaying){
                                 notify("**I can't join voice while an audio file is playing.** I need to do that to collect your playlist. Sorry!\n\nReason: I need to load the Playlist Module.",20000)
                               } else {
-                                Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+                                Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
                                 //Player.setAnnouncementChannel(channelID)
                                 Player.plainTextPlaylistHandler(array, playlistUserID, playlistUsername, 'personal', playlistName);
                                 Player.setAnnouncementChannel(channelID);
@@ -801,7 +801,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             //console.log(firstArg);
             if (firstArg == 'add'){
               //queue a playlist but start player first.
-              Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
+              Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
               var thirdArg = arg.split(' ')[1];
               //console.log(thirdArg);
               queuePlaylist(thirdArg);
@@ -837,7 +837,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                   //console.log(selectedPlaylist);
                   if (!isPlayerLoaded()){//load the player
                     if (!audioFilePlaying){
-                      Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+                      Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
                     } else {
                       notify("I can't start queueing when a local audio file is playing. Leave voice and try again.");
                     } //start the player.
@@ -973,7 +973,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             console.log(playlistID);
             if (!isPlayerLoaded()){
               if (!audioFilePlaying){
-                Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+                Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
               } else {
                 notify("I can't start queueing when a local audio file is playing. Leave voice and try again.");
               } //start the player.
@@ -1075,7 +1075,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                   var response = message.toLowerCase();
 
                   if (response === 'yes'){
-                    Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
+                    Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
                     Player.setAnnouncementChannel(channelID);
 
                     Player.resumePlaylist()
@@ -1362,7 +1362,7 @@ bot.on('message', function(user, userID, channelID, message, event){
               var response = message.toLowerCase();
 
               if (response === 'yes'){
-                Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
+                Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
                 Player.setAnnouncementChannel(channelID);
 
                 Player.resumePlaylist();
@@ -1728,7 +1728,7 @@ bot.on('message', function(user, userID, channelID, message, event){
               audioFilePlaying = true;
               if (sitcom){
                 bot.joinVoiceChannel(voiceChannelID, function(error, events){
-                  bot.getAudioContext({channel: voiceChannelID, stereo: true}, function(error, stream){
+                  bot.getAudioContext(voiceChannelID, function(error, stream){
                     if (error !== null){ err(error); };
 
                     events.on('speaking', function(sitcomUserID, SSRC, speaking){
@@ -1843,7 +1843,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           //  var voiceChannelID = bot.servers[serverID].members[userID]
           //get msg
           bot.joinVoiceChannel(voiceChannelID, function callback(){
-            bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
+            bot.getAudioContext(voiceChannelID, function callback(err, stream){//send audio
                 //console.log(arg);
                 stream.playAudioFile(arg);
                 bot.setPresence({game: {name: arg}});//setting playing to audiofilename
@@ -2074,7 +2074,7 @@ bot.on('message', function(user, userID, channelID, message, event){
   function queueMethod(link){
     checkForPlayerChannel();
     console.log('Proceeding to queue function.');
-    if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyA9ZnSNiPtAI96wRNi6r_VEPADdu13JHbo', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
+    if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
       var requestURL = link.split(' ')[0];
       //console.log(requestURL.split('/')[0]);
 

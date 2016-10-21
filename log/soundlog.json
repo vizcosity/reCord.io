@@ -171,7 +171,10 @@
     "./audio/Filthy Frank Theme.mp3",
     "./audio/Sike that's the wrong number.mp3",
     "./audio/KFC is Illuminati.mp3",
-    "./audio/I dont like it I love it twitch follow sound.mp3"
+    "./audio/I dont like it I love it twitch follow sound.mp3",
+    "sample.mp3",
+    "./audio/FUNNY  INDIAN RINGTONE!!!!!!!!!!!!!!!!!!!!!!.mp3",
+    "./audio/I like licking de banana.mp3"
   ],
   "links": [
     "https://www.youtube.com/watch?v=1mHniaSq3JE"
@@ -250,8 +253,7 @@
   "servers": {
     "128319520497598464": {
       "announcementChannel": "128319520497598464",
-      "queue": [],
-      "currentSong": []
+      "queue": []
     }
   },
   "playlists": {
@@ -316,7 +318,6 @@
             "playlistName": "Suspenful / Epic Songs"
           }
         ],
-        [],
         [
           {
             "type": "YT",

@@ -65,9 +65,17 @@ function Player(Bot, YTKey, SCInfo, channel) {
 	});
 
 	function joinVoice(){
-		Bot.joinVoiceChannel(channel, function() {
+		Bot.joinVoiceChannel(channel, function(error, events) {
+			if (error) return console.error(error);
 			if (playing) playing = false;
-			Bot.getAudioContext({channel: channel, stereo: true}, function(err, stream) {
+
+			/*Bot.getAudioContext({channel: channel, stereo: true}, function(err, stream) {
+				ready = true;
+				streamReference = stream;
+			});*/
+
+			Bot.getAudioContext(channel, function(error, stream){
+				if (error) return console.error(error);
 				ready = true;
 				streamReference = stream;
 			});
@@ -95,6 +103,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 			request (API.Youtube.ContentDetails(data.location), function(err, res, body) {
 				if (err) return log('error', err);
 				body = JSON.parse(body);
+				//console.log(body.error.errors);
 
 				try {
 					if (body.items.length === 0) { return log('warn', data.location + " is not a valid YouTube video ID."); }
@@ -122,6 +131,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 								if (Number(current.audioBitrate) > hb) {
 									hb = Number(current.audioBitrate);
 									selection = current;
+									//console.log(selection);
 									//console.log(current);
 								}
 							}
@@ -129,8 +139,9 @@ function Player(Bot, YTKey, SCInfo, channel) {
 
 						if (!selection) return notify("Unable to get stream information about link: " + data.type);
 						try {
-
-							title = body.items[0].snippet.title;
+							try {
+								title = body.items[0].snippet.title;
+							} catch(e){ console.log("[Player > 135] " + e)};
 							url = selection.url;
 							id = qID();
 							uID = data.location;
@@ -1074,11 +1085,13 @@ function Player(Bot, YTKey, SCInfo, channel) {
 			} catch(e){ console.log('[JOIN VOICE] ' + e);};
 		}
 		try {
-			console.log(announcementChannel);
 			var guildID = Bot.channels[announcementChannel].guild_id;
 			volume = configFile.serverSpecific[guildID].volume;
 		} catch(e){ console.log(e); };
+
 		if (typeof currentSong === 'undefined') currentSong = current;
+		
+		//console.log(currentSong.url);
 		enc = childProc.spawn(selection, [
 			'-loglevel', '0',
 			'-i', currentSong.url,
@@ -1091,8 +1104,12 @@ function Player(Bot, YTKey, SCInfo, channel) {
 
 		var notificationMsgId;
 		enc.stdout.once('readable', function() {
+			console.log('[Player] audio is readable');
 			//secondsLeft = duration;
 			streamReference.send(enc.stdout);
+
+			//enc.stdout.pipe(streamReference, {end: false});
+
 			try {
 				delete currentSong.id;
 			} catch(e){ log(e + ' 989')};
@@ -1107,7 +1124,7 @@ function Player(Bot, YTKey, SCInfo, channel) {
 		});
 
 		enc.stdout.once('end', function() {
-
+			console.log('finished playing');
 			playing = false;
 			last = current;
 			current = undefined;
