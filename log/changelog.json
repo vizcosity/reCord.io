@@ -1,5 +1,5 @@
 {
-  "posted": false,
+  "posted": true,
   "ver": 0.6,
   "additions": [
     "Added new permissions system which works alongside the new roles.",

@@ -38,7 +38,6 @@ if (CLIArguments === 'dev'){
 
 
 var bot = new Discord.Client({
-  //token: "MjA1MzkxMTI2MjkzNzc0MzM2.CpJbog.TH8o86o4pIoHghC6_U2H3xQwJKg",
   token: token, //development mode
   autorun: true
 });
@@ -494,21 +493,17 @@ bot.on('message', function(user, userID, channelID, message, event){
         } catch(e){ console.log(e) }
       })
 
-      //change status
-      if (cmdIs('status', message)){
+      newCommand('status', channelMsg, function(arg){
         try {
-          var newStatus = getArg(prefix + 'status', message);
-          currentStatus = newStatus;
+          currentStatus = arg;
           bot.setPresence({
             game: {
-              name: newStatus
+              name: currentStatus
             }
           });
-
           log('Status changed to: ' + newStatus);
         } catch (e) { console.log(e) };
-      }
-      //end change status
+      }, 'yes');
 
       //get msg (DEBUG)
       if (cmdIs('getmsg', message)){
@@ -525,9 +520,14 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       //anonmsg
       if (cmdIs('anonmsg', message)){
+
+      }
+      //end anonmsg
+
+      newCommand('anonmsg', channelMsg, function(arg){
         try {
-          if (hasArgs('anonmsg', message)){
-            var messageToSendArray = message.split(' ');
+          if (hasArgs('anonmsg', channelMsg)){
+            var messageToSendArray = channelMsg.split(' ');
             var messageToSend = '';
 
             for (var i = 2; i < messageToSendArray.length; i++){
@@ -560,8 +560,7 @@ bot.on('message', function(user, userID, channelID, message, event){
             respond(help.anonmsg.usage, channelID);
           }
         } catch (e) { console.log(e); };
-      }
-      //end anonmsg
+      }, 'yes')
 
       //play RAW audio file (MP3 or PCM etc.);
       newCommand('audio', channelMsg, function audioPlay(arg){
@@ -1154,11 +1153,11 @@ bot.on('message', function(user, userID, channelID, message, event){
             }
           };
           try {
-            var title = result.items[0].snippet.title;
-            var desc = "```"+result.items[0].snippet.description+"```";
+            var title = ":small_blue_diamond: **Title**: " + result.items[0].snippet.title + "\n\n";
+            var desc = ":pencil: **Description**: "+result.items[0].snippet.description+"\n";
             var url = "https://youtube.com/watch?v=" + result.items[0].id.videoId;
 
-            var output = "**" + title + "**\n" + "" + desc + "\n" + url;
+            var output = title + desc + url;
             reply(output);
           } catch(e){ console.log(e); };
         })
@@ -1167,8 +1166,6 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       //change the volume.
       newCommand('volume', channelMsg, function(arg) {
-
-
 
         if (typeof arg === 'undefined') {
           //when no arguments are passed, spit the current volume level.

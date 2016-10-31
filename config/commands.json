@@ -172,6 +172,108 @@
       "desc": "Player module-level direct-console. (Admin only)",
       "usage": "dcp <JS to evaluate>",
       "group": "admin"
+    },
+    "joinvoice": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Joins voice channel.",
+      "usage": "joinvoice",
+      "group": "playback"
+    },
+    "leavevoice": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Leaves voice channel.",
+      "usage": "leavevoice",
+      "group": "playback"
+    },
+    "soundboard": {
+      "access": 2,
+      "scope": "none",
+      "desc": "Joins voice and plays a random dank sound.",
+      "usage": "soundboard",
+      "group": "playback"
+    },
+
+    "purge": {
+      "access": 4,
+      "scope": {
+        "3": "10 self",
+        "4": "20 all",
+        "5": "100 all"
+      },
+      "desc": "Removes specified amount of messages from channel.",
+      "usage": "purge <amount>",
+      "group": "admin"
+    },
+
+    "setprefix": {
+      "access": 5,
+      "scope": {
+        "5": "server",
+        "6": "global"
+      },
+      "desc": "Changes the prefix that I listen to for commands.",
+      "usage": "setprefix <prefix>",
+      "group": "admin"
+    },
+
+    "status": {
+      "access": 4,
+      "scope": "none",
+      "desc": "Changes my 'playing' message.",
+      "usage": "status <new status>",
+      "group": "general"
+    },
+
+    "anonmsg": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Send messages to users anonymously.",
+      "usage": "anonmsg @user <message>",
+      "group": "general"
+    },
+
+    "checkvoice": {
+      "access": 2,
+      "scope": "none",
+      "desc": "Runs a check that typically fixes playback.",
+      "usage": "checkvoice",
+      "group": "playback"
+    },
+
+    "qgetinfo": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Shows info on currently playing song / video.",
+      "usage": "qgetinfo <blank / queue position>",
+      "group": "playback"
+    },
+
+    "youtube": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Searches YouTube and returns the first search result.",
+      "usage": "youtube <search query>",
+      "group": "general"
+    },
+
+    "setusername": {
+      "access": 6,
+      "scope": "none",
+      "desc": "Changes my username. (Not nickname)",
+      "usage": "setusername <username>",
+      "group": "admin"
+    },
+
+    "sitcom": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Everyone in the voice channel suddenly becomes hilarious.",
+      "usage": "sitcom",
+      "group": "general"
     }
+
+
 
 }
