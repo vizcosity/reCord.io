@@ -36,14 +36,17 @@ function messenger(bot, channel){
   }
 
   //replies to the channel in which the bot was invoked.
-  this.send = function(msg, typing){
+  this.send = function(msg, typing, callback){
     if(check()) return;
 
     bot.sendMessage({
       to: channelID,
       message: msg,
       typing: typing ? true : false
-    }, function(err, resp){if (err !== null) log(err);});
+    }, function(err, resp){
+      if (err !== null) log(err);
+      if (callback) callback();
+    });
 
   }
 

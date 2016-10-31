@@ -3,63 +3,81 @@ function permissionHandler(bot, serverID){
   var commands = require('./commands.json');
   var enabled = true;
 
-  //check if there is an entry in the permissions file for the server.
+  // Check if there is an entry in the permissions file for the server.
   if (typeof permissions.servers[serverID] === 'undefined') {
     enabled = false;
-    log("Server: "+ bot.servers[serverID].name" has not been configured for permissions.");
+    //console.log(bot.servers);
+    //console.log(serverID);
+    log("Server: " + bot.servers[serverID].name + " has not been configured for permissions.");
   }
-  if (!permissions.servers[serverID].permissionsEnabled) {
+
+  if (!permissions.servers[serverID] || !permissions.servers[serverID].permissionsEnabled) {
     enabled = false;
     log("Server has permissions disabled.");
   }
 
   // Checks if the user has plain access to the core command.
-  this.hasAccess(userID, command){
+  this.hasAccess = function(userID, command){
+    // if (!enabled)
+
     // Check that the command is configured for permissions.
     if (typeof commands[command] === 'undefined' || !enabled){
       log('Failed to check for command access. Command Defined: ' + typeof commands[command] + ' enabled: ' + enabled);
 
       // Return default true if access level required is 3 or less.
-      if (!enabled) {
-        if (commands[command].access <= 3){
-          return {
-            result: true,
-            reason: null;
-          };
-        } else {
-          return {
-            result: false,
-            reason: "Using this command requires permissions setup."
-          };
-        }
-      };
+      // This is the default case, when servers have not set up permissions.
+      try {
+        if (!enabled) {
+          if (commands[command].access <= 3){
+            return {
+              result: true,
+              reason: null
+            };
+          } else {
+            return {
+              result: false,
+              reason: "Using this command requires permissions setup."
+            };
+          }
+        };
+      } catch(e){ log('Checking for cmd access: ' + e)}
 
-      //if the command does not exist in permissions but premissions is enabled, allow only bot-master to use.
+      // If the command does not exist in permissions (i.e. has not been configured)
+      // but premissions is enabled, allow only bot-master to use.
       if (typeof commands[command] === 'undefined'){
-        var accessLevel6Role = permissions.server[serverID].assignment['6'].id;
-        if (hasRole(userID, accessLevel6Role)){
+
+        try {
+          var accessLevel6Role = permissions.servers[serverID].assignment['6'].id;
+        } catch(e){ log('No cmd setup acccess 6 checker: ' + e)}
+        if (hasSufficientRole(userID, accessLevel6Role)){
           return {
             result: true
           };
         } else {
+
           return {
             result: false,
             reason: "Permissions not configured for this command.\nOnly bot-master can use it until it is configured."
           };
         }
+
       }
 
-    }
+    } // End of check for partial / not configured permissions or cmd-specific permissions.
 
     // Handle for commands that are registed, and permissions are enabled.
     var commandAccessLevel = commands[command].access;
-    var requiredRoleForAccessLevel = permissions.server[serverID].assignment[commandAccessLevel]; // Append ID
 
-    if (!hasRole(userID, requiredRoleForAccessLevel.id)){
+    var requiredRoleForAccessLevel = permissions.servers[serverID].assignment[commandAccessLevel]; // Append ID
+    //console.log('Checked required role for access level');
+
+    if (!hasSufficientRole(userID, requiredRoleForAccessLevel.id)){
       // User does not have requried permission.
       return {
         result: false,
-        reason: "You need access level "+commandAccessLevel+", as part of role: "+requiredRoleForAccessLevel.name+"to use this."
+        reason: "You need access level "+commandAccessLevel+", as part of role: `" +
+        requiredRoleForAccessLevel.name +
+        "` to use this. Your access level is " + getAccessLevel(userID) + "."
       };
     } else {
       // User has permission to use command.
@@ -73,7 +91,7 @@ function permissionHandler(bot, serverID){
   }
 
   // Checks if the user has scope to access feature of a command.
-  this.hasScope(userID, command, scope){
+  this.hasScope = function(userID, command, scope){
     // Return false if any arguments are undefined.
     if (!userID || !command || !scope){
       return {
@@ -98,26 +116,96 @@ function permissionHandler(bot, serverID){
     if (commandScopes === 'none' || !commandScopes) return {result: true, reason: 'No scopes set for command.'};
 
     // Check available scopes;
-    var usersRole = bot.servers
-    var usersAccessLevel =
+    var usersAccessLevel = getAccessLevel(userID);
+
+    var reverseScopeLookup = {};
+
+    // Creates a keyword - access level dictionary
+    // to convert the 'scope' argument into an access level number
+    // that can be compared.
+    for (var key in commandScopes){
+      var scopeKeyword = commandScopes[key];
+      reverseScopeLookup[scopeKeyword] = key;
+    }
+
+    var desiredAccessLevel = reverseScopeLookup[scope]; // This saves the access level desired for the query.
+
+    if (usersAccessLevel >= desiredAccessLevel){
+      return {
+        result: true,
+        reason: null
+      }
+    } else {
+      return {
+        result: false,
+        reason: 'Access level: ' + desiredAccessLevel + ' required, while user only has level: ' + usersAccessLevel
+      }
+    }
+
   }
 
-  function hasRole(userID, role){
+  // Given the roles a user has, this returns the highest access
+  // level for that user.
+  function getAccessLevel(userID){
     try {
       var userRoles = bot.servers[serverID].members[userID].roles;
 
-      // Loop through the roles array and check if the desired role exists.
-      for (var i = 0; i < userRoles.length; i++){
-        var cr = userRoles[i];
-        if (cr === role){
-          return true;
-          break;
-        }
-      }// Finish loop.
+      var roleLookupToRank = {};
 
-      // If role is not found, return false.
-      return false;
-    } catch(e){ log('Role Checking: '+e) return false;}
+      for (var key in permissions.servers[serverID].assignment){
+        roleLookupToRank[permissions.servers[serverID].assignment[key].id] = key;
+      }
+
+      var highestAccessLevel = 0;
+
+      for (var i = 0; i < userRoles.length; i++){
+        var cur = userRoles[i];
+        if (!roleLookupToRank[cur]) continue;
+
+        if (roleLookupToRank[cur] > highestAccessLevel){
+          highestAccessLevel = roleLookupToRank[cur];
+        }
+      }
+
+      return highestAccessLevel;
+
+    } catch(e){ log('Aquiring Access level: ' + e); return 0;}
+  }
+
+  function hasSufficientRole(userID, role){
+    // This grabs the user's roles, and returns true if user
+    // has a role at same rank level as argued role or higher.
+
+    try {
+      var userRoles = bot.servers[serverID].members[userID].roles;
+
+      var roleLookupToRank = {};
+
+      for (var key in permissions.servers[serverID].assignment){
+        roleLookupToRank[permissions.servers[serverID].assignment[key].id] = key;
+      }
+
+      //var highestRole = roleLookupToRank[0].id;
+      var highestRole = permissions.servers[serverID].assignment[0].id;
+
+      //console.log(roleLookupToRank);
+      // Loop through user Roles, finding the highest role.
+      for (var i = 0; i < userRoles.length; i++){
+        var cur = userRoles[i];
+
+        // Skip iteration if the role is not a ranked perm role.
+        if (!roleLookupToRank[cur]) continue;
+
+        if (roleLookupToRank[cur] > roleLookupToRank[highestRole]){
+          highestRole = cur;
+        }
+
+      }
+
+      // If the user has no roles, returns lowest role by default.
+      return roleLookupToRank[highestRole] >= roleLookupToRank[role];
+
+    } catch(e){ log('Getting Highest Role: ' + e); return false; }
   }
 
 
@@ -135,6 +223,7 @@ function permissionHandler(bot, serverID){
   function log(x){
     console.log('[PERMISSION HANDLER] ' + x)
   }
+
 }
 
 module.exports = permissionHandler;

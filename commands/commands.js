@@ -1,7 +1,11 @@
 function commandList(bot){
   //grab the useful message functions.
   var messenger = require('../snippets/message.js');
+  var permissionsInfo = require('../config/permissions.json');
+  var permission = require('../config/permissions.js');
+
   var msg = new messenger(bot);
+
 
   //wrap in try to (hopefully) prevent some crashes.
   try {
@@ -96,9 +100,7 @@ function commandList(bot){
             var convo = new convoInstance(bot);
             var convoMessage = cmd.arg;
 
-            setTimeout(function(){
-              convo.ask(convoMessage, cmd.channelID);
-            }, 3000)
+            convo.ask(convoMessage, cmd.channelID);
           } catch(e){ log('Problem with talk command: ' + e)}
         },
 
@@ -116,6 +118,101 @@ function commandList(bot){
 
 
         },
+
+      // GENERAL commands
+
+      help: function(cmd){
+        // Assign the server ID from the command.
+        var permissions = new permission(bot, cmd.sID);
+
+        var commandInfo = require('../config/commands.json'); // Command information is stored here.
+        var config = require('../config.json');
+        // Returns useful help information.
+
+        // If there are arguments, it is likely that the user is looking
+        // for information on a specific command. Check if this command exists
+        // and output description & usage. Else, return full help.
+
+        msg.setCID(cmd.channelID);
+        if (!cmd.arg){
+          // Set the cID to the userID.
+
+          msg.setCID(cmd.uID);
+          // Generate normal full help method. (Arguments are empty.)
+
+          function generateHelpList(){
+            // Command groups & headers.
+            var helpList = {
+              introMsg: ":small_orange_diamond:   **reCord** v0.55 **GitHub**: <https://github.com/Vizcosity/discord.gi>\n",
+              general: "__**General / Misc**__ :zap:\n",
+              playback: "__**Playback / Music**__ :musical_note:\n",
+              admin: "__**Administration**__ :tools: :gear:\n"
+            };
+
+            // Loop through each command, add each one to respective category.
+            for (var key in commandInfo){
+              if (!permissions.hasAccess(cmd.uID, key).result) continue;
+              var cmdGroup = commandInfo[key].group;
+              helpList[cmdGroup] += "**" + config.prefix + key + "** - " + commandInfo[key].desc + '\n';
+            }
+
+            // Returns as an array so that each cmd Group is split up and can be
+            // sent to the user as a seperate message. (Gets around the char limit.);
+            return [helpList.general, helpList.playback, helpList.admin];
+          }
+
+          // Send the help message to the user.
+
+          var helpList = generateHelpList();
+
+          // Sends the introductory message first, then the other help messages intermittendly.
+          msg.send(":small_orange_diamond: **reCord** v"+ require('../log/changelog.json').ver +" **GitHub**: <https://github.com/Vizcosity/discord.gi>\n",
+          false,
+          function(){
+            for (var i = 0; i < helpList.length; i++){
+              msg.send(helpList[i]);
+            }
+          });
+
+
+          return;
+
+        } else {
+
+          // Check that the command exists.
+          var commandToLookup = cmd.arg;
+          if (typeof commandInfo[commandToLookup] !== 'undefined'){
+            // The command exists. Return the description & usage.
+            var description = ":pencil: **Description**: " + commandInfo[commandToLookup].desc;
+            var usage = ":comet: **Usage**: " + config.prefix + commandInfo[commandToLookup].usage;
+            var accessLevel = "";
+            var access = "";
+
+            try {
+              // This will only work if permissions is set up on the server,
+              // Otherwise the output will simply be blank.
+              accessLevel = "\n\n:closed_lock_with_key: **Access Level**: "
+               + commandInfo[commandToLookup].access + " (`" +
+               permissionsInfo.servers[cmd.sID].assignment[commandInfo[commandToLookup].access].name + "`)";
+            } catch(e){ console.log(e) };
+
+            try {
+              access = permissions.hasAccess(cmd.uID, commandToLookup).result
+              ? "\n\n :white_check_mark: **You have access to this command.**"
+              : "\n\n :no_entry: **You do not have access to this command:**\n\n:small_red_triangle_down: **Reason**: " +
+              permissions.hasAccess(cmd.uID, commandToLookup).reason;
+            } catch(e) { console.log(e) };
+            // var access =
+
+            var formattedResponse = description + '\n\n' + usage + accessLevel + access;
+
+            msg.notify(formattedResponse, 60000);
+          }
+
+        }
+
+
+      },
 
       //Administration
 

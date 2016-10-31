@@ -42,11 +42,12 @@
       "access": 4,
       "scope": {
         "4": "soft",
-        "5": "hard",
-        "desc": "Restarts the bot. Useful in case of issues.",
-        "usage": "restart",
-        "group": "admin"
-      }
+        "5": "hard"
+      },
+      "desc": "Restarts the bot. Useful in case of issues.",
+      "usage": "restart",
+      "group": "admin"
+
     },
     "audio": {
       "access": 2,
@@ -162,13 +163,15 @@
       "access": 6,
       "scope": "none",
       "desc": "Access to the direct-console. (Admin only)",
-      "usage": "dc <JS to evaluate>"
+      "usage": "dc <JS to evaluate>",
+      "group": "admin"
     },
     "dcp": {
       "access": 6,
       "scope": "none",
       "desc": "Player module-level direct-console. (Admin only)",
-      "usage": "dcp <JS to evaluate>"
+      "usage": "dcp <JS to evaluate>",
+      "group": "admin"
     }
 
 }

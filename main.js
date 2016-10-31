@@ -1,31 +1,30 @@
+// Dependencies
 var Discord = require('discord.io');
-var serverLog = require('./snippets/serverlog.js');
 var http = require('http');
 var b64encode = require('base64-stream').Encode;
-
+var Lame = require('lame');
+var spawn = require('child_process').spawn;
 var fs = require('fs');
 var ytStream = require('youtube-audio-stream');
 var ytdl = require('ytdl-core');
+var osmosis = require('osmosis');
 var YouTube = require('youtube-node');
 var youTube = new YouTube();
-//var countdown = require('countdownjs');
-
 youTube.setKey('AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ');
 
+// Modules
 var config = require('./config.json');
-//var toWav = require('audiobuffer-to-wav')
 var help = require('./help.json');
 var alias = require('./alias.json');
 var soundlog = require('./log/soundlog.json');
+var serverLog = require('./snippets/serverlog.js');
 var commandList = require('./commands/commands.js'), commands;
-var Lame = require('lame');
-var spawn = require('child_process').spawn;
 var player = require('./snippets/Player.js');
-var Player = '';
-var osmosis = require('osmosis');
 var spotifyServer = require('./authorization_code/app.js');
-var editLooper;
+var permissionHandler = require('./config/permissions.js');
 
+
+// Environment setup
 var CLIArguments = process.argv[2];
 var token = "MjA1MzkxMTI2MjkzNzc0MzM2.CpJbog.TH8o86o4pIoHghC6_U2H3xQwJKg";
 var prefix = config.prefix;
@@ -50,32 +49,39 @@ var currentStatus = config.status;
 var randomSoundboard = config.randomSoundboard;
 var randomSoundDelay = parseInt(config.randomSoundDelay);
 
-//Some global variables
+// Some global variables
+var Player = '';
+var editLooper;
 var holdConversation = false, conversationLog = []; //variables for conversation handler.
 var desiredResponseChannel;
 var audioFilePlaying = false;
 var sitcom = false;
 var attitude = config.attitude;
-var delay = 0, activeDelay = delay, cmdToCooldown = '', cooldown = false, cooldownResponse = 'Loading...', delayCountdown, cdCount = 0;
+var delay = 0, activeDelay = delay, cmdToCooldown = '',
+    cooldown = false, cooldownResponse = 'Loading...',
+    delayCountdown, cdCount = 0;
 
 bot.on('ready',function(){
 
-  //set up a new commandlist instance.
+  // Set up a new commandlist instance.
   commands = new commandList(bot);
-  //this passes the bot object so that it is accessible in the speerate commands.js file.
+  // This passes the bot object so that it is accessible in the speerate commands.js file.
 
   var servers = '';
-  for (var key in bot.servers){
-    servers+= '\n'+bot.servers[key].name+': ' + key + ' [' + Object.keys(bot.servers[key].members).length + ']';
+
+  for (var key in bot.servers) {
+    servers += '\n'+bot.servers[key].name+': ' + key + ' [' + Object.keys(bot.servers[key].members).length + ']';
   }
+
   //anounce to conosle that bot has successfully loaded.
   console.log("Successfully logged in as " + bot.username + ' - ID: ' + bot.id+servers);
 
   //server logging
   serverLog(bot);
 
-  //check for any changes that need to be presented.
+  // CHANGELOG HANDLER
   var changelog = require('./log/changelog.json');
+  // Check for any changes that need to be presented.
   if (!changelog.posted) {
     var changesStringed = '';
 
@@ -87,7 +93,9 @@ bot.on('ready',function(){
         changesStringed += '- ' + x;
       }
     }
-    respond(":bacon: __**"+bot.username+" updated!**__\nVersion: " + changelog.ver + " :fire:\n\nChanges:\n" + changesStringed, "128319520497598464");
+
+    respond(":bacon: __**"+bot.username+" updated!**__\nVersion: "
+    + changelog.ver + " :fire:\n\nChanges:\n" + changesStringed, "128319520497598464");
 
     changelog.posted = true;
     fs.writeFile('./log/changelog.json', JSON.stringify(changelog, null, 2), function callback(err){
@@ -98,7 +106,7 @@ bot.on('ready',function(){
   }
 
 
-  //change the username if it is set in config.
+  // Change the username if it is set in config.
   if (bot.username !== config.name){
 
     bot.editUserInfo({
@@ -110,7 +118,7 @@ bot.on('ready',function(){
 
   };
 
-  //anounce that the bot has loaded.
+  // Anounce that the bot has loaded.
   bot.sendMessage({
     to: config.serverSpecific['128319520497598464'].logChannel,
     message: config.name + ' Successfully loaded.'
@@ -192,6 +200,8 @@ var conversationHandlerLogic;
 
 bot.on('message', function(user, userID, channelID, message, event){
 
+
+
   if (userID !== bot.id && userID !== '218772784057286656' && userID !== '205391126293774336') {//ignore record & record dev.
 
   if (!bot.channels[channelID]) return console.log('[Main.js > Channel Check] Rejected channel. Likely a DM instance.');
@@ -199,7 +209,10 @@ bot.on('message', function(user, userID, channelID, message, event){
   // Attempt to set ServerID.
   try {
     var serverID = bot.channels[channelID].guild_id;
-  } catch(e){ console.log('[Main.js > Set ServerID] ' +e)}
+  } catch(e){ console.log('[Main.js > Set ServerID] ' + e)}
+
+  var permissions = new permissionHandler(bot, serverID);
+
 
   // Check if the server has been configured
   // If not, then set it up in config.json.
@@ -344,14 +357,14 @@ bot.on('message', function(user, userID, channelID, message, event){
   log(user + " tried to execute: " + message);
   //end log command.
 
-  //main command list methods;
+  // Main command list methods;
 
-      //create command object with useful about the current message and the type.
+      // Create command object with useful about the current message and the type.
       var cmd = {
         sID: serverID,
         message: channelMsg,
         rawMessage: message,
-        arg: null, //this will be changed when passed into the neCommand function.
+        arg: null, //this will be changed when passed into the and function.
         user: user,
         uID: userID,
         channelID: channelID, //channelID origin for the command message.
@@ -367,7 +380,7 @@ bot.on('message', function(user, userID, channelID, message, event){
           cmd.arg = args;
           //setting the cmd.arg attribute.
           commands.execute.roll(cmd);
-        }, 'yes');
+        }, 'yes', 'yes');
         //end roll
 
         //smug
@@ -380,7 +393,7 @@ bot.on('message', function(user, userID, channelID, message, event){
         newCommand('imgur', channelMsg, function(arg){
           cmd.arg = arg;
           commands.execute.imgur(cmd);
-        }, 'yes');
+        }, 'yes', 'yes');
 
         //experimental cleverbot command.
         newCommand('talk', channelMsg, function(arg){
@@ -394,6 +407,12 @@ bot.on('message', function(user, userID, channelID, message, event){
 
           cmd.arg = arg;
           commands.execute.ping(cmd);
+        }, 'yes', 'yes');
+
+        // Help command.
+        newCommand('help', channelMsg, function(arg){
+          cmd.arg = arg;
+          commands.execute.help(cmd);
         }, 'yes', 'yes');
 
       //setAlias method:
@@ -459,41 +478,21 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes');
       //end purge execute command.
 
-      //legacy help method
-      if(cmdIs('help', channelMsg)){
-        try {
-          var cmd = help;
-          if ( hasArgs('help', channelMsg) === false ) {
-            //no arguments so generate normal help and send to DM for user;
-            console.log(generateHelp());
-            bot.sendMessage({
-              to: userID,
-              message: generateHelp()
-            }, function(err, resp){
-              if (err !== null) console.log(err);
+      // //set global cmd prefix;
+      // if (message.substring(0,10) === prefix + 'setprefix'){
+      //   try {
+      //     setprefixCmd(user, userID, channelID, message);
+      //   } catch (e) {
+      //     console.log(e);
+      //   };
+      // }
+      // //end set global cmd prefix
 
-            })
-          } else {//command has arguments
-          //  console.log(getArg(prefix + 'help', message))
-            var helpItem = help[getArg(prefix + 'help', channelMsg, channelID)];
-            var outputHelpCmdText = "```" + "Description: " + helpItem.desc + '\n \n' + "Usage: " + prefix + helpItem.usage + "```";
-              respond(outputHelpCmdText, channelID);
-          }
-        } catch(e) {
-          console.log(e);
-        }
-      }
-      //end help
-
-      //set global cmd prefix;
-      if (message.substring(0,10) === prefix + 'setprefix'){
+      newCommand('setprefix', channelMsg, function(arg){
         try {
           setprefixCmd(user, userID, channelID, message);
-        } catch (e) {
-          console.log(e);
-        };
-      }
-      //end set global cmd prefix
+        } catch(e){ console.log(e) }
+      })
 
       //change status
       if (cmdIs('status', message)){
@@ -738,6 +737,7 @@ bot.on('message', function(user, userID, channelID, message, event){
         // end spotgrab start
       } catch(e) {console.log(e); };
       });//end new command
+
       var testArray;
       //view playlist
       newCommand('playlist', channelMsg, function(arg){
@@ -1229,8 +1229,8 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       newCommand('queue', channelMsg, function(){
 
-
-          notify('Hey **' + user + '** ' + prefix + 'queue was changed to ' + prefix + 'q. Just a quicker way of doing it!' );
+          notify('Hey **' + user + '** ' + prefix + 'queue was changed to ' +
+          prefix + 'q. Just a quicker way of doing it!' );
 
       });
 
@@ -1441,78 +1441,53 @@ bot.on('message', function(user, userID, channelID, message, event){
       }
       //end basic responses
 
-      //restart bot method / command;
-      if (channelMsg.substring(0, message.length) === prefix + 'restart'){
+
+      newCommand('restart', channelMsg, function(){
         try {
           if (isPlayerLoaded()){
-            respond(":warning: I'm currently playing music. Would you like me to interrupt and force restart?", channelID);
-              /*bot.on('message', function (user, userID, channelID, message, event){
+          respond(":warning: I'm currently playing music. Would you like me to interrupt and force restart?", channelID);
 
-                if (message.toLowerCase() === 'yes' || message.toLowerCase() === 'y'){
+          var convo = new conversation(channelID, userID);
+
+          convo.start(function(channelID, message, userIDs, messageID){
+
+
+              if (message.toLowerCase() === 'yes' || message.toLowerCase() === 'y'){
                   bot.setPresence({game: {name: 'Restarting...'}});
                   bot.sendMessage({channelID: channelID, message: "Ok fam. Restarting."}, function (err){
-                    if (err !== null){log(err)};
-                    log(user + ' requested a hard restart.');
-                    console.log('/restartChild');
-                  });
+                      if (err !== null){log(err)};
+                      log(user + ' requested a hard restart.');
+                      console.log('/restartChild');
+                      });
+                      convo.stop()
+                      convo.clear();
                 } else if (message.toLowerCase() === 'no' || message.toLowerCase() === 'n'){
                   respond("Alright. I'll wait till I leave voice then restart. If I don't leave automatically, use " + prefix + "lv or " + prefix + "leavevoice", channelID);
+                      convo.clear();
+                      convo.stop()
+
                   setInterval(checkIfPlayerLoadedAndRestart, 6000);
+
                   function checkIfPlayerLoadedAndRestart(){
                     if (isPlayerLoaded() === false){
                       respond("Finished playing through voice. Restarting now.", channelID);
-                      bot.setPresence({game: {name: 'Restarting...'}});
-                      console.log('/restartChild');
+                        bot.setPresence({game: {name: 'Restarting...'}});
+                          console.log('/restartChild');
                     }
                   }
-                }//end check to force restart
+              }//end check to force restart
 
-            });//end on message event.*/ //legacy on 'message' event.
-            var convo = new conversation(channelID, userID);
+            //timeout listening to convo
+            setTimeout(convo.stop, 60000);
+          });
+        } else {
 
-            convo.start(function(channelID, message, userIDs, messageID){
+          bot.setPresence({game: {name: 'Restarting...'}});
 
-
-                if (message.toLowerCase() === 'yes' || message.toLowerCase() === 'y'){
-                    bot.setPresence({game: {name: 'Restarting...'}});
-                    bot.sendMessage({channelID: channelID, message: "Ok fam. Restarting."}, function (err){
-                        if (err !== null){log(err)};
-                        log(user + ' requested a hard restart.');
-                        console.log('/restartChild');
-                        });
-                        convo.stop()
-                        convo.clear();
-                  } else if (message.toLowerCase() === 'no' || message.toLowerCase() === 'n'){
-                    respond("Alright. I'll wait till I leave voice then restart. If I don't leave automatically, use " + prefix + "lv or " + prefix + "leavevoice", channelID);
-                        convo.clear();
-                        convo.stop()
-
-                    setInterval(checkIfPlayerLoadedAndRestart, 6000);
-
-                    function checkIfPlayerLoadedAndRestart(){
-                      if (isPlayerLoaded() === false){
-                        respond("Finished playing through voice. Restarting now.", channelID);
-                          bot.setPresence({game: {name: 'Restarting...'}});
-                            console.log('/restartChild');
-                      }
-                    }
-                }//end check to force restart
-
-
-
-
-              //timeout listening to convo
-              setTimeout(convo.stop, 60000);
-            });
-          } else {
-
-            bot.setPresence({game: {name: 'Restarting...'}});
-
-            console.log('/restartChild');
-          }
-        } catch(e){ console.log(e); };
-      }
-      //end restart bot method
+          console.log('/restartChild');
+        }
+      } catch(e){ console.log(e); };
+      }, 'yes', 'yes');
 
       //set username method;
       newCommand('setusername', channelMsg, function(arg){
@@ -1566,8 +1541,9 @@ bot.on('message', function(user, userID, channelID, message, event){
       }, 'yes');
       //end debug console player
 
-      //quote method;
-      if (cmdIs('quote', channelMsg, channelID)){
+      // quote method;
+
+      newCommand('quote', channelMsg, function(arg){
         try {
           if (channelMsg !== prefix + 'quote'){
           var msgArray = [];
@@ -1610,7 +1586,11 @@ bot.on('message', function(user, userID, channelID, message, event){
           }
 
         } catch(e) { console.log(e); };
-      }
+      }, 'yes');
+
+      // if (cmdIs('quote', channelMsg, channelID)){
+      //
+      // }
       //end quote method;
 
       //test BUDI
@@ -1884,34 +1864,53 @@ bot.on('message', function(user, userID, channelID, message, event){
   //function to automate adding new commands
   function newCommand(commandName, message, func, arg, hideUsage){
     try {
-      if (cmdIs(commandName, message)){//checks to see if cmd contained within received message & that cooldown is not active.
-        if (cmdIs(cmdToCooldown, message) && cooldown){} else {
-            //proceed with command method;
+        // Checks to see if cmd contained within received message & that cooldown is not active.
+        if (!cmdIs(commandName, message)) return; // Not the command
+        if (cmdIs(cmdToCooldown, message) && cooldown) return; // Exit on active cooldown
+
+        try {
+          // Check if user has permission.
+          var permCache = permissions.hasAccess(userID, commandName);
+
+        // Stops command execution and returns message on no access.
+        if ( !permCache.result ) {
+          return notify(
+            ":no_entry:  **You don't have permission to use** " +
+            "`"+ prefix + commandName+"`" +
+            "\n\n:small_red_triangle_down:  **Reason**: " +
+            permCache.reason
+          , 30000);
+        }
+
+      } catch(e){ console.log('[MAIN.JS > newCommand] Assigning permcache variable: ' + e); return;};
+
+            // Proceed with command method;
             if (arg === 'yes'){// requires arguments;
               if (hasArgs(commandName, message)){//command has arguments, proceed to method;
                 var commandArgs = getArg(prefix + commandName, message);
-                            func(commandArgs);
+                func(commandArgs);
               }  else {//no arguments, return usage if no arguments required.
                 if (typeof help[commandName] !== 'undefined' && typeof hideUsage === 'undefined'){
                   respond('```Usage: ' + prefix + help[commandName].usage + '```', channelID);
                 } else {
                   var commandArgs = getArg(prefix + commandName, message);
-                              func(commandArgs);
+                  func(commandArgs);
                 }
               }
-            } else {//command doesn't require arguments
+            } else {
+              // Command doesn't require arguments
               func();
             }
 
-            //after 3 seconds, delete the user msg;
+            // After 30 seconds, delete the user msg;
             try {
-              setTimeout(clearLastMsg, 3000);
+              setTimeout(clearLastMsg, 30000);
             } catch(e) {console.log(e); };
-        }
 
-      }
+
+
     } catch (e){
-      console.log(e);
+      console.log('[MAIN.JS > newCommand]: ' + e);
     }
   }
   //end new command function;

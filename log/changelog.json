@@ -1,7 +1,14 @@
 {
-  "posted": true,
-  "ver": 0.51,
+  "posted": false,
+  "ver": 0.6,
   "additions": [
-    "Fixed issue where saved playlists would skip every song and not play among other stability improvements."
+    "Added new permissions system which works alongside the new roles.",
+    "Redesigned the !help command, check it out. (It's beautiful).",
+    "!help will only list the commands you have access to, unless you're checking a specific command, e.g. `!help restart`",
+    "Upcoming:",
+    "Permissions for command-specific features (e.g. voteskip vs force skip)",
+    "Ranking system",
+    "Revamped audio playback",
+    "Music playback bug fixes and stability improvements (I know it's quite broken for now)"
   ]
 }
