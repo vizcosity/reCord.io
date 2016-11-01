@@ -131,13 +131,6 @@
       "usage": "filter <add / list / remove>",
       "group": "admin"
     },
-    "attitude": {
-      "access": 5,
-      "scope": "none",
-      "desc": "Pesters you about using other bots.",
-      "usage": "attitude",
-      "group": "general"
-    },
     "clean": {
       "access": 3,
       "scope": "none",

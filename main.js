@@ -55,7 +55,6 @@ var holdConversation = false, conversationLog = []; //variables for conversation
 var desiredResponseChannel;
 var audioFilePlaying = false;
 var sitcom = false;
-var attitude = config.attitude;
 var delay = 0, activeDelay = delay, cmdToCooldown = '',
     cooldown = false, cooldownResponse = 'Loading...',
     delayCountdown, cdCount = 0;
@@ -199,11 +198,12 @@ var conversationHandlerLogic;
 
 bot.on('message', function(user, userID, channelID, message, event){
 
+  if (!message.containsPrefix()) return;
 
+  if (isBot(userID)) return;
 
-  if (userID !== bot.id && userID !== '218772784057286656' && userID !== '205391126293774336') {//ignore record & record dev.
-
-  if (!bot.channels[channelID]) return console.log('[Main.js > Channel Check] Rejected channel. Likely a DM instance.');
+  if (!bot.channels[channelID])
+    return console.log('[Main.js > Channel Check] Rejected channel. Likely a DM instance.');
 
   // Attempt to set ServerID.
   try {
@@ -256,92 +256,6 @@ bot.on('message', function(user, userID, channelID, message, event){
   cooldownHandler(message, user);
   //end cooldown handler
 
-  //check if wildbot is being used
-  if (message.substring(0,2) === '++' && message !== '++leave-voice' && message.substring(0,'++rule34'.length) !== '++rule34' && attitude === true){
-      if (message === '++'){
-        bot.sendMessage({
-          to: channelID,
-          message: 'nice try ' + user + ' im not gonna get pissed off that easily, but fuck u still',
-          typing: true
-        });
-      } else {
-      respond("Dude...", channelID);
-      setTimeout(function(){
-        bot.sendMessage({
-          to: channelID,
-          message: "seriously?",
-          typing: true
-        }, function(){
-        bot.sendMessage({
-          to: channelID,
-          message: "I'm like, right here",
-          typing: true
-        }, function(){
-          bot.sendMessage({
-            to: channelID,
-            message: "ouch",
-            typing: "true"
-          }, function(){
-            bot.sendMessage({
-              to: channelID,
-              message: 'wtf did i ever do to u ' + user,
-              typing: true
-            }, function(){
-              if (message === '++voice'){
-                bot.sendMessage({
-                  to:channelID,
-                  message: 'FUCK YOU WILDBOT',
-                  typing: true
-                }, function(){
-                  bot.sendMessage({
-                    to: channelID,
-                    message: '++leave-voice',
-                    typing: true
-                  }, function(){
-                    bot.sendMessage({
-                      to: channelID,
-                      message: "there, that's better. try !queue next time fam. ;)",
-                      typing: true
-                    });
-                  })
-                })
-              }
-            });
-          });
-        });
-      });
-    }, 1000);}
-
-
-    } else if (message.substring(0, '++rule34'.length) === '++rule34'){
-    try  {
-      var disgustResponses = [
-        'wtf dude u nasty',
-        'ewwww',
-        'i hope you feel ashamed fam',
-        'i actually feel bad for wildbot, poor piece of shit has to deal with your horny fucks',
-        'u guys need help',
-        'seriously?',
-        mention(userID) + ' im actually ashamed of you',
-        'so much disappoint rn'
-      ];
-
-      var chooseRandomResponse = disgustResponses[randomIntFromInterval(0,disgustResponses.length)];
-      bot.sendMessage({
-        to: channelID,
-        message: chooseRandomResponse,
-        typing: true
-      }, function(){
-        log('Responded to ' + user + ' with ' + chooseRandomResponse)
-      })
-    } catch(e) {
-      console.log(e);
-    };
-  };
-  //end cheeky check for other bot.
-
-  //prefix & alias check:
-  if (message.substring(0,1) === prefix) {//message contains cmd prefix, proceed to cmd methods;
     //aliascheck
     var aliasCheck = message.substring(prefix.length, message.length);
     //check for alias and apply msg swap.
@@ -353,7 +267,7 @@ bot.on('message', function(user, userID, channelID, message, event){
   //end prefix & alias check;
 
   //log command and user:
-  log(user + " tried to execute: " + message);
+  log('[COMMAND] ('+user+') '+ message );
   //end log command.
 
   // Main command list methods;
@@ -444,25 +358,6 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       }, 'yes');
       //end shortcut method.
-
-      //set attitude
-      newCommand('attitude', channelMsg, function(){
-        if (attitude === false){
-          notify('**Attitude enabled**. Wildbot can suck it.');
-          attitude = true;
-          fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
-            if (err !== null){log(err)};
-            log(user + ': ' + userID + ' toggled attitude to: "' + attitude + '"');
-          });
-          } else {
-          //attitude is already true, turn to false;
-          attitude = false;
-  		  notify('**Attitude disabled**. I will no longer pester you about wildbot.');
-            log(user + ': ' + userID + ' toggled attitude to: "' + attitude + '"');
-          }
-
-      });
-      //end set attitude
 
       //purge method:
       newCommand('purge', channelMsg, function doPurge(arg){
@@ -1810,8 +1705,6 @@ bot.on('message', function(user, userID, channelID, message, event){
       });
       //end clean chat
 
-    }//end check to see if sender is not bot.
-    }//end conditional for checking command prefix, other messages ignored.
 
 
   //FUNCTIONS THAT REQUIRE MESSAGE SCOPE;
@@ -2274,6 +2167,16 @@ bot.on('disconnect', function(errMsg, code){
 
 //GLOBAL FUNCTIONS;
 
+// Does message contain prefix?
+String.prototype.containsPrefix = function(){
+  return (this.substring(0,prefix.length) == prefix);
+}
+
+// Checks if the messages comes from a bot
+function isBot(userID){
+  return bot.users[userID].bot;
+}
+
 //filtering
 function filter(msg, eventINF){
     var filteredWords = config.filter;
@@ -2581,14 +2484,15 @@ function getArg(cmd, msg, channelID){
     var args = msg.substring(cmd.length + 1, msg.length);
     if (args.length > 0){//arguments exist;
       return args;
-    } else {// no arguments, return usage.
-      try {
-        bot.sendMessage({
-          to: channelID,
-          message: help.usage[cmd]
-        });
-      } catch(e){ console.log("Couldn't send usage message for command: " + cmd)};
     }
+    // } else {// no arguments, return usage.
+    //   try {
+    //     bot.sendMessage({
+    //       to: channelID,
+    //       message: help.usage[cmd]
+    //     });
+    //   } catch(e){ console.log("Couldn't send usage message for command: " + cmd)};
+    // }
   } catch(e) {console.log(e); };
 }
 //end get command arguments function
@@ -2655,8 +2559,7 @@ function hasArgs(cmd, message, type){
         if (typeof getArg(cmd, message) === type){ return true} else {console.log(cmd + ' has args ' + getArg(cmd, message) + ' but not correct type'); return false};
       }
     } else {
-      log(cmd + ' has no arguments. Returning false');
-      return false
+      return false;
     }
   } catch(e){ console.log(e); };
 }

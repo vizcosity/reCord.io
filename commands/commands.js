@@ -244,7 +244,7 @@ function commandList(bot){
 
       //Administration
 
-        //edit nickname
+        // Edit nickname [Partial implementation]
         nickname: function(cmd){
           msg.setCID(cmd.channelID);
           var serverID = bot.channels[cmd.channelID].guild_id;
