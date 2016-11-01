@@ -7,7 +7,7 @@ function commandList(bot){
   var msg = new messenger(bot);
 
 
-  //wrap in try to (hopefully) prevent some crashes.
+  // Wrap in try to (hopefully) prevent some crashes.
   try {
     //executable commands.
     this.execute = {
@@ -114,8 +114,37 @@ function commandList(bot){
             ":ping_pong: Please be more careful with that. Almost hit me in the eye!"
           ];
 
-          msg.notify(responses[Math.floor(Math.random() * responses.length)]);
+          var userMsgTimestamp = cmd.event.d.timestamp;
+          var userMS = userMsgTimestamp.split('.')[1].split('+')[0].substring(0,3);
+          var pingMessage = responses[Math.floor(Math.random() * responses.length)];
 
+          bot.sendMessage({
+            to: cmd.channelID,
+            message: pingMessage
+          }, function(err, res){
+            // This will detect the 'ms' delay between messages.
+
+            // Get the timestamp of the command message.
+
+            // Grab the message id, and edit it to append the delay in 'ms'.
+            try {
+              if (err) console.log(err);
+              var msgID = res.id;
+              var botMsgTimestamp = res.timestamp;
+              var botMS = botMsgTimestamp.split('.')[1].split('+')[0].substring(0,3);
+
+              var latency = (parseInt(botMS) - parseInt(userMS)) > 0 ?
+              parseInt(botMS) - parseInt(userMS) : '1000+';
+              var latencyString = '`'+latency + ' ms`';
+
+              bot.editMessage({
+                channelID: cmd.channelID,
+                messageID: msgID,
+                message: pingMessage + ' ' + latencyString
+              });
+
+            } catch(e){ log('[PING LATENCY] ' + e)}
+          });
 
         },
 
@@ -135,10 +164,10 @@ function commandList(bot){
 
         msg.setCID(cmd.channelID);
         if (!cmd.arg){
-          // Set the cID to the userID.
-
-          msg.setCID(cmd.uID);
           // Generate normal full help method. (Arguments are empty.)
+
+          // Set the cID to the userID.
+          msg.setCID(cmd.uID);
 
           function generateHelpList(){
             // Command groups & headers.
@@ -173,7 +202,6 @@ function commandList(bot){
               msg.send(helpList[i]);
             }
           });
-
 
           return;
 
@@ -268,7 +296,7 @@ function commandList(bot){
 
   } catch(e){ log(e); };
 
-  //logging function
+  // Logging function
   function log(msg){
     console.log('[COMMAND] ' + msg);
   };

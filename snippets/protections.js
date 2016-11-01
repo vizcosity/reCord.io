@@ -1,4 +1,6 @@
 function protectionCheck(bot){
+  // The purpose of this function
+
   
 }
 
