@@ -59,14 +59,16 @@ var delay = 0, activeDelay = delay, cmdToCooldown = '',
     cooldown = false, cooldownResponse = 'Loading...',
     delayCountdown, cdCount = 0;
 
+var logicForMessageHandler;
+
 bot.on('ready',function(){
 
   // Set up a new commandlist instance.
   commands = new commandList(bot);
   // This passes the bot object so that it is accessible in the speerate commands.js file.
 
+  // List the servers the bot is connected to.
   var servers = '';
-
   for (var key in bot.servers) {
     servers += '\n'+bot.servers[key].name+': ' + key + ' [' + Object.keys(bot.servers[key].members).length + ']';
   }
@@ -77,32 +79,8 @@ bot.on('ready',function(){
   //server logging
   serverLog(bot);
 
-  // CHANGELOG HANDLER
-  var changelog = require('./log/changelog.json');
-  // Check for any changes that need to be presented.
-  if (!changelog.posted) {
-    var changesStringed = '';
-
-    for (var i = 0; i < changelog.additions.length; i++){
-      var x = changelog.additions[i];
-      if (i !== changelog.additions.length - 1){
-        changesStringed += '- ' + x + '\n';
-      } else {
-        changesStringed += '- ' + x;
-      }
-    }
-
-    respond(":bacon: __**"+bot.username+" updated!**__\nVersion: "
-    + changelog.ver + " :fire:\n\nChanges:\n" + changesStringed, "128319520497598464");
-
-    changelog.posted = true;
-    fs.writeFile('./log/changelog.json', JSON.stringify(changelog, null, 2), function callback(err){
-      if (err !== null){log(err)};
-    });//end update soundlog file.
-
-
-  }
-
+  // Changelod HANDLER
+  changelogHandler(bot);
 
   // Change the username if it is set in config.
   if (bot.username !== config.name){
@@ -198,10 +176,6 @@ var conversationHandlerLogic;
 
 bot.on('message', function(user, userID, channelID, message, event){
 
-  if (!message.containsPrefix()) return;
-
-  if (isBot(userID)) return;
-
   if (!bot.channels[channelID])
     return console.log('[Main.js > Channel Check] Rejected channel. Likely a DM instance.');
 
@@ -210,31 +184,10 @@ bot.on('message', function(user, userID, channelID, message, event){
     var serverID = bot.channels[channelID].guild_id;
   } catch(e){ console.log('[Main.js > Set ServerID] ' + e)}
 
+  configCheck(serverID);
+
   var permissions = new permissionHandler(bot, serverID);
 
-
-  // Check if the server has been configured
-  // If not, then set it up in config.json.
-  try {
-    if (typeof config.serverSpecific[serverID] === 'undefined'){
-      // Server is not set up. Add server entry to config.json.
-      config.serverSpecific[serverID] = {
-        "logChannel": null,
-        "publicLogChannel": null,
-        "playerChannel": null,
-        "volume": 0.1
-      };
-
-      //updateJSON(config, './config.json');
-
-      fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
-        if (err !== null){log(err)};
-        console.log('Configured '+bot.servers[serverID].name + ': ' + serverID);
-      });
-
-      config = require('./config.json');
-    }
-  } catch(e){ console.log('[Main.js > Initial server check] '+e)};
 
   // Attempt to find music channel.
   try {
@@ -255,6 +208,10 @@ bot.on('message', function(user, userID, channelID, message, event){
   //cooldown handler
   cooldownHandler(message, user);
   //end cooldown handler
+
+  if (!message.containsPrefix()) return;
+
+  if (isBot(userID)) return;
 
     //aliascheck
     var aliasCheck = message.substring(prefix.length, message.length);
@@ -316,7 +273,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
         //ping command with a tad more character.
         newCommand('ping', channelMsg, function(arg){
-          //shouldn't return usage.
+        //shouldn't return usage.
 
           cmd.arg = arg;
           commands.execute.ping(cmd);
@@ -412,12 +369,6 @@ bot.on('message', function(user, userID, channelID, message, event){
         } catch (e) { console.log(e) };
       }
       //end get msg (Debug)
-
-      //anonmsg
-      if (cmdIs('anonmsg', message)){
-
-      }
-      //end anonmsg
 
       newCommand('anonmsg', channelMsg, function(arg){
         try {
@@ -670,7 +621,10 @@ bot.on('message', function(user, userID, channelID, message, event){
 
                   //check if the playlist is empty and respond to user accordingly.
                   if (playlist.length !== 0){
-                    notify("I couldn't remove your playlist. This could be due to one of three things: \n\n**1).** You tried to remove a Global / Server Specific playlist that you don't have permission to remove.\n**2).** You entered the wrong number for the playlist id.\n**3).** I could not find the playlist.", 30000);
+                    notify("I couldn't remove your playlist. This could be due to one of three things:"+
+                    " \n\n**1).** You tried to remove a Global / Server Specific playlist that you don't"+
+                    " have permission to remove.\n**2).** You entered the wrong number for the playlist "+
+                    "id.\n**3).** I could not find the playlist.", 30000);
 
                   } else {
                     notify("Playlist: **" + playlistToRemoveName + "** removed successfully.");
@@ -962,26 +916,29 @@ bot.on('message', function(user, userID, channelID, message, event){
       //queueing songs.
       newCommand('q', channelMsg, function(link){
         try {
-          if (typeof link === "undefined"){
-            if (isPlayerLoaded()){
+          // Print queue handler.
+          if (!link){
+            if (isPlayerLoaded())
               Player.printPlaylist();
-            } else {
+            else
               notify('There is nothing playing at the moment.');
-            }
           } else {
+            // Handle queue query.
             var initialmsgID = event.d.id;
-            if (audioFilePlaying){error('Local audio file currently playing. Please ' + prefix + 'lv (' + prefix + 'leave-voice) and try queuing again.')} else {
+            if (audioFilePlaying){
+              error('Local audio file currently playing. Please '
+              + prefix + 'lv (' + prefix + 'leave-voice) and try queuing again.')
+            } else {
               voiceChannelID = bot.servers[serverID].members[userID].voice_channel_id;
-              //check to see if a playlist was running before bot left voice.
+              // Check to see if a playlist was running before bot left voice.
 
-              if (wasPlaylistRunning(serverID) && !isPlayerLoaded()){//a playlist was on, and the Player is currently off.
+              if (wasPlaylistRunning(serverID) && !isPlayerLoaded()){
+                // A playlist was on, and the Player is currently off.
                 console.log('Detected playlist was running.')
                 var resumePlaylistHandler = new conversation(channelID, userID);
                 respond(':warning: It looks like a playlist was running before I left voice. Would you like to resume?', channelID);
                 resumePlaylistHandler.start(function(channelID, message, userIDs, messageID){
-
                   var response = message.toLowerCase();
-
                   if (response === 'yes'){
                     Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ', '2de63110145fafa73408e5d32d8bb195', voiceChannelID); //start the player.
                     Player.setAnnouncementChannel(channelID);
@@ -999,10 +956,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                   setTimeout(resumePlaylistHandler.clear, 15000);
                 });
               } else {
-
                 queueMethod(link);
-
-              //allow queue check.
             };
 
           }//end check for arguments to returrn the queue or not.
@@ -1762,17 +1716,17 @@ bot.on('message', function(user, userID, channelID, message, event){
           // Check if user has permission.
           var permCache = permissions.hasAccess(userID, commandName);
 
-        // Stops command execution and returns message on no access.
-        if ( !permCache.result ) {
-          return notify(
-            ":no_entry:  **You don't have permission to use** " +
-            "`"+ prefix + commandName+"`" +
-            "\n\n:small_red_triangle_down:  **Reason**: " +
-            permCache.reason
-          , 30000);
-        }
+          // Stops command execution and returns message on no access.
+          if ( !permCache.result ) {
+            return notify(
+              ":no_entry:  **You don't have permission to use** " +
+              "`"+ prefix + commandName+"`" +
+              "\n\n:small_red_triangle_down:  **Reason**: " +
+              permCache.reason
+            , 30000);
+          }
 
-      } catch(e){ console.log('[MAIN.JS > newCommand] Assigning permcache variable: ' + e); return;};
+        } catch(e){ console.log('[MAIN.JS > newCommand] Assigning permcache variable: ' + e); return;};
 
             // Proceed with command method;
             if (arg === 'yes'){// requires arguments;
@@ -1973,21 +1927,33 @@ bot.on('message', function(user, userID, channelID, message, event){
   }
   //end clear last msg
 
-  //queue method
+  // Queue method
   function queueMethod(link){
-    checkForPlayerChannel();
-    console.log('Proceeding to queue function.');
-    if (isPlayerLoaded() === false){Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ', '2de63110145fafa73408e5d32d8bb195', voiceChannelID);} //bot not on yet, initiate and then queue.
-      var requestURL = link.split(' ')[0];
-      //console.log(requestURL.split('/')[0]);
 
+    // Check if the command was run in the designated 'player' channel.
+    // If not, forward the response to the player channel accordingly.
+    checkForPlayerChannel();
+
+    console.log('Proceeding to queue function.');
+
+    // If the Player module has not be initialized, initialize it.
+    if (!isPlayerLoaded()){
+      Player = new player(bot, 'AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ',
+       '2de63110145fafa73408e5d32d8bb195', voiceChannelID);
+     }
+
+      var requestURL = link.split(' ')[0];
+
+      // Is the URL valid check.
       if (requestURL.split('/')[0] === 'http:' || requestURL.split('/')[0] === 'https:'){
-        console.log(requestURL);
-      if (requestURL.indexOf('list=') !== -1){
+
+      // Is the URL a playlist?
+      if (requestURL.indexOf('list=') !== -1) {
         Player.setAnnouncementChannel(channelID);
         console.log(requestURL);
         queuePlaylist(requestURL);
-        //define the queueplaylist function
+
+        // Playlist Handler
         function queuePlaylist(link){
           var baseUrl = link.split('/')[2];
           if (baseUrl !== 'www.youtube.com'){
@@ -2010,10 +1976,13 @@ bot.on('message', function(user, userID, channelID, message, event){
         }
         //end queue playlist
       } else {
+        // If the request is a link AND not a playlist URL,
+        // Feed it to the player.
         Player.setAnnouncementChannel(channelID);
         Player.enqueue(user, userID, requestURL);
       }
-    } else {//no link, search instead
+    } else {
+      // No link, search instead
       var query = link;
       log('Attempting to queue: ' + query);
       var respondChannel = channelID;
@@ -2021,7 +1990,9 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       function ytSearchPlayerInterface(query, amtOfResults){
         var fallbackQuery = query;
-        youTube.search(query, amtOfResults, function(error, results){
+
+        youTube.search(query, amtOfResults, function(error, results) {
+
           if (error !== null){notify('YT Search responded with **error**. Wait a sec and try again.'); log(error);};
           var allowedResults = [];
           var videoSearchQueryID;
@@ -2029,9 +2000,14 @@ bot.on('message', function(user, userID, channelID, message, event){
             if (typeof results === 'undefined' && typeof results.items === 'undefined') {
               //no items have been found
               //check for the reason that this happened.
-              var reason = error !== null ? "\n\n**Reason: **"+error.errors[0].reason + "\n\nThis is unfortunately caused by the YouTube API. If the quota is exceeded, there's nothing I can do. You need to wait till it resets." : '';
+              var reason = error !== null ? "\n\n**Reason: **"
+              +error.errors[0].reason +
+              "\n\nThis is unfortunately caused by the YouTube API."+
+              " If the quota is exceeded, there's nothing I can do."+
+              " You need to wait till it resets." : '';
               console.log('No items were found. Reason: '+ error.errors[0].reason);
               return notify("I couldn't find any results."+reason, 15000);
+
             } else {
               if (results.items.length > 0){//results obtained Successfully;
                 for (var i = 0; i < amtOfResults; i++){
@@ -2047,8 +2023,11 @@ bot.on('message', function(user, userID, channelID, message, event){
           } catch(e){ console.log(e); };
 
           if (allowedResults.length > 0){ // results obtained.
-            var stringedResults = "Below are the results. Which result would you like to queue? (Respond with number of item you would like).\n\nChoosing the first option if you don't respond in 8 seconds: \n";
+            var stringedResults = "Below are the results. Which result would you like to queue? "+
+            "(Respond with number of item you would like).\n\nChoosing the first option if you "+
+            "don't respond in 8 seconds: \n";
 
+            // Compiling the results to be displayed.
             for (var i = 0; i < allowedResults.length; i++){
               if (i !== allowedResults.length - 1){
                 stringedResults += '**' + i + '.** ' + allowedResults[i].title + '\n';
@@ -2056,76 +2035,69 @@ bot.on('message', function(user, userID, channelID, message, event){
                 stringedResults += '**' + i + '.** ' + allowedResults[i].title + "\n\n **More** | **None / Cancel**";
               };
             };
+
             var requestUser = userID;
             var searchQueryMsgID;
+            var queryHandler;
             bot.sendMessage({
               to: respondChannel,
               message: stringedResults
             }, function(err, response){
               try {
                 searchQueryMsgID = response.id;
+                // Launch the query handler AFTER sending the message?
+                handleQuery();
               } catch(e){console.log(e);};
               log(searchQueryMsgID);
             });
             setTimeout(hasUserRespondedToYTSearchQuery, 8000);//wait 4 seconds for user response.
             var deleteMsgsAfterAWhileID = [];
-            var queryHandler = new conversation(channelID, requestUser);
-            queryHandler.start(function(channelID, message, userIDs, messageID){
-              //console.log('[QUERY INTERFACE]: ' + message);
-              //console.log(userIDs + ': ' + requestUser);
-              if (userIDs === requestUser){
-                if (typeof videoSearchQueryID === 'undefined'){
-                  if (message.toLowerCase() === 'none' || message.toLowerCase() === 'cancel') {//extra options.
-                    bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID});
-                    notify('**Cancelled search query.**');
-                    videoSearchQueryID = 'null';
-                    //bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID}); //removes the search query message.
-                    queryHandler.clear('both');
-                    return;
+
+            function handleQuery(){
+              var queryHandler = new conversation(channelID, requestUser);
+
+              queryHandler.start(function(channelID, message, userIDs, messageID){
+                console.log('[QUERY INTERFACE]: ' + message);
+                console.log('ID of recieved message: '+userIDs
+                + ': ' + 'ID from requester: "' + requestUser);
+
+                if (userIDs === requestUser){
+                  if (typeof videoSearchQueryID === 'undefined'){
+                    if (message.toLowerCase() === 'none' || message.toLowerCase() === 'cancel') {//extra options.
+                      bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID});
+                      notify('**Cancelled search query.**');
+                      videoSearchQueryID = 'null';
+                      queryHandler.clear('both');
+                      // return;
+                    }
+                    if (message.toLowerCase() === 'more'){
+                      videoSearchQueryID = 'null';
+                      bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID});
+                      ytSearchPlayerInterface(query, amtOfResults + 5);
+                      // return;
+                    }
+                    var index = parseInt(message); //change the recieved message into a number.
+                    if (typeof allowedResults[index] !== 'undefined'){//check if number entered.
+                      videoSearchQueryID = allowedResults[index].id;
+                      bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID}); //removes the search query message.
+                      //respond('Queueing ' + allowedResults[index].title, respondChannel);
+                      queryHandler.clear('both');
+                      notify('**Queueing** ' + allowedResults[index].title);
+
+                      var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
+                      Player.setAnnouncementChannel(respondChannel);
+                      Player.enqueue(user, userID, requestURLFromQuery);
+                      // return;
+                    } // If id of user msg response is valid check end.
                   }
-                  if (message.toLowerCase() === 'more'){
-                    videoSearchQueryID = 'null';
-                    bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID});
-                    ytSearchPlayerInterface(query, amtOfResults + 5);
-                    //bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID}); //removes the search query message.
-                    //queryHandler.clear('both');
-                    return;
-                  }
-                  var index = parseInt(message); //change the recieved message into a number.
-                  if (typeof allowedResults[index] !== 'undefined'){//check if number entered.
-                    videoSearchQueryID = allowedResults[index].id;
-                    bot.deleteMessage({channelID: respondChannel, messageID: searchQueryMsgID}); //removes the search query message.
-                    //respond('Queueing ' + allowedResults[index].title, respondChannel);
-                    queryHandler.clear('both');
-                    notify('**Queueing** ' + allowedResults[index].title);
-                    /*bot.sendMessage({
-                      to: respondChannel,
-                      message: '**Queueing** ' + allowedResults[index].title
-                      }, function (error, response){
-                      if (error !== null){log(error)};
-                      if (response !== 'undefined'){
-                        deleteMsgsAfterAWhileID.push(response.id);
-                        console.log(deleteMsgsAfterAWhileID);
-                        setTimeout(function(){
-                          bot.deleteMessages({
-                            channelID: respondChannel,
-                            messageIDs: deleteMsgsAfterAWhileID
-                          });
-                        }, 3000);
-                      }
-                    });
-                    //end notify of queueing */
-                    var requestURLFromQuery = 'https://www.youtube.com/watch?v=' + videoSearchQueryID;
-                    Player.setAnnouncementChannel(respondChannel);
-                    Player.enqueue(user, userID, requestURLFromQuery);
-                    return;
-                  }//if id of user msg response is valid check end.
-                }
-              }//make sure you listen to the orgiginal requester only.
-              try {
-                setTimeout(queryHandler.stop(), 10000) //stop convo automatically in 10 seconds.
-              } catch(e){ console.log(e); };
-            });
+                } // Make sure you listen to the original requester only.
+
+                // UNSTABLE CODE:
+                // try {
+                //   setTimeout(queryHandler.stop(), 10000) //stop convo automatically in 10 seconds.
+                // } catch(e){ console.log(e); };
+              });
+            }
 
             function hasUserRespondedToYTSearchQuery(){
               if (typeof videoSearchQueryID === 'undefined'){//no input from user.
@@ -2148,7 +2120,7 @@ bot.on('message', function(user, userID, channelID, message, event){
         });//end yt search query.
 
       };
-
+      // Mega function which deals with the YT search query.
       ytSearchPlayerInterface(query, 5);
     }//end search
 
@@ -2164,6 +2136,39 @@ bot.on('disconnect', function(errMsg, code){
 });
 //end reconnect
 
+// ON READY FUNCTIONS
+// CHANGELOG HANDLER
+function changelogHandler(bot){
+  var changelog = require('./log/changelog.json');
+  // Check for any changes that need to be presented.
+  if (!changelog.posted) {
+    var changesStringed = '';
+
+    for (var i = 0; i < changelog.additions.length; i++){
+      var x = changelog.additions[i];
+      if (i !== changelog.additions.length - 1){
+        changesStringed += '- ' + x + '\n';
+      } else {
+        changesStringed += '- ' + x;
+      }
+    }
+
+    // respond(":bacon: __**"+bot.username+" updated!**__\nVersion: "
+    // + changelog.ver + " :fire:\n\nChanges:\n" + changesStringed, "128319520497598464");
+
+    bot.sendMessage({
+      to: "128319520497598464",
+      message: ":bacon: __**"+bot.username+" updated!**__\nVersion: "
+      + changelog.ver + " :fire:\n\nChanges:\n" + changesStringed
+    })
+
+    // Updated the 'posted' boolean in changelog json.
+    changelog.posted = true;
+    fs.writeFile('./log/changelog.json', JSON.stringify(changelog, null, 2), function callback(err){
+      if (err !== null){log(err)};
+    });//end update soundlog file.
+  }
+}
 
 //GLOBAL FUNCTIONS;
 
@@ -2211,6 +2216,34 @@ function filter(msg, eventINF){
 };
 //end filtering
 
+// Checks if the server has been configured.
+// CHANGE TO ON SERVER INV. Reference any related errors to this funciton.
+function configCheck(serverID){
+  // Check if the server has been configured
+  // If not, then set it up in config.json.
+  try {
+    if (!config.serverSpecific[serverID]){
+
+      // Server is not set up. Add server entry to config.json.
+      config.serverSpecific[serverID] = {
+        "logChannel": null,
+        "publicLogChannel": null,
+        "playerChannel": null,
+        "volume": 0.1
+      };
+
+      // Update the config file.
+      fs.writeFile('./config.json', JSON.stringify(config, null, 2), function callback(err){
+        if (err !== null){log(err)};
+        console.log('Configured '+bot.servers[serverID].name + ': ' + serverID);
+      });
+
+      // Update config cache.
+      config = require('./config.json');
+    }
+  } catch(e){ console.log('[Main.js > Initial server check] '+e)};
+}
+
 //logging:
 function log(Message){
   try {
@@ -2254,8 +2287,9 @@ function messageHandler(channelID, message, userID, messageID, userType){
   try {
     var type;
     //to run everything that isn't a command;
-      if (holdConversation && typeof logicForMessageHandler === 'function'){//run only if it is desired to hold a conversation & logic is not undefined & user isn't bot.
-        if (desiredResponseChannel === channelID){//proceed
+      if (holdConversation && typeof logicForMessageHandler === 'function'){
+        // Run only if it is desired to hold a conversation & logic is not undefined & user isn't bot.
+        if (desiredResponseChannel === channelID){
           conversationLog.push({
             'channelID': channelID,
             'userID': userID,
@@ -2275,15 +2309,26 @@ function messageHandler(channelID, message, userID, messageID, userType){
 }
 //end message handler
 
-//coonversation method.
+// Conversation method.
 function conversation(ConvoChannel, userID){
   try {
-    if (typeof userID !== 'undefined'){var desiredUser =  userID;} else {var desiredUser = '00000000000';}
+    // Check that the passed userID is valid. (Redundant)
+    if (typeof userID !== 'undefined'){
+      var desiredUser =  userID;
+    } else {
+      var desiredUser = '00000000000';
+    }
+
     desiredResponseChannel = ConvoChannel;
+
     this.start = function(inputFunc, callback){
-      log(inputFunc);
+      // log('input function for convo instance: ' + inputFunc);
+      // Set the global holdconvo variable to true.
       holdConversation = true;
-      logicForMessageHandler = inputFunc; //declares the function to execute the logic.
+
+      // Declares the function to execute the logic.
+      logicForMessageHandler = inputFunc;
+      // If the callback is a function, call it.
       if (typeof callback === 'function'){callback()};
     }
 
@@ -2485,14 +2530,6 @@ function getArg(cmd, msg, channelID){
     if (args.length > 0){//arguments exist;
       return args;
     }
-    // } else {// no arguments, return usage.
-    //   try {
-    //     bot.sendMessage({
-    //       to: channelID,
-    //       message: help.usage[cmd]
-    //     });
-    //   } catch(e){ console.log("Couldn't send usage message for command: " + cmd)};
-    // }
   } catch(e) {console.log(e); };
 }
 //end get command arguments function
