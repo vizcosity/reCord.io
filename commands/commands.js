@@ -1,10 +1,23 @@
 function commandList(bot){
-  //grab the useful message functions.
-  var messenger = require('../snippets/message.js');
-  var permissionsInfo = require('../config/permissions.json');
-  var permission = require('../config/permissions.js');
 
-  var msg = new messenger(bot);
+  // External (to this file) Commands and snippets.
+  var external = {
+    command: {
+      shortcut: require('./shortcut.js')
+    },
+    snippet: {
+      messenger: require('../snippets/message.js'),
+      permissions: require('../config/permissions.js')
+    },
+    config: {
+      permissions: require('../config/permissions.json')
+    }
+  }
+    var permissionsInfo = require('../config/permissions.json');
+    var permission = require('../config/permissions.js');
+
+    // Set up instance of messenger.
+    var msg = new external.snippet.messenger(bot);
 
 
   // Wrap in try to (hopefully) prevent some crashes.
@@ -53,7 +66,7 @@ function commandList(bot){
           console.log(cmd.arg);
         },
 
-        imgur: function(cmd, callback) {
+        imgur: function(cmd, callback){
           try {
             var imgurAPI = require('../snippets/imgurAPI.js');
             var imgur = new imgurAPI();
@@ -152,7 +165,7 @@ function commandList(bot){
 
       help: function(cmd){
         // Assign the server ID from the command.
-        var permissions = new permission(bot, cmd.sID);
+        var permissions = new external.snippet.permissions(bot, cmd.sID);
 
         var commandInfo = require('../config/commands.json'); // Command information is stored here.
         var config = require('../config.json');
@@ -170,24 +183,26 @@ function commandList(bot){
           msg.setCID(cmd.uID);
 
           function generateHelpList(){
-            // Command groups & headers.
-            var helpList = {
-              introMsg: ":small_orange_diamond:   **reCord** v0.55 **GitHub**: <https://github.com/Vizcosity/discord.gi>\n",
-              general: "__**General / Misc**__ :zap:\n",
-              playback: "__**Playback / Music**__ :musical_note:\n",
-              admin: "__**Administration**__ :tools: :gear:\n"
-            };
+            try {
+              // Command groups & headers.
+              var helpList = {
+                introMsg: ":small_orange_diamond:   **reCord** v0.55 **GitHub**: <https://github.com/Vizcosity/discord.gi>\n",
+                general: "__**General / Misc**__ :zap:\n",
+                playback: "__**Playback / Music**__ :musical_note:\n",
+                admin: "__**Administration**__ :tools: :gear:\n"
+              };
 
-            // Loop through each command, add each one to respective category.
-            for (var key in commandInfo){
-              if (!permissions.hasAccess(cmd.uID, key).result) continue;
-              var cmdGroup = commandInfo[key].group;
-              helpList[cmdGroup] += "**" + config.prefix + key + "** - " + commandInfo[key].desc + '\n';
-            }
+              // Loop through each command, add each one to respective category.
+              for (var key in commandInfo){
+                if (!permissions.hasAccess(cmd.uID, key).result) continue;
+                var cmdGroup = commandInfo[key].group;
+                helpList[cmdGroup] += "**" + config.prefix + key + "** - " + commandInfo[key].desc + '\n';
+              }
 
-            // Returns as an array so that each cmd Group is split up and can be
-            // sent to the user as a seperate message. (Gets around the char limit.);
-            return [helpList.general, helpList.playback, helpList.admin];
+              // Returns as an array so that each cmd Group is split up and can be
+              // sent to the user as a seperate message. (Gets around the char limit.);
+              return [helpList.general, helpList.playback, helpList.admin];
+            } catch(e){ log(e); }
           }
 
           // Send the help message to the user.
@@ -221,7 +236,7 @@ function commandList(bot){
               // Otherwise the output will simply be blank.
               accessLevel = "\n\n:closed_lock_with_key: **Access Level**: "
                + commandInfo[commandToLookup].access + " (`" +
-               permissionsInfo.servers[cmd.sID].assignment[commandInfo[commandToLookup].access].name + "`)";
+               external.config.permissions.servers[cmd.sID].assignment[commandInfo[commandToLookup].access].name + "`)";
             } catch(e){ console.log(e) };
 
             try {
@@ -239,8 +254,14 @@ function commandList(bot){
 
         }
 
-
       },
+
+      shortcut: function(cmd){
+        external.command.shortcut(cmd, msg)
+      },
+
+      // De references command to external function.
+      // shortcut: external.shortcutHandler(cmd),
 
       //Administration
 

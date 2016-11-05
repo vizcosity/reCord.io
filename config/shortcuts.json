@@ -1,0 +1,47 @@
+{
+  "server-wide": {
+      "128319520497598464": {
+        "tuturu": "audio sample.mp3",
+        "cenafy": "audio http://picosong.com/cdn/ac3046eb41dd60b2483137138067bcb7.mp3",
+        "test1": "audio sample.mp3",
+        "trig": "udio udio http://gpkio.yt-downloader.org/download.php?id=e429bea24bf6e5fc913e5a6450abf988.mp3",
+        "test2": "audio sample.mp3",
+        "testing123": "owbubwahtb awitbnawkfjnakjwnakjwfnjkawnfjkawnfawnfjkawnfjkawnfj",
+        "test3": "hello but why is this not working right?!?!",
+        "xfiles": "playsong https://www.youtube.com/watch?v=NqNqnJhRAuk",
+        "lv": "leavevoice",
+        "boss": "play https://www.youtube.com/watch?v=YqcwnYBaH3Y thenleave",
+        "jv": "joinvoice",
+        "fuckyouleroy": "request https://www.youtube.com/watch?v=q2WS65T7Vuc",
+        "allahu": "audio ./audio/allahu akbar.mp3",
+        "test": "",
+        "earrape": "audio ear.mp3",
+        "proximity": "q https://www.youtube.com/playlist?list=UU3ifTl5zKiCAhHIBQYcaTeg",
+        "monstercat": "q https://www.youtube.com/playlist?list=UUJ6td3C9QlPO9O_J5dF4ZzA",
+        "mrsuicidesheep": "q https://www.youtube.com/playlist?list=UU5nc_ZtjKW1htCVZVRxlQAQ",
+        "Ocean": "!q https://www.youtube.com/watch?v=cs926AIL-ck",
+        "oceanman": "!q https://www.youtube.com/watch?v=cs926AIL-ck",
+        "Oceanman": "!q https://www.youtube.com/watch?v=cs926AIL-ck",
+        "sandstorm": "q https://www.youtube.com/watch?v=y6120QOlsfU",
+        "allstar": "q https://www.youtube.com/watch?v=kiACFlHZ1IA",
+        "meme": "q https://www.youtube.com/watch?v=rLWAlWfgivA",
+        "running": "q https://www.youtube.com/watch?v=DNKu3-FdZdA",
+        "amiafaggot": "dc var response = ['Yes', 'No']; reply(response[randomIntFromInterval(0,response.length - 1)] + ', **' + user + '**.' );",
+        "theory": "q https://www.youtube.com/watch?v=LLY9r1Y9aIU",
+        "pong": "ping",
+        "larrygofuckyourself": "q www.meatspin.com",
+        "!theory": "q https://www.youtube.com/watch?v=LLY9r1Y9aIU",
+        "liar": "q https://www.youtube.com/watch?v=IqISdNIveF0",
+        "smug": "imgur anime smug",
+        "song": "qgetinfo",
+        "developers": "q https://www.youtube.com/watch?v=Vhh_GeBPOhs",
+        "happydance": "dc reply(\"https://media.giphy.com/media/UO5elnTqo4vSg/giphy.gif\")"
+      }
+  },
+  "global": {
+
+  },
+  "personal": {
+    
+  }
+}

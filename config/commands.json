@@ -265,8 +265,13 @@
       "desc": "Everyone in the voice channel suddenly becomes hilarious.",
       "usage": "sitcom",
       "group": "general"
+    },
+
+    "googlefeud": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Play googlefeud with friends in the channel!",
+      "usage": "googlefeud <start / stop>",
+      "group": "general"
     }
-
-
-
 }

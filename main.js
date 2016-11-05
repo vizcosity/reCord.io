@@ -58,6 +58,7 @@ var sitcom = false;
 var delay = 0, activeDelay = delay, cmdToCooldown = '',
     cooldown = false, cooldownResponse = 'Loading...',
     delayCountdown, cdCount = 0;
+var horseman;
 
 var logicForMessageHandler;
 
@@ -68,11 +69,12 @@ bot.on('ready',function(){
   // This passes the bot object so that it is accessible in the speerate commands.js file.
 
   // List the servers the bot is connected to.
-  var servers = '';
-  for (var key in bot.servers) {
-    servers += '\n'+bot.servers[key].name+': ' + key + ' [' + Object.keys(bot.servers[key].members).length + ']';
-  }
-
+  try {
+    var servers = '';
+    for (var key in bot.servers) {
+      servers += '\n'+bot.servers[key].name+': ' + key + ' [' + Object.keys(bot.servers[key].members).length + ']';
+    }
+  } catch(e){};
   //anounce to conosle that bot has successfully loaded.
   console.log("Successfully logged in as " + bot.username + ' - ID: ' + bot.id+servers);
 
@@ -198,7 +200,7 @@ bot.on('message', function(user, userID, channelID, message, event){
   //set serverID of message.
 
   //message filtering
-  filter(message.toLowerCase(), event);
+  filter(message.toLowerCase(), event, userID);
   //end message filtering
 
   //pass messages to convo handler
@@ -238,7 +240,8 @@ bot.on('message', function(user, userID, channelID, message, event){
         user: user,
         uID: userID,
         channelID: channelID, //channelID origin for the command message.
-        event: event
+        event: event,
+        prefix: prefix
       };
 
       //MISC COMNMANDS
@@ -271,10 +274,9 @@ bot.on('message', function(user, userID, channelID, message, event){
           commands.execute.talk(cmd);
         }, 'yes');
 
-        //ping command with a tad more character.
+        // Fancy ping command.
         newCommand('ping', channelMsg, function(arg){
-        //shouldn't return usage.
-
+        // Shouldn't return usage.
           cmd.arg = arg;
           commands.execute.ping(cmd);
         }, 'yes', 'yes');
@@ -287,6 +289,8 @@ bot.on('message', function(user, userID, channelID, message, event){
 
       //setAlias method:
       newCommand('shortcut', message, function setAlias(arg){
+        cmd.arg = arg;
+        return commands.execute.shortcut(cmd);
         try {
           var shortcutName = arg.split(' ')[0];
           var aliasCmdName = arg.split(' ')[1];
@@ -1306,7 +1310,7 @@ bot.on('message', function(user, userID, channelID, message, event){
                       console.log('/restartChild');
                       });
                       convo.stop()
-                      convo.clear();
+                      convo.clear('both');
                 } else if (message.toLowerCase() === 'no' || message.toLowerCase() === 'n'){
                   respond("Alright. I'll wait till I leave voice then restart. If I don't leave automatically, use " + prefix + "lv or " + prefix + "leavevoice", channelID);
                       convo.clear();
@@ -1471,77 +1475,180 @@ bot.on('message', function(user, userID, channelID, message, event){
       //end testbudi
 
       //googlefeud
-      newCommand('googlefeud', channelMsg, function(){
+      newCommand('googlefeud', channelMsg, function(arg){
+        var stopConvo = false;
+        var thirdArg = arg.split(' ')[0];
+
+        if (thirdArg == 'stop') {
+          notify('**Google feud game stopped**');
+          horseman.close();
+          horseman = null;
+          stopConvo = true;
+          return;
+        };
+
         var respondChannel = channelID;
         //notify user of startup;
         bot.sendMessage({
             to: channelID,
             message: 'Starting Google Feud. Just a sec.',
             typing: true
-            });
+        });
 
         //finish sending notify message to channel.
 
         var stringedCategoriesResults = 'Pick an option from the following to continue: \n**';
-        var catResults = [];
-        osmosis
-        .get('http://www.googlefeud.com/')
-        .find('span.caties')
-        .set('categories')
-        .data(function(listing){
-          catResults.push(listing.categories);
-          log(catResults);
-          if (catResults.length === 4){
-            for (var i = 0; i < catResults.length; i++){
-              if (i !== catResults.length - 1){
-                stringedCategoriesResults += catResults[i] + '      ';
-              } else {
-                stringedCategoriesResults += catResults[i] + '**';
-              }
-            }
+        var catResults = {};
+        var Horseman = require('node-horseman');
+          if (!horseman)
+            horseman = new Horseman();
+          else
+            return notify('Google feud is already running.');
 
-            respond(stringedCategoriesResults, channelID);
+            horseman
+              .open('http://googlefeud.com/')
+            function startFeud(){
+              horseman
+              .text('span.caties')
+              .then(function(categories){
+                var stringedOutput = 'Select a category:\n\n';
+                categories = categories.split(/(?=[A-Z])/);
+                catResults = categories;
+                for (var i = 0; i < categories.length; i++){
+                  stringedOutput += ':small_blue_diamond: **' + categories[i] + '**     ';
+                }
+
+                // bot.sendMessage({
+                //   channel: respondChannel,
+                //   message: stringedOutput
+                // }, function(err, res){ if (err) console.log(err);})
+                respond(stringedOutput, respondChannel);
+
+              }).then(function(){
 
             var convo = new conversation(channelID);
-            convo.start(function(channelID, message){
-              switch (message.toLowerCase()) {
-                case catResults[0].toLowerCase():
-                  respond(catResults[0] + ' category selected.', channelID);
-                  continueToGFGame(catResults[0]);
-                  convo.stop();
-                  break;
-                case catResults[1].toLowerCase():
-                  respond(catResults[1] + ' category selected.', channelID);
-                  categoryResponseFromUser = catResults[1];
-                  continueToGFGame(catResults[1]);
-                  convo.stop();
-                  break;
-                case catResults[2].toLowerCase():
-                  respond(catResults[2] + ' category selected.', channelID);
-                  categoryResponseFromUser = catResults[2];
-                  continueToGFGame(catResults[2]);
-                  convo.stop();
-                  break;
-                case catResults[3].toLowerCase():
-                  respond(catResults[3] + ' category selected.', channelID);
-                  categoryResponseFromUser = catResults[3];
-                  continueToGFGame(catResults[3]);
-                  convo.stop();
-                  break;
-                default:
+            convo.start(function(channelID, message, convoUserID){
+              if (stopConvo) {
+                convo.clear('both');
+                convo.stop();
+              }
+              if (isBot(convoUserID) || message.containsPrefix()) return;
+              if (channelID !== respondChannel) return;
+              var formattedOption = message.substring(0,1).toUpperCase()+message.substring(1,message.length).toLowerCase();
+
+              if (catResults.includes(formattedOption)) {
+                notify('**' + formattedOption + '** category selected. :white_check_mark:');
+                horseman
+                  .click("span[data-cat*='"+formattedOption.toLowerCase()+"']")
+                  .text('#queryspan')
+                  .then(function(text){
+                    var stringedOutput = ':pencil2:  **Finish off the following**:\n\n:small_orange_diamond:  '+
+                    text+'...';
+                    respond(stringedOutput, channelID);
+                    convo.stop();
+                    convo.clear('both');
+                    continueToGFGame(horseman, channelID, bot, text);
+                  })
               }
             });
             //handle user response for category
-          }//wait till 4 results are collected from site (for categories)
-
+          })
+          }
+          startFeud();
           //proceed to the next stage; after category has been selected.
-          function continueToGFGame(category){
-            log("Proceeding to main game with " + category + " selected.");
+          function continueToGFGame(horseman, channelID, bot, querymessage){
+            var convo = new conversation(channelID);
+            convo.start(function(channelID, message, convoUserID){
+              if (stopConvo){
+                convo.clear('both');
+                convo.stop();
+              }
+              if (isBot(convoUserID) || message.containsPrefix()) return;
+              // Entries at this point go straight to the queryspan.
+              horseman
+                .type('#queryspan', message)
+                .keyboardEvent('keypress', 16777221)
+                .text('#answerkey')
+                .then(function(text){
+                  console.log(text);
+                  var outputString = '';
+                  // Sort the bare text. (joins to make the 10 item at the end).
+                  var partitioned = text.match(/[a-zA-Z]+|[0-9]+/g);
+                  if (partitioned.length == 1){
+                    outputString += ':scroll: **No Points**';
+                    var numArr = text.split('')
+                    for (var i = 0; i < numArr.length; i++){
+                      var one = 0;
+                      if (numArr[i] == 1) one++;
+                      if (numArr[i] == 1 && one > 1){
+                        numArr[i] += numArr[i+1];
+                        numArr.splice(i+1,1)
+                      }
+                    }
+                  } else {
+                    var outArray = ['__**Results**__: :scroll:\n*'+querymessage+'...*'];
+                    // The user has won some points.
+                    for (var i = 0; i < partitioned.length; i++){
+                      if (isNaN(partitioned[i])){
+                        var pointIndex = i;
+                        var item = '';
+                        while(isNaN(partitioned[pointIndex])){
+                          if (item.length > 0) item += ' ';
+                          item += partitioned[pointIndex];
+                          pointIndex++;
+                        }
+                        i = pointIndex;
+                        // console.log(item);
+                        // console.log(pointIndex + ',' + i);
+                        // console.log(partitioned[pointIndex] +' ' + partitioned[pointIndex+1]);
+                        var points = '';
+                        if (partitioned[pointIndex+1] != '10'){
+                          points += partitioned[pointIndex] + ',' + partitioned[pointIndex+1].substring(0,3);
+                        } else {
+                          points += partitioned[pointIndex] + partitioned[pointIndex+1] + ',' +
+                          partitioned[pointIndex+2].substring(0,3);
+                        }
+                        // At this index, there is a word.
+                        outArray.push(':small_orange_diamond: **'+item.toString()+'**   `'+points+'`');
+                      }
+                    }
+
+                    // Convert output array into stringable sendmessage.
+                    for (var i = 0; i < outArray.length; i++){
+                      outputString += outArray[i];
+
+                      if (i != outArray.length - 1)
+                        outputString += '\n';
+                    }
+                  }
+
+                  bot.sendMessage({
+                    to: channelID,
+                    message: outputString
+                  }, function(err, res){
+                    if (err) console.log(err);
+                    // Next round:
+                    try {
+                      if (outArray && outArray.length == 11){
+                          setTimeout(function(){
+                          notify('**Round over, starting next round..**');
+                          convo.stop();
+                          convo.clear('both');
+                          horseman
+                            .click('#message')
+                          startFeud();
+                        }, 2000);
+                      }
+                    } catch(e){}
+
+                  })
+
+
+                })
+            })
           }
 
-        });//end data listing function.
-
-      });
+      }, 'yes');
       //end google feud
 
       //set sitcom simulator
@@ -2183,8 +2290,9 @@ function isBot(userID){
 }
 
 //filtering
-function filter(msg, eventINF){
+function filter(msg, eventINF, userID){
     var filteredWords = config.filter;
+    if (isBot(userID)) return;
     if (eventINF.d.author.id !== bot.id && msg.substring(0, prefix.length) !== prefix){//makes sure bot isn't sending the message and that message is not a command.
       for (var i = 0; i < filteredWords.length; i++){
         if (msg.indexOf(filteredWords[i].toLowerCase()) !== -1){
@@ -2285,6 +2393,7 @@ function error(error){
 //conversation handler
 function messageHandler(channelID, message, userID, messageID, userType){
   try {
+    if (message.containsPrefix() || isBot(userID)) return;
     var type;
     //to run everything that isn't a command;
       if (holdConversation && typeof logicForMessageHandler === 'function'){
@@ -3016,3 +3125,34 @@ function updateJSON(cacheObj, path, callback){
     });
   } catch(e){ console.log('[Main.js > updateJSON > '+cacheObj+'] ' + e)};
 }
+
+Array.prototype.includes = function(searchElement /*, fromIndex*/) {
+    'use strict';
+    if (this == null) {
+      throw new TypeError('Array.prototype.includes called on null or undefined');
+    }
+
+    var O = Object(this);
+    var len = parseInt(O.length, 10) || 0;
+    if (len === 0) {
+      return false;
+    }
+    var n = parseInt(arguments[1], 10) || 0;
+    var k;
+    if (n >= 0) {
+      k = n;
+    } else {
+      k = len + n;
+      if (k < 0) {k = 0;}
+    }
+    var currentElement;
+    while (k < len) {
+      currentElement = O[k];
+      if (searchElement === currentElement ||
+         (searchElement !== searchElement && currentElement !== currentElement)) { // NaN !== NaN
+        return true;
+      }
+      k++;
+    }
+    return false;
+  };

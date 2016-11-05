@@ -10,7 +10,7 @@ function messenger(bot, channel){
   }
 
   //self-deleting response in the channelID where the bot was invoked.
-  this.notify = function(msg, delay){
+  this.notify = function(msg, delay, callback){
     try {
       //stop if no channelID has been selected.
       if (check()) return;
@@ -22,6 +22,7 @@ function messenger(bot, channel){
       }, function callback(err, response){
         try {
           var previousMessageID =  response.id;
+          if (callback) callback();
           setTimeout(function(){
             try {
               bot.deleteMessage({
