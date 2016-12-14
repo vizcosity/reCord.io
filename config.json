@@ -19,6 +19,12 @@
       "publicLogChannel": null,
       "playerChannel": null,
       "volume": 0.1
+    },
+    "202133811100778498": {
+      "logChannel": null,
+      "publicLogChannel": null,
+      "playerChannel": null,
+      "volume": 0.1
     }
   },
   "filter": [
