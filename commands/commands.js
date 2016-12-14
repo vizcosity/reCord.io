@@ -7,10 +7,14 @@ function commandList(bot){
     },
     snippet: {
       messenger: require('../snippets/message.js'),
-      permissions: require('../config/permissions.js')
+      permissions: require('../config/permissions.js'),
+      voicerecordings: require("../snippets/voicerecordings.js")
     },
     config: {
       permissions: require('../config/permissions.json')
+    },
+    module: {
+      voice: require('../modules/voice.js')
     }
   }
     var permissionsInfo = require('../config/permissions.json');
@@ -19,6 +23,8 @@ function commandList(bot){
     // Set up instance of messenger.
     var msg = new external.snippet.messenger(bot);
 
+    // Global voice variable.
+    var voice = {};
 
   // Wrap in try to (hopefully) prevent some crashes.
   try {
@@ -249,7 +255,17 @@ function commandList(bot){
 
             var formattedResponse = description + '\n\n' + usage + accessLevel + access;
 
-            msg.notify(formattedResponse, 60000);
+            //msg.notify(formattedResponse, 60000);
+            msg.embed({
+              title: "Help Info",
+              type: "rich",
+              description: formattedResponse,
+              author: {
+                name: "Command Info for: "+commandToLookup,
+                icon_url: "http://image.flaticon.com/icons/png/128/25/25400.png"
+              },
+              color: "1146534"
+            })
           }
 
         }
@@ -309,11 +325,80 @@ function commandList(bot){
             if (err !== null) {log(err); msg.notify("I encountered an error trying to change **" + userToNickUsername+"'s** nickname.\n\nDetails: " + err)}
             else {msg.notify('Succesfully changed **'+userToNickUsername+"'s** to **"+newNickname+"**.")}
           });
+        },
+
+        queue: function(cmd){
+          external.exernal.queue(cmd);
+        },
+
+        q: function(cmd){
+          external.external.queue(cmd);
+        },
+
+        recordstart: function(cmd){
+          log("RECORD REACHED. Attempting to instantiate.");
+          try {
+              if (voice[cmd.sID]) {
+                msg.setCID(cmd.cID);
+                return msg.error("I am already recording. Use " + cmd.prefix + "recordstop to finish recording.");
+              }
+              voice[cmd.sID] = new external.module.voice(bot, cmd.cID, cmd.sID, cmd.uID, function callback(){
+              // Start recording once joice channel has joined.
+              voice[cmd.sID].recordStart();
+            });
+          } catch(e){ console.log(e); };
+        },
+
+        leavevoice: function(cmd){
+          if (voice[cmd.sID]){
+              // log("Attempting to leave voice");
+              voice[cmd.sID].leaveVoice();
+              // Clear the voice object after leaving.
+              return voice[cmd.sID] = null;
+           };
+
+          msg.setCID(cmd.cID);
+          msg.error("Not in a voice channel.");
+          return;
+        },
+
+        joinvoice: function(cmd){
+          voiceFunction(cmd);
+        },
+
+        recordstop: function(cmd){
+          // console.log("recordstop cmd exec order reached.");
+          if (voice[cmd.sID]) {
+            voice[cmd.sID].recordStop();
+          }
+        },
+
+        recordings: function(cmd){
+          external.snippet.voicerecordings(cmd);
+        },
+
+        audio: function(cmd){
+          voiceFunction(cmd, function(voice){
+            voice.playAudio(cmd.arg);
+          });
         }
+
+
     }
 
 
 
+    // Ease of use voiceFunction which checks environment before executing particular function.
+    function voiceFunction(cmd, callback){
+      // Checks the voice environment, sets up a new instance if it doesn't exist,
+      // executes command afterwards appropriately if the setup is needed.
+
+      if (!voice[cmd.sID]) voice[cmd.sID] = new external.module.voice(bot, cmd.cID, cmd.sID, cmd.uID, function(){
+        if (callback) return callback(voice[cmd.sID]);
+      });
+
+      return callback(voice[cmd.sID]);
+    }
 
   } catch(e){ log(e); };
 

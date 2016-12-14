@@ -75,9 +75,9 @@ function permissionHandler(bot, serverID){
       // User does not have requried permission.
       return {
         result: false,
-        reason: "You need access level "+commandAccessLevel+", as part of role: `" +
+        reason: "You need access level **"+commandAccessLevel+"**, as part of role: `" +
         requiredRoleForAccessLevel.name +
-        "` to use this. Your access level is " + getAccessLevel(userID) + "."
+        "` to use this.\nYour access level is **" + getAccessLevel(userID) + "**."
       };
     } else {
       // User has permission to use command.

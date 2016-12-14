@@ -7,7 +7,7 @@ var spawn = require('child_process').spawn;
 var fs = require('fs');
 var ytStream = require('youtube-audio-stream');
 var ytdl = require('ytdl-core');
-var osmosis = require('osmosis');
+//var osmosis = require('osmosis');
 var YouTube = require('youtube-node');
 var youTube = new YouTube();
 youTube.setKey('AIzaSyAb1wRVss0Pf4nM9Ra3bCgGgRYSplblusQ');
@@ -31,7 +31,7 @@ var prefix = config.prefix;
 
 if (CLIArguments === 'dev'){
   console.log('Starting Developer mode.')
-  token = "MjE4NzcyNzg0MDU3Mjg2NjU2.CqIH_w.pnZbF7HqN1-ciwO_5PD8S0Dz6pQ";
+  token = "MjUxMDEyNzk1ODgwMDQ2NTky.CxdNaA.GEzYCnNw-PaptCAl1To9D6bO_aY";
   //token = "MjI4OTYxMzE2MzY1MTM5OTY4.CscUWg.2mkVao-sAJHi0u7_JRCJxJRlBYE"; //record d-zone
   prefix = '+';
 };
@@ -81,7 +81,7 @@ bot.on('ready',function(){
   //server logging
   serverLog(bot);
 
-  // Changelod HANDLER
+  // Changelog HANDLER
   changelogHandler(bot);
 
   // Change the username if it is set in config.
@@ -120,58 +120,7 @@ bot.on('ready',function(){
 
   };
 
-  if (randomSoundboard === 'true'){
-      console.log('Random sounds is running.');
-      callFunctionEvery(playRandomSoundFromSoundboard, randomSoundDelay);
-  }
 
-  //play audio requires scope of on ready
-  function audioRANDOM(arg){
-        var extraArguments = arg.split(' ')[1];
-        var serverID = bot.channels['151051305295675395'].guild_id;
-      //  var voiceChannelID = bot.servers[serverID].members[userID]
-        //get msg
-        bot.joinVoiceChannel(voiceChannelID, function callback(){
-          bot.getAudioContext({channel: voiceChannelID, stereo: true}, function callback(err, stream){//send audio
-              //console.log(arg);
-              stream.playAudioFile(arg);
-              bot.setPresence({game: {name: arg}});//setting playing to audiofilename
-              stream.once('fileEnd', function(){
-                bot.setPresence({//reverting status
-                  game: {
-                    name: 'Surprise dank'
-                  }
-                })
-
-                bot.leaveVoiceChannel(voiceChannelID); //leave voice channel?
-
-                soundlog['audio'].push(arg);
-                fs.writeFile('./log/soundlog.json', JSON.stringify(soundlog, null, 2), function callback(err){
-                  if (err !== null){log(err)};
-                });//end update soundlog file.
-              })
-            });//end get audio context
-        })//end join voice method
-
-  }
-  //end play audio command method logic.
-
-  //play random soundboard
-  function playRandomSoundFromSoundboard(){
-    if (randomIntFromInterval(0,1) === 1){
-      if (Player == ''){
-        audioRANDOM('./audio/' + soundlog.soundboard[randomIntFromInterval(0,soundlog.soundboard.length)]);
-        console.log('Randomly played ' + soundlog.audio[soundlog.audio.length]);
-      }
-    }
-  }
-  //end random soundboard play
-
-  //repeat function
-  function callFunctionEvery(func, delay) {
-    setInterval(func, delay);
-  }
-  //end repeat
 });
 
 var conversationHandlerLogic;
@@ -244,6 +193,9 @@ bot.on('message', function(user, userID, channelID, message, event){
         prefix: prefix
       };
 
+      // Developmental command handler.
+      //command(cmd);
+
       //MISC COMNMANDS
 
         //GAMES & OTHER
@@ -276,7 +228,7 @@ bot.on('message', function(user, userID, channelID, message, event){
 
         // Fancy ping command.
         newCommand('ping', channelMsg, function(arg){
-        // Shouldn't return usage.
+          // Shouldn't return usage.
           cmd.arg = arg;
           commands.execute.ping(cmd);
         }, 'yes', 'yes');
@@ -332,16 +284,6 @@ bot.on('message', function(user, userID, channelID, message, event){
         }
       }, 'yes');
       //end purge execute command.
-
-      // //set global cmd prefix;
-      // if (message.substring(0,10) === prefix + 'setprefix'){
-      //   try {
-      //     setprefixCmd(user, userID, channelID, message);
-      //   } catch (e) {
-      //     console.log(e);
-      //   };
-      // }
-      // //end set global cmd prefix
 
       newCommand('setprefix', channelMsg, function(arg){
         try {
@@ -2286,7 +2228,14 @@ String.prototype.containsPrefix = function(){
 
 // Checks if the messages comes from a bot
 function isBot(userID){
-  return bot.users[userID].bot;
+  try{
+  if (bot.users[userID] && bot.users[userID].bot)
+    return bot.users[userID].bot;
+  else
+    return false;
+  } catch(e){
+    console.log("[MAIN.JS > isBot] " + e);
+  };
 }
 
 //filtering

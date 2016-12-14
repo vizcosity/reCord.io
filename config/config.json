@@ -1,0 +1,25 @@
+{
+  "global": {
+    "prefix": "!",
+    "status": "Try !googlefeud start",
+    "username": "reCord",
+    "nickname": "reCord",
+    "token": "MjA1MzkxMTI2MjkzNzc0MzM2.CpJbog.TH8o86o4pIoHghC6_U2H3xQwJKg"
+  },
+  "global-dev":{
+    "enabled": true,
+    "prefix": ">",
+    "status": "Testing",
+    "nickname": "reCord BETA",
+    "token": "MjUxMDEyNzk1ODgwMDQ2NTky.CxdNaA.GEzYCnNw-PaptCAl1To9D6bO_aY"
+  },
+  "server":{
+    "128319520497598464":{
+      "prefix": ">",
+      "volume": 1,
+      "privateLogChannel": null,
+      "publicLogChannel": null,
+      "audioChannel": null
+    }
+  }
+}

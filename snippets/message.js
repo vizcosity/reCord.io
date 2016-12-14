@@ -4,6 +4,8 @@ function messenger(bot, channel){
   //if channelID has not been passed, set to null.
   var channelID = typeof channel !== 'undefined' ? channel : null;
 
+  var self = this;
+
   //set the channelID in which responses should be made.
   this.setCID = function(cID){
     channelID = cID;
@@ -48,6 +50,33 @@ function messenger(bot, channel){
       if (err !== null) log(err);
       if (callback) callback();
     });
+
+  }
+
+  this.embed = function(embedObj, timeout){
+    if (check()) return;
+    bot.sendMessage({
+      to: channelID,
+      message: '',
+      embed: embedObj
+    }, function(err, res){
+      if (err) log(err);
+    });
+  }
+
+  this.error = function(message, timeout){
+    if (!timeout) timeout = 30000;
+    if (check()) return;
+    self.embed({
+      type: "rich",
+      title: "Error",
+      description: message,
+      color: "16729871",
+      author: {
+        name: "Error",
+        icon_url: "http://www.copypastesymbol.com/wp-content/uploads/2016/07/1f6ab.png"
+      }
+    }, timeout);
 
   }
 
