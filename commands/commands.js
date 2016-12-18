@@ -354,7 +354,7 @@ function commandList(bot){
               // log("Attempting to leave voice");
               voice[cmd.sID].leaveVoice();
               // Clear the voice object after leaving.
-              return voice[cmd.sID] = null;
+              //return voice[cmd.sID] = null;
            };
 
           msg.setCID(cmd.cID);
@@ -379,7 +379,7 @@ function commandList(bot){
 
         audio: function(cmd){
           voiceFunction(cmd, function(voice){
-            voice.playAudio(cmd.arg);
+            voice.playAudio(cmd.arg, {leave: true});
           });
         }
 
@@ -393,11 +393,22 @@ function commandList(bot){
       // Checks the voice environment, sets up a new instance if it doesn't exist,
       // executes command afterwards appropriately if the setup is needed.
 
+      // If voice is not initiated for the current server, initiate it.
       if (!voice[cmd.sID]) voice[cmd.sID] = new external.module.voice(bot, cmd.cID, cmd.sID, cmd.uID, function(){
-        if (callback) return callback(voice[cmd.sID]);
-      });
+        // Run the callback if there is one.
 
-      return callback(voice[cmd.sID]);
+        if (callback) {
+          //console.log("Callback found.");
+          return callback(voice[cmd.sID]);
+        };
+      });
+      else {
+        // The voice instance is running. Assume that the callback is present.
+        if (callback) return callback(voice[cmd.sID]);
+      }
+
+
+      //return callback(voice[cmd.sID]);
     }
 
   } catch(e){ log(e); };

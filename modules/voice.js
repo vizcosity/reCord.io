@@ -24,36 +24,48 @@ function voice(bot, channelID, serverID, userID, callback){
   var write;
   var self = this;
 
-  // CHECKS
+  // This stream object will be assigned the stream obj once audio context is collected.
+  // When this is not null, audio can be piped to it. Otherwise it cannot be.
+  var stream = null;
 
+  // CHECKS
   if (botInVoiceChannel(bot, voiceID)) return;
 
-  joinVoice(bot, voiceID, callback);
-
+  joinVoice(bot, voiceID, function(){
+    getStream(voiceID, function(streamRef){
+      stream = streamRef;
+      log("Stream assigned.");
+      if (callback) callback();
+    })
+  });
 
   this.playAudio = function(file, paramObj){
+    log("Playing: " + file);
     try {
-      if (!check().result) return check().reason;
+      if (!check().result) {
+        log("Check failed: " + check().reason);
+        return check().reason;
+      };
       // Play an audio file (local / mp3 direct) that is specified.
 
-      // Grab the audio context of the current voice channel.
+      // Grab audio context if it hasn't been collected.
       try {
-        bot.getAudioContext({channelID: voiceID}, function(error, stream){
-          if (error) log(error);
-          // Play the file.
-          try {
-            // fs.createReadStream(__parentDir+file).pipe(stream, {end: false});
-            stream.playAudioFile(__parentDir+file);
-          } catch(e){ log("playAudio: " + e)}
-          stream.once('done', function(){
+
+        fs.createReadStream(__parentDir+file).pipe(stream, {end: false});
+
+        stream.once('done', function(){
+            // Make module available for other files to play, and possibly leave.
             busy = false;
+            //log("Busy set to: " + busy);
             if (paramObj && paramObj.leave){
               // If paramObj.leave
               self.leaveVoice();
             }
-          });
         });
+
       } catch(e){ log(e); };
+
+
     } catch(e){ log(e); };
   }
 
@@ -63,6 +75,14 @@ function voice(bot, channelID, serverID, userID, callback){
     bot.getAudioContext({channelID: voiceID, maxStreamSize: 50 * 1024}, function(error, stream) {
 
     var date = new Date();
+    date = date.toString();
+
+    console.log("Date string: " + date);
+    // Replace spaces in date with underscores.
+    date = date.replace(/\s/g, '_');
+
+    console.log("Date string: "+date);
+
     if (error) console.log(error);
       write = fs.createWriteStream(__parentDir+'/audio/recordings/'+date+".pcm");
       stream.pipe(write);
@@ -132,10 +152,25 @@ function log(message){
 }
 
 function joinVoice(bot, voiceID, callback){
+  var streamReference;
   bot.joinVoiceChannel(voiceID, function(err, res){
     if (err) console.log(err);
     if (callback) callback();
   });
+}
+
+function getStream(voiceID, callback){
+  //var streamRef = null;
+  try {
+    // Grab the audio Context.
+    log("Attempting to grab audio context.");
+    bot.getAudioContext({channelID: voiceID}, function(error, stream){
+      log("Grabbed audio context");
+      if (error) return log(error);
+      //streamRef = stream;
+      callback(stream);
+    });
+  } catch(e){ log("Getting audio context: " + e)}
 }
 
 function botInVoiceChannel(bot, voiceID){
