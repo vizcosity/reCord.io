@@ -14,7 +14,8 @@ function commandList(bot){
       permissions: require('../config/permissions.json')
     },
     module: {
-      voice: require('../modules/voice.js')
+      voice: require('../modules/voice.js'),
+      queue: require('../modules/queue.js')
     }
   }
     var permissionsInfo = require('../config/permissions.json');
@@ -328,11 +329,22 @@ function commandList(bot){
         },
 
         queue: function(cmd){
-          external.exernal.queue(cmd);
+          voiceFunction(cmd, function(voice){
+            voice.queue(cmd);
+          });
         },
 
         q: function(cmd){
-          external.external.queue(cmd);
+          voiceFunction(cmd, function(voice){
+            voice.queue(cmd);
+          });
+        },
+
+        skip: function(cmd){
+          log("Recieved skip request.");
+          voiceFunction(cmd, function(voice){
+            voice.skip(cmd);
+          });
         },
 
         recordstart: function(cmd){
@@ -352,7 +364,7 @@ function commandList(bot){
         leavevoice: function(cmd){
           if (voice[cmd.sID]){
               // log("Attempting to leave voice");
-              voice[cmd.sID].leaveVoice();
+              return voice[cmd.sID].leaveVoice();
               // Clear the voice object after leaving.
               //return voice[cmd.sID] = null;
            };
@@ -363,7 +375,9 @@ function commandList(bot){
         },
 
         joinvoice: function(cmd){
-          voiceFunction(cmd);
+          voiceFunction(cmd, function(voice){
+            voice.joinVoice(cmd);
+          });
         },
 
         recordstop: function(cmd){
@@ -390,24 +404,22 @@ function commandList(bot){
 
     // Ease of use voiceFunction which checks environment before executing particular function.
     function voiceFunction(cmd, callback){
+
+      // Check for callback.
+      if (!callback) return log("No callback found for voice function.");
+
       // Checks the voice environment, sets up a new instance if it doesn't exist,
       // executes command afterwards appropriately if the setup is needed.
 
       // If voice is not initiated for the current server, initiate it.
       if (!voice[cmd.sID]) voice[cmd.sID] = new external.module.voice(bot, cmd.cID, cmd.sID, cmd.uID, function(){
-        // Run the callback if there is one.
-
-        if (callback) {
-          //console.log("Callback found.");
-          return callback(voice[cmd.sID]);
-        };
-      });
+          // Run the callback if there is one.
+          if (callback)  return callback(voice[cmd.sID]);
+        });
       else {
-        // The voice instance is running. Assume that the callback is present.
+        // The voice instance is running.
         if (callback) return callback(voice[cmd.sID]);
       }
-
-
       //return callback(voice[cmd.sID]);
     }
 

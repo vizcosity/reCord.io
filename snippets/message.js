@@ -61,6 +61,16 @@ function messenger(bot, channel){
       embed: embedObj
     }, function(err, res){
       if (err) log(err);
+      if (timeout) {
+        setTimeout(function(){
+          try {
+            bot.deleteMessage({
+              channelID: res.channel_id,
+              messageID: res.id
+            });
+          } catch(e){log(e);};
+        }, timeout);
+      }
     });
   }
 
@@ -77,7 +87,6 @@ function messenger(bot, channel){
         icon_url: "http://www.copypastesymbol.com/wp-content/uploads/2016/07/1f6ab.png"
       }
     }, timeout);
-
   }
 
   //logging function which shows that it has come from this file.

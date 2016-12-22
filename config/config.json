@@ -1,6 +1,6 @@
 {
   "global": {
-    "prefix": "!",
+    "prefix": ">",
     "status": "Try !googlefeud start",
     "username": "reCord",
     "nickname": "reCord",

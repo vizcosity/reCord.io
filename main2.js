@@ -10,13 +10,8 @@ var commandList = require('./commands/commands.js'), commands;
 var permissionHandler = require('./config/permissions.js');
 var Utility = require('./modules/discord-bot-utility.js');
 
-// ENVIRONMENT SETUP
-const readline = require("readline");
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-var shell = true;
+
+var shell = false;
 var dev = false;
 var token = determineToken(process.argv[2]);
 bot = new Discord.Client({
@@ -34,6 +29,12 @@ bot.on('ready', function(){
   // Setup interactive console / shell.
   if (shell){
     console.log("Shell initialized.");
+    // ENVIRONMENT SETUP
+    const readline = require("readline");
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
     rl.on('line', (input) => {
       try {
         eval(input);
