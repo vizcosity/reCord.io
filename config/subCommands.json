@@ -1,0 +1,9 @@
+{
+  "shuffle": {
+    "access": 3,
+    "scope": "none",
+    "desc": "Shuffles the queue.",
+    "usage": "shuffle",
+    "group": "queue"
+  }
+}

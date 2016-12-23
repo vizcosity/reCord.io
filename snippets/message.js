@@ -74,6 +74,19 @@ function messenger(bot, channel){
     });
   }
 
+  this.embedNotify = function(mainText, footer, timeout){
+    if (!timeout) timeout = 12000; // Set default timeout length if it is not specified.
+
+    self.embed({
+      type: 'rich',
+      color: 1146534,
+      thumbnail:{url:'http://i.imgur.com/JO4b5GH.jpg'},
+      footer: {text: footer ? footer : ""},
+      description: mainText ? mainText : ""
+    }, timeout);
+
+  }
+
   this.error = function(message, timeout){
     if (!timeout) timeout = 30000;
     if (check()) return;

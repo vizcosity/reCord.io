@@ -93,6 +93,17 @@ module.exports = {
     }
   },
 
+  shuffleQueue: function(queue){
+    var shuffledQueue = [];
+
+    while (shuffledQueue.length !== queue.length){
+      var randomItem = queue[math.random()*queue.length];
+      if (!itemInArray(shuffledQueue, randomItem)) shuffledQueue.push(randomItem);
+    }
+
+    return shuffledQueue;
+  },
+
   getEta: function(queue){
     return getEtaGlobal(queue);
   },
@@ -124,7 +135,15 @@ module.exports = {
 
 function generateLocalFileName(userID, videoID){
   // Generates a unique filename that won't be able to be overwritten because no two generated filenames are the same.
-  return Date.now()+'_'+userID+'_'+videoID;
+  // return Date.now()+'_'+userID+'_'+videoID;
+  return videoID; // Experimental agnostic version
+}
+
+function itemInArray(item, array){
+  for (var i = 0; i < array.length; i++  ){
+    if (item == array[i]) return true;
+  }
+  return false;
 }
 
 function buildQueueGlobal(queue){

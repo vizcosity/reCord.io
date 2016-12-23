@@ -334,6 +334,12 @@ function commandList(bot){
           });
         },
 
+        play: function(cmd){
+          voiceFunction(cmd, function(voice){
+            voice.queue(cmd);
+          });
+        },
+
         q: function(cmd){
           voiceFunction(cmd, function(voice){
             voice.queue(cmd);

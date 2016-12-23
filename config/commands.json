@@ -75,8 +75,34 @@
         "4": "playlists",
         "5": "unlimited"
       },
-      "desc": "Streams audio from YouTube. Accepts either links or search queries.",
+      "desc": "[Alias for queue] Streams audio from YouTube. Accepts either links or search queries.",
       "usage": "q <link / search query>",
+      "group": "playback"
+
+    },
+    "queue": {
+      "access": 2,
+      "scope": {
+        "2": "links",
+        "3": "search",
+        "4": "playlists",
+        "5": "unlimited"
+      },
+      "desc": "Streams audio from YouTube. Accepts either links or search queries.",
+      "usage": "queue <link / search query>",
+      "group": "playback"
+
+    },
+    "play": {
+      "access": 2,
+      "scope": {
+        "2": "links",
+        "3": "search",
+        "4": "playlists",
+        "5": "unlimited"
+      },
+      "desc": "[Alias for queue] Streams audio from YouTube. Accepts either links or search queries.",
+      "usage": "play <link / search query>",
       "group": "playback"
 
     },

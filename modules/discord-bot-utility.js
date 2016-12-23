@@ -62,10 +62,15 @@ function utility(bot){
       channelID: channelID,
       cID: channelID,
       event: event,
+      util: self,
       // Check if the server has set a prefix, and assign it.
       prefix: self.prefix
     }
 
+  }
+
+  this.getCmdName = function(message){
+    return getCmdName(message);
   }
 
   this.setEnvironment = function(channelID, dev){
@@ -177,6 +182,10 @@ function utility(bot){
       } catch(e) {log.debug("[CMD EXECUTION] " + e)};
 
     // }
+  }
+
+  this.containsPrefix = function(input){
+    return containsPrefix(input, self.getPrefix());
   }
 
 

@@ -9,7 +9,7 @@ var request = require('request');
 var path = require('path');
 __parentDir = require('path').dirname(process.mainModule.filename);
 var spawn = require('child_process').spawn;
-var ffmpeg = require('fluent-ffmpeg');
+//var fluentffmpeg = require('fluent-ffmpeg');
 var childProc = require('child_process');
 var queueUtility = require('./queue');
 var mkdirp = require('mkdirp');
@@ -37,19 +37,22 @@ function voice(bot, channelID, serverID, userID, callback){
   };
 
   var write;
-  var currentSong = null;
+  var currentSong = {};
+  currentSong[serverID] = null;
+
   var self = this;
 
   // This stream object will be assigned the stream obj once audio context is collected.
   // When this is not null, audio can be piped to it. Otherwise it cannot be.
-  var stream = null;
+  var stream = {};
+  stream[serverID] = null;
 
   // CHECKS
   if (botInVoiceChannel(bot, voiceID)) return log("Bot already in voice.");
   joinVoice(bot, voiceID, function(){
     log("Joined: " + voiceID);
     getStream(voiceID, function(streamRef){
-      stream = streamRef;
+      stream[serverID] = streamRef;
       log("Stream assigned.");
       if (callback) callback();
     })
@@ -63,6 +66,9 @@ function voice(bot, channelID, serverID, userID, callback){
 
     // Checking to see if it is a blank request and if it should be searched for or not.
     if (queueUtility.blankRequest(cmd.arg)) return msg.embed(queueUtility.buildPrintedQueueEmbedObject(queue[serverID]));
+
+    // Sub command handler. Checks if another subcommand e.g. >queue >shuffle is entered, and handles accordingly.
+    if (validSubCommand(cmd)) return subCommandHandler(cmd.util.getCmdObj(cmd.user, cmd.uID. cmd.cID, cmd.arg, cmd.event));
 
     // Validate link to ensure it is in correct format.
     if (queueUtility.isLink(cmd.arg) && !queueUtility.validateInput(cmd.arg).result) return msg.error(queueUtility.validateInput(cmd.arg).reason);
@@ -80,14 +86,23 @@ function voice(bot, channelID, serverID, userID, callback){
         if (!details.result) return msg.error("Could not queue item. \n" + details.reason);
         queue[serverID].push( new queueUtility.item( queue[serverID].length, cmd.sID, 'queue', bot.users[cmd.uID].username, cmd.uID, details.title, details.duration, details.url, details.videoID) );
 
+        var lastQueueItem = queue[cmd.sID][queue[cmd.sID].length - 1];
+
         try {
           // Notify that the item has been successfully queued.
-          msg.embed(queueUtility.buildQueuedNotificationEmbedObject(queue[serverID][queue[serverID].length - 1], queueUtility.getEta(queue[serverID])), 10000);
+          msg.embed(queueUtility.buildQueuedNotificationEmbedObject(lastQueueItem, queueUtility.getEta(queue[cmd.sID])), 10000);
+
+          // Download the file.
+          downloadAudioFile(lastQueueItem.url, cmd.sID, lastQueueItem.localFileName, function(){
+
+            // Pop first item from queue, and play it once details are collected.
+            state[serverID].queue = true;
+
+            queueCheck();
+
+          });
         } catch(e){ log("Could not notify of queued item: " + e)}
 
-        // Pop first item from queue, and play it once details are collected.
-        state[serverID].queue = true;
-        queueCheck();
 
       });
     } catch(e){ log("Getting YT Details: " + e)}
@@ -105,7 +120,7 @@ function voice(bot, channelID, serverID, userID, callback){
       downloadAudioFile(item.url, item.serverID, item.localFileName, function(file){
 
         // Log download finish.
-        log("Finished downloading: " + item.title);
+        //log("Finished downloading: " + item.title);
 
         if (!status.result) return msg.error(status.reason);
 
@@ -113,7 +128,7 @@ function voice(bot, channelID, serverID, userID, callback){
 
         ffmpeg = childProc.spawn('ffmpeg', [
           '-loglevel', '0',
-          '-i', item.url,
+          '-i', file,
           '-af', 'volume=' + '0.5',
           '-f', 's16le',
           '-ar', '48000',
@@ -136,17 +151,16 @@ function voice(bot, channelID, serverID, userID, callback){
           log("Playing: " + item.title + " ["+item.duration+"]");
 
           // Once the stream is readable, pipe to the cjopus stream.
-          stream.send(ffmpeg.stdout, {end: false});
+          stream[serverID].send(ffmpeg.stdout, {end: false});
 
         })
 
-        ffmpeg.stdout.once('end', function(data){
+        ffmpeg.stdout.once('end', function(){
           // Make module available for other files to play, and possibly leave.
-          log(data);
           ffmpeg.kill();
           state[serverID].active = false;
           log("Finished Playing: " + item.title + " ["+item.duration+"]");
-          //deleteAudioFile(file); // Deletes the audio file after it is done playing.
+          deleteAudioFile(file); // Deletes the audio file after it is done playing.
           queueCheck();
         });
 
@@ -156,9 +170,15 @@ function voice(bot, channelID, serverID, userID, callback){
 
   }
 
+  this.shuffleQueue = function(cmd){
+    queue[cmd.sID] = queueUtility.shuffleQueue(queue[cmd.sID]);
+  }
+
   this.skip = function(cmd){
     log("Attempting to skip.");
     if (ffmpeg) ffmpeg.kill();
+    msg.setCID(cmd.cID);
+    msg.embedNotify("**Skipping**: "+ (currentSong[cmd.sID] && currentSong[cmd.sID].title ? currentSong[cmd.sID].title : "Item") + "", cmd.user + " executed skip.");
     queueCheck();
   }
 
@@ -170,9 +190,9 @@ function voice(bot, channelID, serverID, userID, callback){
 
           state[serverID].active = true;
 
-          stream.playAudioFile(file);
+          stream[serverID].playAudioFile(file);
 
-          stream.once('done', function(){
+          stream[serverID].once('done', function(){
               // Make module available for other files to play, and possibly leave.
               state[serverID].active = false;
               //log("Busy set to: " + busy);
@@ -237,14 +257,14 @@ function voice(bot, channelID, serverID, userID, callback){
     state[serverID].queue = false;
 
     // Clear the stream.
-    stream = null;
+    stream[serverID] = null;
 
     // Move the 'currentSong' (if there is one) to the queue so that it doesn't
     // auto-play or request on join, and clear the currentSong.
-    if (currentSong) {
+    if (currentSong[serverID]) {
       try {
-        queue[serverID].unshift(currentSong);
-        currentSong = null;
+        queue[serverID].unshift(currentSong[serverID]);
+        currentSong[serverID] = null;
       } catch(e){log("Error preparing queue for leaveVoice: " + e)}
     }
 
@@ -266,7 +286,7 @@ function voice(bot, channelID, serverID, userID, callback){
     if (!botInVoiceChannel(bot, voiceID)) {
       joinVoice(bot, voiceID, function(){
         getStream(voiceID, function(streamReference){
-          stream = streamReference;
+          stream[serverID] = streamReference;
           // If previous queue exists, resume playing it.
           if (queue[serverID].length !== 0) resumeQueue();
         })
@@ -287,7 +307,7 @@ function voice(bot, channelID, serverID, userID, callback){
     if (!botInVoiceChannel(bot, voiceID)) {
       joinVoice(bot, voiceID, function(){
         getStream(voiceID, function(streamReference){
-          stream = streamReference;
+          stream[serverID] = streamReference;
           if (callback) callback();
         })
       })
@@ -326,9 +346,9 @@ function voice(bot, channelID, serverID, userID, callback){
     if (state[serverID].queue && !state[serverID].active) {
       playNext();
       //msg.notify(currentSong.title + " now playing.");
-      if (!currentSong) return; // Nothing in queue to report.
-      var queueNotificationEmbedObject = queueUtility.buildEmbedObject(currentSong);
-      msg.embed(queueNotificationEmbedObject, currentSong.duration * 1000); // Keep message for the length of the song.
+      if (!currentSong[serverID]) return; // Nothing in queue to report.
+      var queueNotificationEmbedObject = queueUtility.buildEmbedObject(currentSong[serverID]);
+      msg.embed(queueNotificationEmbedObject, currentSong[serverID].duration * 1000); // Keep message for the length of the song.
     }
   }
 
@@ -336,7 +356,7 @@ function voice(bot, channelID, serverID, userID, callback){
     // Saves to /audio/cache/serverID by default.
 
       // Check callback exists.
-      if (!callback) return log("No callback found for downloadAudioFile.");
+      // if (!callback) return log("No callback found for downloadAudioFile.");
 
       // Check to see if the serverID directory has been set up.
       // If it hasn't, create one.
@@ -347,10 +367,17 @@ function voice(bot, channelID, serverID, userID, callback){
         // Prepare the filename.
         var fullFileName = localFileName + '.wav';
 
-        // Prepare full path.
+        // Prepare relative path.
         var relativePath = './audio/queue/cache/'+serverID+'/'+fullFileName;
 
+        // Prepare full absolute path.
         var fullPath = path.resolve(relativePath);
+
+        // If file has been downloaded already, queue it.
+        if (fs.existsSync(fullPath)) {
+          log("File: " + fullPath + " already exists. Using that instead of re-downloading.");
+          return callback(fullPath);
+        }; // File has already been downloaded.
 
         // Create a writeStream with the name of the file.
         var fileOutput = fs.createWriteStream(relativePath);
@@ -360,12 +387,11 @@ function voice(bot, channelID, serverID, userID, callback){
 
         // On finish, run the callback and pass in the full path to the downloaded file.
         fileOutput.on('finish', function(){
-            callback(fullPath);
+            log("Finished downloading: " + localFileName);
+            if (callback) callback(fullPath);
         });
 
       });
-
-
   }
 
   function deleteAudioFile(pathToFile){
@@ -374,13 +400,13 @@ function voice(bot, channelID, serverID, userID, callback){
   }
 
   function playNext(){
-    if (queue[serverID].length > 0) currentSong = queue[serverID].shift();
+    if (queue[serverID].length > 0) currentSong[serverID] = queue[serverID].shift();
     else return endQueueHandler();
-    self.playQueueItem(currentSong);
+    self.playQueueItem(currentSong[serverID]);
   }
 
   function endQueueHandler(){
-    currentSong = null;
+    currentSong[serverID] = null;
     log("End of queue reached.");
     msg.notify("End of queue reached.");
   }
@@ -391,7 +417,30 @@ function voice(bot, channelID, serverID, userID, callback){
     state[serverID].queue = true;
     state[serverID].active = false;
     queueCheck();
+  }
 
+  function validSubCommand(cmd){
+    return cmd.util.containsPrefix(cmd.arg) && subCommandExists(cmd.util.getCmdName(cmd.arg));
+  }
+
+  function containsPrefix(message, prefix){
+    return message.substring(0, prefix.length) == prefix;
+  }
+
+  function subCommandExists(command){
+    if (require('../config/subCommands.json')[command]) return true;
+    return false;
+  }
+
+  function subCommandHandler(cmd){
+    log("Subcommand detected: " + cmd.name);
+    switch(cmd.name){
+      case "shuffle":
+        self.shuffleQueue(cmd);
+        break;
+      default:
+      return log("Sub command not recognized.");
+    }
   }
 
 }
