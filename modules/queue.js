@@ -94,13 +94,17 @@ module.exports = {
   },
 
   shuffleQueue: function(queue){
+    // log("Shuffling queue.");
     var shuffledQueue = [];
-
     while (shuffledQueue.length !== queue.length){
-      var randomItem = queue[math.random()*queue.length];
-      if (!itemInArray(shuffledQueue, randomItem)) shuffledQueue.push(randomItem);
+      var randomItem = queue[Math.floor(Math.random()*queue.length)];
+      // log("SHUFFLE: Random item: "+queue.indexOf(randomItem));
+      if (!itemInArray(randomItem, shuffledQueue)) {
+        // log("Placing item " + queue.indexOf(randomItem) + " at position " + shuffledQueue.length);
+        shuffledQueue.push(randomItem);
+      }
     }
-
+    // console.log(shuffledQueue);
     return shuffledQueue;
   },
 
@@ -140,10 +144,12 @@ function generateLocalFileName(userID, videoID){
 }
 
 function itemInArray(item, array){
-  for (var i = 0; i < array.length; i++  ){
-    if (item == array[i]) return true;
-  }
-  return false;
+  try {
+    for (var i = 0; i < array.length; i++){
+      if (item == array[i]) return true;
+    }
+    return false;
+  } catch(e){log("Checking if in array: " + e)}
 }
 
 function buildQueueGlobal(queue){

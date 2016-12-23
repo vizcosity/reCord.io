@@ -172,7 +172,10 @@ function voice(bot, channelID, serverID, userID, callback){
   }
 
   this.shuffleQueue = function(cmd){
+    // log("Shuffle queue called.");
     queue[cmd.sID] = queueUtility.shuffleQueue(queue[cmd.sID]);
+    msg.notify("Queue shuffled.");
+    msg.embed(queueUtility.buildPrintedQueueEmbedObject(queue[serverID]))
   }
 
   this.skip = function(cmd){
