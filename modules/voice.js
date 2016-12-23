@@ -60,15 +60,16 @@ function voice(bot, channelID, serverID, userID, callback){
 
   this.queue = function(cmd){
 
-    // log("Queue called.");
+    log("Queue called.");
 
     msg.setCID(cmd.channelID);
 
+    // Sub command handler. Checks if another subcommand e.g. >queue >shuffle is entered, and handles accordingly.
+    log(validSubCommand(cmd));
+    if (validSubCommand(cmd)) return subCommandHandler(buildSubCommandObj(cmd));
+
     // Checking to see if it is a blank request and if it should be searched for or not.
     if (queueUtility.blankRequest(cmd.arg)) return msg.embed(queueUtility.buildPrintedQueueEmbedObject(queue[serverID]));
-
-    // Sub command handler. Checks if another subcommand e.g. >queue >shuffle is entered, and handles accordingly.
-    if (validSubCommand(cmd)) return subCommandHandler(cmd.util.getCmdObj(cmd.user, cmd.uID. cmd.cID, cmd.arg, cmd.event));
 
     // Validate link to ensure it is in correct format.
     if (queueUtility.isLink(cmd.arg) && !queueUtility.validateInput(cmd.arg).result) return msg.error(queueUtility.validateInput(cmd.arg).reason);
@@ -420,16 +421,54 @@ function voice(bot, channelID, serverID, userID, callback){
   }
 
   function validSubCommand(cmd){
-    return cmd.util.containsPrefix(cmd.arg) && subCommandExists(cmd.util.getCmdName(cmd.arg));
+    try {
+      log("Checking prefix: " + containsPrefix(cmd.arg, cmd.prefix) +" subcomexists: " + subCommandExists(getCmdName(cmd.arg, cmd.prefix)));
+      return containsPrefix(cmd.arg, cmd.prefix) && subCommandExists(getCmdName(cmd.arg, cmd.prefix));
+    } catch(e){log("Validating sub command: " + e)}
   }
 
   function containsPrefix(message, prefix){
-    return message.substring(0, prefix.length) == prefix;
+    try {
+      log("Checking: "+ message + " prefix: "+ prefix + " with length: " + prefix.length);
+      return message.substring(0, prefix.length) == prefix;
+    } catch(e){log("Checking if contains prefix: " + e)}
+  }
+
+  function getCmdName(message, prefix){
+    try {
+      return message.substring(prefix.length, message.length).split(' ')[0];
+    } catch(e){ log("Getting command name: " + e)}
+  }
+
+  function buildSubCommandObj(cmd){
+
+    // Return built cmd object.
+    return {
+      sID: cmd.sID,
+      message: cmd.arg,
+      name: getCmdName(cmd.arg, cmd.prefix),
+      arg: getCmdArguments(cmd.arg, cmd.prefix), // This will be changed when passed into the and function.
+      user: cmd.user,
+      uID: cmd.uID,
+      channelID: cmd.channelID,
+      cID: cmd.channelID,
+      event: cmd.event,
+      //util: self,
+      // Check if the server has set a prefix, and assign it.
+      prefix: self.prefix
+    }
+  }
+
+  function getCmdArguments(message, prefix){
+    var preCmd = message.substring(0, prefix.length + getCmdName(message, prefix).length + 1);
+    return message.substring(preCmd.length, message.length);
   }
 
   function subCommandExists(command){
-    if (require('../config/subCommands.json')[command]) return true;
-    return false;
+    try {
+      if (require('../config/subCommands.json')[command]) return true;
+      return false;
+    } catch(e){log("Checking subcommand existance: " + e)}
   }
 
   function subCommandHandler(cmd){
