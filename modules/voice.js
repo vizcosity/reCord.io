@@ -9,7 +9,6 @@ var request = require('request');
 var path = require('path');
 __parentDir = require('path').dirname(process.mainModule.filename);
 var spawn = require('child_process').spawn;
-//var fluentffmpeg = require('fluent-ffmpeg');
 var childProc = require('child_process');
 var queueUtility = require('./queue');
 var mkdirp = require('mkdirp');
@@ -23,36 +22,54 @@ function voice(bot, channelID, serverID, userID, callback){
 
   // Grab the VoiceID that would like to join.
   var voiceIDQuery = getVoiceID(bot, serverID, userID);
-  if (!voiceIDQuery.result) return msg.error("I couldn't get the Voice Channel: " + voiceIDQuery.reason);
   var voiceID = voiceIDQuery.result;
-  var ffmpeg;
-  var queue = {};
-  queue[serverID] = [];
-  //var busy = false
+  if (!voiceIDQuery.result) msg.error("I couldn't get the Voice Channel: " + voiceIDQuery.reason);
 
-  var state = {};
-  state[serverID] = {
-    active: false,
-    queue: false
-  };
+  var instance = {};
 
-  var write;
-  var currentSong = {};
-  currentSong[serverID] = null;
+  // Set up instance for the server.
+  instance[serverID] = {
+    ffmpeg: null,
+    queue: [],
+    state: {
+      active: false,
+      queue: false
+    },
+    currentSong: null,
+    voiceID: voiceID,
+    stream: null,
+    write: null,
+    checkEmptyRunning: null
+  }
+
+
+  // var ffmpeg;
+  // var queue = {};
+  // queue[serverID] = [];
+  // //var busy = false
+  //
+  // var state = {};
+  // state[serverID] = {
+  //   active: false,
+  //   queue: false
+  // };
+  //
+  // var currentSong = {};
+  // currentSong[serverID] = null;
 
   var self = this;
 
   // This stream object will be assigned the stream obj once audio context is collected.
   // When this is not null, audio can be piped to it. Otherwise it cannot be.
-  var stream = {};
-  stream[serverID] = null;
+  // var stream = {};
+  // stream[serverID] = null;
 
   // CHECKS
-  if (botInVoiceChannel(bot, voiceID)) return log("Bot already in voice.");
-  joinVoice(bot, voiceID, function(){
+  if (botInVoiceChannel(bot, instance[serverID].voiceID)) return log("Bot already in voice.");
+  joinVoice(bot, instance[serverID].voiceID, function(){
     log("Joined: " + voiceID);
     getStream(voiceID, function(streamRef){
-      stream[serverID] = streamRef;
+      instance[serverID].stream = streamRef;
       log("Stream assigned.");
       if (callback) callback();
     })
@@ -60,22 +77,24 @@ function voice(bot, channelID, serverID, userID, callback){
 
   this.queue = function(cmd){
 
+    // Update the state so that the module knows who / what / server/ channel to target and respond to.
+    updateState(cmd);
+
+    // Log queue call for debugging.
     log("Queue called.");
 
-    msg.setCID(cmd.channelID);
+    msg.setCID(channelID); // Replaced from cmd.channelID due to implementation of updateState() that should address global variable obseletion.
 
     // Sub command handler. Checks if another subcommand e.g. >queue >shuffle is entered, and handles accordingly.
-    log(validSubCommand(cmd));
     if (validSubCommand(cmd)) return subCommandHandler(buildSubCommandObj(cmd));
 
     // Checking to see if it is a blank request and if it should be searched for or not.
-    if (queueUtility.blankRequest(cmd.arg)) return msg.embed(queueUtility.buildPrintedQueueEmbedObject(queue[serverID]));
+    if (queueUtility.blankRequest(cmd.arg)) return msg.embed(queueUtility.buildPrintedQueueEmbedObject(instance[serverID].queue));
 
     // Validate link to ensure it is in correct format.
     if (queueUtility.isLink(cmd.arg) && !queueUtility.validateInput(cmd.arg).result) return msg.error(queueUtility.validateInput(cmd.arg).reason);
 
     // Parse input into a raw id.
-    // var request = queueUtility.isLink(cmd.arg) ? queueUtility.parseInput(cmd.arg) : cmd.arg;
     var request = cmd.arg;
 
     log("REQUEST: " + request);
@@ -85,19 +104,19 @@ function voice(bot, channelID, serverID, userID, callback){
       queueUtility.getYTDetails(request, function(details){
 
         if (!details.result) return msg.error("Could not queue item. \n" + details.reason);
-        queue[serverID].push( new queueUtility.item( queue[serverID].length, cmd.sID, 'queue', bot.users[cmd.uID].username, cmd.uID, details.title, details.duration, details.url, details.videoID) );
+        instance[serverID].queue.push( new queueUtility.item( instance[serverID].queue.length, cmd.sID, 'queue', bot.users[cmd.uID].username, cmd.uID, details.title, details.duration, details.url, details.videoID) );
 
-        var lastQueueItem = queue[cmd.sID][queue[cmd.sID].length - 1];
+        var lastQueueItem = instance[cmd.sID].queue[ instance[cmd.sID].queue.length - 1 ];
 
         try {
           // Notify that the item has been successfully queued.
-          msg.embed(queueUtility.buildQueuedNotificationEmbedObject(lastQueueItem, queueUtility.getEta(queue[cmd.sID])), 10000);
+          msg.embed(queueUtility.buildQueuedNotificationEmbedObject(lastQueueItem, queueUtility.getEta(instance[cmd.sID].queue)), 10000);
 
           // Download the file.
           downloadAudioFile(lastQueueItem.url, cmd.sID, lastQueueItem.localFileName, function(){
 
             // Pop first item from queue, and play it once details are collected.
-            state[serverID].queue = true;
+            instance[serverID].state.queue = true;
 
             queueCheck();
 
@@ -120,14 +139,11 @@ function voice(bot, channelID, serverID, userID, callback){
 
       downloadAudioFile(item.url, item.serverID, item.localFileName, function(file){
 
-        // Log download finish.
-        //log("Finished downloading: " + item.title);
-
         if (!status.result) return msg.error(status.reason);
 
-        state[serverID].queue = true;
+        instance[serverID].state.queue = true;
 
-        ffmpeg = childProc.spawn('ffmpeg', [
+        instance[serverID].ffmpeg = childProc.spawn('ffmpeg', [
           '-loglevel', '0',
           '-i', file,
           '-af', 'volume=' + '0.5',
@@ -137,29 +153,35 @@ function voice(bot, channelID, serverID, userID, callback){
           'pipe:1'
         ], {stdio: ['pipe', 'pipe', 'ignore']});
 
-        ffmpeg.on('error', function(error){
+        instance[serverID].ffmpeg.on('error', function(error){
           log("FFMPEG: " + error);
         });
 
-        ffmpeg.on('exit', function(code, signal){
+        instance[serverID].ffmpeg.on('exit', function(code, signal){
           log("FFMPEG exited with code: "+code+" and signal: " + signal);
         })
 
-        ffmpeg.stdout.once('readable', function(){
+        instance[serverID].ffmpeg.stdout.once('readable', function(){
 
-          state[serverID].active = true;
+          instance[serverID].state.active = true;
 
           log("Playing: " + item.title + " ["+item.duration+"]");
 
           // Once the stream is readable, pipe to the cjopus stream.
-          stream[serverID].send(ffmpeg.stdout, {end: false});
+          instance[serverID].stream.send(instance[serverID].ffmpeg.stdout, {end: false});
+
+          // Trying out pipe instead of send to stream.
+          // instance[serverID].ffmpeg.pipe(instance[serverID].stream, {end: false});
+
+          // Testing
+          // fs.createReadStream(file).pipe(instance[serverID].stream, {end: false});
 
         })
 
-        ffmpeg.stdout.once('end', function(){
+        instance[serverID].ffmpeg.stdout.once('end', function(){
           // Make module available for other files to play, and possibly leave.
-          ffmpeg.kill();
-          state[serverID].active = false;
+          instance[serverID].ffmpeg.kill();
+          instance[serverID].state.active = false;
           log("Finished Playing: " + item.title + " ["+item.duration+"]");
           deleteAudioFile(file); // Deletes the audio file after it is done playing.
           queueCheck();
@@ -172,37 +194,59 @@ function voice(bot, channelID, serverID, userID, callback){
   }
 
   this.shuffleQueue = function(cmd){
-    // log("Shuffle queue called.");
-    queue[cmd.sID] = queueUtility.shuffleQueue(queue[cmd.sID]);
+
+    // Update global variables.
+    updateState(cmd);
+
+    // Handle error if no queue or too small
+    if (instance[cmd.sID].queue.length <= 1)
+      return msg.error(
+        instance[cmd.sID].queue ?
+        "Queue size "+instance[cmd.sID].queue.length+" is too small to be shuffled." :
+        "There is no queue."
+      );
+
+    // Reassign shuffled queue.
+    instance[serverID].queue = queueUtility.shuffleQueue(instance[serverID].queue);
     msg.notify("Queue shuffled.");
-    msg.embed(queueUtility.buildPrintedQueueEmbedObject(queue[serverID]))
+    msg.embed(queueUtility.buildPrintedQueueEmbedObject(instance[serverID].queue));
   }
 
   this.skip = function(cmd){
+
+    // Update global variables.
+    updateState(cmd);
+
     log("Attempting to skip.");
-    if (ffmpeg) ffmpeg.kill();
+    if (instance[cmd.sID].ffmpeg) instance[cmd.sID].ffmpeg.kill();
     msg.setCID(cmd.cID);
-    msg.embedNotify("**Skipping**: "+ (currentSong[cmd.sID] && currentSong[cmd.sID].title ? currentSong[cmd.sID].title : "Item") + "", cmd.user + " executed skip.");
+    msg.embedNotify("**Skipping**: "+ (instance[cmd.sID].currentSong && instance[cmd.sID].currentSong.title ? instance[cmd.sID].currentSong.title : "Item") + "", cmd.user + " executed skip.");
     queueCheck();
   }
 
-  this.playAudio = function(file, paramObj){
+  this.playAudio = function(cmd, paramObj){
+
+    // Global variables *should* have been updated before reaching this point.
+    updateState(cmd);
+
+    // Set the file from the command argument.
+    var file = cmd.arg;
 
       check(function(status){
         if (!status.result) return msg.error(status.reason);
         try {
 
-          state[serverID].active = true;
+          instance[serverID].state.active = true;
 
-          stream[serverID].playAudioFile(file);
+          instance[serverID].stream.playAudioFile(file);
 
-          stream[serverID].once('done', function(){
+          instance[serverID].stream.once('done', function(){
               // Make module available for other files to play, and possibly leave.
-              state[serverID].active = false;
+              instance[serverID].state.active = false;
               //log("Busy set to: " + busy);
               if (paramObj && paramObj.leave){
                 // If paramObj.leave
-                self.leaveVoice();
+                self.leaveVoice({sID: serverID});
               }
           });
 
@@ -212,11 +256,14 @@ function voice(bot, channelID, serverID, userID, callback){
 
   }
 
-  this.recordStart = function(){
+  this.recordStart = function(cmd){
+
+    // Update global variables for this request.
+    updateState(cmd);
 
     if (!check().result) return check().reason;
 
-    bot.getAudioContext({channelID: voiceID, maxStreamSize: 50 * 1024}, function(error, stream) {
+    bot.getAudioContext({channelID: instance[serverID].voiceID, maxStreamSize: 50 * 1024}, function(error, stream) {
 
     var date = new Date();
     date = date.toString();
@@ -228,8 +275,8 @@ function voice(bot, channelID, serverID, userID, callback){
     console.log("Date string: "+date);
 
     if (error) console.log(error);
-      state[serverID].active = true;
-      write = fs.createWriteStream(__parentDir+'/audio/recordings/'+date+".pcm");
+      instance[serverID].state.active = true;
+      instance[serverID].write = fs.createWriteStream(__parentDir+'/audio/recordings/'+date+".pcm");
       stream.pipe(write);
 
     console.log("RECORDING VOICE");
@@ -237,7 +284,11 @@ function voice(bot, channelID, serverID, userID, callback){
     });
   }
 
-  this.recordStop = function(){
+  this.recordStop = function(cmd){
+
+    // Update global variables to match command origin.
+    updateState(cmd);
+
       write.close(function(){
         getMostRecentRecording(function(filename){
           var path = __parentDir+'/audio/recordings/';
@@ -245,39 +296,51 @@ function voice(bot, channelID, serverID, userID, callback){
         });
       });
 
-      state[serverID].active = false;
+      instance[serverID].state.active = false;
       console.log("Recording finished.");
   }
 
   // Leaves the voice channel and configures the environment after that accordingly.
-  this.leaveVoice = function(){
+  this.leaveVoice = function(cmd){
+
+    // Update global variables to match command origin.
+    updateState(cmd);
+
+    // Update server id to match where command originated.
+    serverID = cmd.sID;
+    instance[serverID].voiceID = updateVoiceID(serverID);
+    if (!instance[serverID].voiceID) return msg.error("I am not in a voice channel.");
+
     // Notify of leaving voice.
-    log("Leaving: " + voiceID);
-    bot.leaveVoiceChannel(voiceID);
+    log("Leaving: " + instance[serverID].voiceID+": "+resolveNameFromID(bot, instance[serverID].voiceID));
+    bot.leaveVoiceChannel(instance[serverID].voiceID);
 
 
     // Configure environment properly for leaving voice channel.
-    state[serverID].active = false;
-    state[serverID].queue = false;
+    instance[serverID].state.active = false;
+    instance[serverID].state.queue = false;
 
     // Clear the stream.
-    stream[serverID] = null;
+    instance[serverID].stream = null;
 
     // Move the 'currentSong' (if there is one) to the queue so that it doesn't
     // auto-play or request on join, and clear the currentSong.
-    if (currentSong[serverID]) {
+    if (instance[serverID].currentSong) {
       try {
-        queue[serverID].unshift(currentSong[serverID]);
-        currentSong[serverID] = null;
+        instance[serverID].queue.unshift(instance[serverID].currentSong);
+        instance[serverID].currentSong = null;
       } catch(e){log("Error preparing queue for leaveVoice: " + e)}
     }
 
     // Check if ffmpeg instance is on, and kill it if so.
-    if (ffmpeg) ffmpeg.kill();
+    if (instance[serverID].ffmpeg) instance[serverID].ffmpeg.kill();
 
   }
 
   this.joinVoice = function(cmd){
+
+    // Update global voice variables.
+    updateState(cmd);
 
     log("Joinvoice called.");
 
@@ -285,14 +348,14 @@ function voice(bot, channelID, serverID, userID, callback){
     // Grab the VoiceID that would like to join.
     voiceIDQuery = getVoiceID(bot, cmd.sID, cmd.uID);
     if (!voiceIDQuery.result) return msg.error("I couldn't find your Voice Channel: " + voiceIDQuery.reason);
-    voiceID = voiceIDQuery.result;
+    instance[cmd.sID].voiceID = voiceIDQuery.result;
 
-    if (!botInVoiceChannel(bot, voiceID)) {
-      joinVoice(bot, voiceID, function(){
-        getStream(voiceID, function(streamReference){
-          stream[serverID] = streamReference;
+    if (!botInVoiceChannel(bot, instance[cmd.sID].voiceID)) {
+      joinVoice(bot, instance[cmd.sID].voiceID, function(){
+        getStream(instance[cmd.sID].voiceID, function(streamReference){
+          instance[cmd.sID].stream = streamReference;
           // If previous queue exists, resume playing it.
-          if (queue[serverID].length !== 0) resumeQueue();
+          if (instance[cmd.sID].queue.length !== 0) resumeQueue();
         })
       })
     }
@@ -300,20 +363,32 @@ function voice(bot, channelID, serverID, userID, callback){
 
   // Check if the voice channel is empty every minute.
   // If so, leave.
-  setTimeout(checkEmpty, 60000);
+  // checkEmpty();
+  // setTimeout(checkEmpty, 60000);
 
   // FUNCTIONS THAT REQUIRES SCOPE
   function checkInVoice(callback){
     // Before any function is called that depends on being in a voice channel,
     // this command checks if it is prepared.
 
+    // Set new voice channel if there is one.
+    // Grab the VoiceID that would like to join.
+    voiceIDQuery = getVoiceID(bot, serverID, userID);
+    if (!voiceIDQuery.result) return msg.error("I couldn't find your Voice Channel: " + voiceIDQuery.reason);
+    instance[serverID].voiceID = voiceIDQuery.result;
+
     // Check if the bot is in the proper voice channel.
-    if (!botInVoiceChannel(bot, voiceID)) {
-      joinVoice(bot, voiceID, function(){
-        getStream(voiceID, function(streamReference){
-          stream[serverID] = streamReference;
+    if (!botInVoiceChannel(bot, instance[serverID].voiceID)) {
+      joinVoice(bot, instance[serverID].voiceID, function(){
+        getStream(instance[serverID].voiceID, function(streamReference){
+          instance[serverID].stream = streamReference;
           if (callback) callback();
         })
+      })
+    } else if (!instance[serverID].stream){
+      getStream(instance[serverID].voiceID, function(streamRef){
+        instance[serverID].stream = streamRef;
+        if (callback) callback();
       })
     } else {
       if (callback) callback();
@@ -321,12 +396,56 @@ function voice(bot, channelID, serverID, userID, callback){
   }
 
   function checkEmpty(){
+
+    log("Checking if empty.");
+
+    // Assign that check empty is running.
+    instance[serverID].checkEmptyRunning = true;
+
+    instance[serverID].voiceID = updateVoiceID(serverID);
     // Check if there is anyone in the voice channel.
-    if (botInVoiceChannel(bot, voiceID) && Object.keys(getUsersInVoiceChannel(bot, voiceID)).length == 1){
+    if (botInVoiceChannel(bot, instance[serverID].voiceID) && Object.keys(getUsersInVoiceChannel(bot, instance[serverID].voiceID)).length == 1){
       // The bot is the only user in the voice channel, leave.
-      msg.notify("Leaving `" + resolveNameFromID(bot, voiceID) + "` as it is empty.");
-      self.leaveVoice();
+      msg.notify("Leaving `" + resolveNameFromID(bot, instance[serverID].voiceID) + "` as it is empty.");
+      self.leaveVoice({sID: serverID});
     }
+
+    // Call function again recursively to check if there is anyone connected in the voice channel.
+    if (checkEmpty && botInVoiceChannel(bot,instance[serverID].voiceID)){
+      return setTimeout(checkEmpty, 300000); // Check every 5 minutes.
+    }
+
+    // Return false if the checkEmpty recursion has finished.
+    instance[serverID].checkEmptyRunning = false;
+
+    // Anounce that checkEmpty is no longer runnig.
+    log("CheckEmpty instance closed.");
+  }
+
+  function updateVoiceID(serverID){
+    var voiceID = false; // Requires to be disproven that it is not in a voice channel.
+
+    // Looks for which channel the bot is connected to on the server and updates voiceID accordingly.
+    for (var key in bot._vChannels){
+      //log("Testing " + key);
+      if (bot._vChannels[key].serverID == serverID) {
+        voiceID = key;
+        //log("Success");
+        break;
+      }
+    }
+
+    return voiceID;
+  }
+
+  function updateState(cmd){
+    // Grabs the newest details from the cmd object and reassigns global variables accordingly to
+    // avoid confusion.
+    channelID = cmd.cID;
+    serverID = cmd.sID;
+    userID = cmd.uID;
+    instance[serverID].voiceID = updateVoiceID(serverID);
+    log("VoiceID updated to: " + resolveNameFromID(bot, instance[serverID].voiceID));
   }
 
   function check(callback){
@@ -335,24 +454,30 @@ function voice(bot, channelID, serverID, userID, callback){
       // log("Check In Voice Callback.");
       var status = {result: true, reason: null};
       // Check if the voice module is busy.
-      if (state[serverID].active) status = {result: false, reason: "Voice module is busy."};
+      if (instance[serverID].state.active) status = {result: false, reason: "Voice module is busy."};
 
       // If is isn't busy, set it to busy.
-      state[serverID].active = true;
+      instance[serverID].state.active = true;
 
       if (callback) callback(status);
     });
+
+    // Instantiate checkempty if it hasn't been already.
+    if (!instance[serverID].checkEmptyRunning) {
+      log("No checkEmpty instance. Running now. Current state: " + instance[serverID].checkEmptyRunning);
+      checkEmpty();
+    }
 
   }
 
   function queueCheck(){
     // log("QUEUE: " + state.queue + " ACTIVE: " + state.active);
-    if (state[serverID].queue && !state[serverID].active) {
+    if (instance[serverID].state.queue && !instance[serverID].state.active) {
       playNext();
       //msg.notify(currentSong.title + " now playing.");
-      if (!currentSong[serverID]) return; // Nothing in queue to report.
-      var queueNotificationEmbedObject = queueUtility.buildEmbedObject(currentSong[serverID]);
-      msg.embed(queueNotificationEmbedObject, currentSong[serverID].duration * 1000); // Keep message for the length of the song.
+      if (!instance[serverID].currentSong) return; // Nothing in queue to report.
+      var queueNotificationEmbedObject = queueUtility.buildEmbedObject(instance[serverID].currentSong);
+      msg.embed(queueNotificationEmbedObject, instance[serverID].currentSong.duration * 1000); // Keep message for the length of the song.
     }
   }
 
@@ -404,13 +529,13 @@ function voice(bot, channelID, serverID, userID, callback){
   }
 
   function playNext(){
-    if (queue[serverID].length > 0) currentSong[serverID] = queue[serverID].shift();
+    if (instance[serverID].queue.length > 0) instance[serverID].currentSong = instance[serverID].queue.shift();
     else return endQueueHandler();
-    self.playQueueItem(currentSong[serverID]);
+    self.playQueueItem(instance[serverID].currentSong);
   }
 
   function endQueueHandler(){
-    currentSong[serverID] = null;
+    instance[serverID].currentSong = null;
     log("End of queue reached.");
     msg.notify("End of queue reached.");
   }
@@ -418,21 +543,20 @@ function voice(bot, channelID, serverID, userID, callback){
   function resumeQueue(){
     log("Found queue. Resuming");
     msg.notify("Resuming queue.");
-    state[serverID].queue = true;
-    state[serverID].active = false;
+    instance[serverID].state.queue = true;
+    instance[serverID].state.active = false;
     queueCheck();
   }
 
   function validSubCommand(cmd){
     try {
-      log("Checking prefix: " + containsPrefix(cmd.arg, cmd.prefix) +" subcomexists: " + subCommandExists(getCmdName(cmd.arg, cmd.prefix)));
+      // log("Checking prefix: " + containsPrefix(cmd.arg, cmd.prefix) +" subcomexists: " + subCommandExists(getCmdName(cmd.arg, cmd.prefix)));
       return containsPrefix(cmd.arg, cmd.prefix) && subCommandExists(getCmdName(cmd.arg, cmd.prefix));
     } catch(e){log("Validating sub command: " + e)}
   }
 
   function containsPrefix(message, prefix){
     try {
-      log("Checking: "+ message + " prefix: "+ prefix + " with length: " + prefix.length);
       return message.substring(0, prefix.length) == prefix;
     } catch(e){log("Checking if contains prefix: " + e)}
   }
@@ -485,6 +609,9 @@ function voice(bot, channelID, serverID, userID, callback){
     }
   }
 
+  function log(message){
+    console.log("[VOICE.JS] " + resolveNameFromID(bot, instance[serverID].voiceID) + ": "+ message);
+  }
 }
 
 function log(message){
@@ -492,6 +619,7 @@ function log(message){
 }
 
 function joinVoice(bot, voiceID, callback){
+  if (!voiceID) return log("Invalid voiceID: " + voiceID);
   log("Joining: " + voiceID);
   bot.joinVoiceChannel(voiceID, function(err, res){
     if (err) console.log(err);
@@ -521,7 +649,10 @@ function botInVoiceChannel(bot, voiceID){
 
 function resolveNameFromID(bot, voiceID){
   try {
-    return bot.channels[voiceID].name;
+    if (bot.channels[voiceID] && bot.channels[voiceID].name)
+      return bot.channels[voiceID].name;
+
+    return ""; // No voice channel found.
   } catch(e){ log("Resolving name from id: " + e); return "Voice Channel"; };
 }
 

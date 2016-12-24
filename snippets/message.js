@@ -23,19 +23,21 @@ function messenger(bot, channel){
         message: msg
       }, function callback(err, response){
         try {
-          var previousMessageID =  response.id;
-          if (callback) callback();
+          //var previousMessageID =  response.id;
+          //if (callback) callback();
           setTimeout(function(){
             try {
               bot.deleteMessage({
                 channelID: response.channel_id,
-                messageID: previousMessageID
+                messageID: response.id
+              }, function(err){
+                if (err) log(err);
               });
-            } catch(e){log(e);};
+            } catch(e){log("Removing notify message: " + e + "\nMessage: " + msg);};
           }, delay);
-        } catch(e){log(e);};
+        } catch(e){log("Timeout for removing notitfy message: " + e + "\nMessage: " + msg);};
       });
-    } catch (e) {log(e);};
+    } catch (e) {log("Sending notify message: " + e + "\nMessage: " + msg);};
   }
 
   //replies to the channel in which the bot was invoked.

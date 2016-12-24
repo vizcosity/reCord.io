@@ -217,7 +217,7 @@ function commandList(bot){
           var helpList = generateHelpList();
 
           // Sends the introductory message first, then the other help messages intermittendly.
-          msg.send(":small_orange_diamond: **reCord** v"+ require('../log/changelog.json').ver +" **GitHub**: <https://github.com/Vizcosity/discord.gi>\n",
+          msg.send(":small_orange_diamond: **reCord** v"+ require('../log/changelog.json').ver +" **GitHub**: <https://github.com/Vizcosity/discord.gi>\n:small_blue_diamond: **Invite me to your server**: " + bot.inviteURL,
           false,
           function(){
             for (var i = 0; i < helpList.length; i++){
@@ -355,22 +355,15 @@ function commandList(bot){
 
         recordstart: function(cmd){
           log("RECORD REACHED. Attempting to instantiate.");
-          try {
-              if (voice[cmd.sID]) {
-                msg.setCID(cmd.cID);
-                return msg.error("I am already recording. Use " + cmd.prefix + "recordstop to finish recording.");
-              }
-              voice[cmd.sID] = new external.module.voice(bot, cmd.cID, cmd.sID, cmd.uID, function callback(){
-              // Start recording once joice channel has joined.
-              voice[cmd.sID].recordStart();
-            });
-          } catch(e){ console.log(e); };
+          voiceFunction(cmd, function(voice){
+            voice.recordStart(cmd);
+          });
         },
 
         leavevoice: function(cmd){
           if (voice[cmd.sID]){
               // log("Attempting to leave voice");
-              return voice[cmd.sID].leaveVoice();
+              return voice[cmd.sID].leaveVoice(cmd);
               // Clear the voice object after leaving.
               //return voice[cmd.sID] = null;
            };
@@ -388,9 +381,9 @@ function commandList(bot){
 
         recordstop: function(cmd){
           // console.log("recordstop cmd exec order reached.");
-          if (voice[cmd.sID]) {
-            voice[cmd.sID].recordStop();
-          }
+          voiceFunction(cmd, function(voice){
+            voice.recordStop(cmd);
+          });
         },
 
         recordings: function(cmd){
@@ -399,7 +392,7 @@ function commandList(bot){
 
         audio: function(cmd){
           voiceFunction(cmd, function(voice){
-            voice.playAudio(cmd.arg, {leave: true});
+            voice.playAudio(cmd, {leave: true});
           });
         }
 

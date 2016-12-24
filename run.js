@@ -1,7 +1,7 @@
 var forever = require('forever-monitor');
 var config = require('./config.json');
 
-var child = new (forever.Monitor)('main.js', {
+var child = new (forever.Monitor)('main2.js', {
   max: 100,
   silent: false,
   args: []
