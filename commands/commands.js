@@ -11,7 +11,8 @@ function commandList(bot){
       voicerecordings: require("../snippets/voicerecordings.js")
     },
     config: {
-      permissions: require('../config/permissions.json')
+      permissions: require('../config/permissions.json'),
+      config: require('../config/config.json')
     },
     module: {
       voice: require('../modules/voice.js'),
@@ -175,7 +176,9 @@ function commandList(bot){
         var permissions = new external.snippet.permissions(bot, cmd.sID);
 
         var commandInfo = require('../config/commands.json'); // Command information is stored here.
-        var config = require('../config.json');
+        external.config.config = require('../config/config.json'); // Update config file in case prefix has changed.
+        var config = external.config.config; // Shorter reference to config file.
+
         // Returns useful help information.
 
         // If there are arguments, it is likely that the user is looking
@@ -203,7 +206,7 @@ function commandList(bot){
               for (var key in commandInfo){
                 if (!permissions.hasAccess(cmd.uID, key).result) continue;
                 var cmdGroup = commandInfo[key].group;
-                helpList[cmdGroup] += "**" + config.prefix + key + "** - " + commandInfo[key].desc + '\n';
+                helpList[cmdGroup] += "**" + cmd.prefix + key + "** - " + commandInfo[key].desc + '\n';
               }
 
               // Returns as an array so that each cmd Group is split up and can be
@@ -234,7 +237,7 @@ function commandList(bot){
           if (typeof commandInfo[commandToLookup] !== 'undefined'){
             // The command exists. Return the description & usage.
             var description = ":pencil: **Description**: " + commandInfo[commandToLookup].desc;
-            var usage = ":comet: **Usage**: " + config.prefix + commandInfo[commandToLookup].usage;
+            var usage = ":comet: **Usage**: " + cmd.prefix + commandInfo[commandToLookup].usage;
             var accessLevel = "";
             var access = "";
 
@@ -252,11 +255,10 @@ function commandList(bot){
               : "\n\n :no_entry: **You do not have access to this command:**\n\n:small_red_triangle_down: **Reason**: " +
               permissions.hasAccess(cmd.uID, commandToLookup).reason;
             } catch(e) { console.log(e) };
-            // var access =
 
             var formattedResponse = description + '\n\n' + usage + accessLevel + access;
 
-            //msg.notify(formattedResponse, 60000);
+            // Pretty embed response.
             msg.embed({
               title: "Help Info",
               type: "rich",

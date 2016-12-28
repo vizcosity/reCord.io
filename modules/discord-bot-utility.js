@@ -5,11 +5,11 @@
  * @return {type}  void
  * @param {type} bot current bot instance.
  */
-function utility(bot){
+function utility(bot, dev){
 
   var debug = false;
   var self = this;
-  var dev = false;
+  // var dev = false;
 
   // MODULES
   var config = require("../config/config.json");
@@ -179,6 +179,11 @@ function utility(bot){
         }})
       }
 
+      // Attempt to assign permissions instance to cmd object.
+      try {
+        cmd.permissions = permission;
+      } catch(e){log.debug("Assinging permission to cmd obj: " + e)}
+
       // Attempt to execute.
       try {
         command.execute[cmd.name](cmd);
@@ -192,7 +197,14 @@ function utility(bot){
     return containsPrefix(input, self.getPrefix());
   }
 
-
+  this.setStatus = function(input){
+    var status = input ? input : self.getPrefix() + " | Ready.";
+    bot.setPresence({
+        game : {
+          name: status
+        }
+      });
+  }
 }
 
 function logger(debug){

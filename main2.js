@@ -10,8 +10,7 @@ var commandList = require('./commands/commands.js'), commands;
 var permissionHandler = require('./config/permissions.js');
 var Utility = require('./modules/discord-bot-utility.js');
 
-
-var shell = false ;
+var shell = true;
 var dev = false;
 var token = determineToken(process.argv[2]);
 bot = new Discord.Client({
@@ -19,9 +18,10 @@ bot = new Discord.Client({
   autorun: true
 });
 
-var util = new Utility(bot);
+var util = new Utility(bot, dev);
 
 bot.on('ready', function(){
+
   // Log initialization status.
   var servers = util.printServers();
   console.log("Successfully logged in as " + bot.username + ' - ID: ' + bot.id+servers);
@@ -41,8 +41,13 @@ bot.on('ready', function(){
       } catch(e){ console.log(e); };
     });
   }
+
+  // Set status.
+  util.setStatus();
+
 });
 
+// Message handling.
 bot.on('message', function(user, userID, channelID, message, event){
 
   // Sets up the environment for command execution.
@@ -60,6 +65,12 @@ bot.on('message', function(user, userID, channelID, message, event){
 
   util.execute(cmd);
 
+});
+
+// Reconnection handling
+bot.on('disconnect', function(error, code){
+  bot.connect();
+  console.log("[MAIN.JS] Disconnected and attempting to reconnect: " + code + ": " + error);
 });
 
 

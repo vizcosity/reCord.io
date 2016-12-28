@@ -108,6 +108,81 @@ module.exports = {
     return shuffledQueue;
   },
 
+  clearQueueHandler: function(cmd, queue, callback){
+    try {
+      if (!callback) return log("clearQueueHandler: no callback found.");
+      if (!cmd) return log("clearQueueHandler: no cmd object found.");
+      if (!queue) return log("clearQueueHandler: No queue found to clear.");
+      var mode = determineClearQueueMode(cmd.arg, cmd.event);
+      if (!cmd.permissions.hasSubScope(cmd.uID, "queue", "clear", mode).result)
+        return callback(queue, "Insufficient permissions to use this subcommand: "+cmd.permissions.hasSubScope(cmd.uID, "queue", "clear", mode).reason);
+
+      /*  There are 4 modes for clearQueue:
+          * Clear all from a user. (self or other)
+          * Clear by keyword (using quote marks "")
+          * Clear by position
+          * Clear all. (No arguments);
+      */
+
+      switch (mode){
+          case "all":
+            callback([], null, "All items in queue cleared. **["+queue.length+"]**"); // Return an empty queue.
+            break;
+          case "keyword":
+            var initialQueueLength = queue.length;
+            var rawKeyword = cmd.arg.substring(1,cmd.arg.length-1);
+            for (var i = 0; i < queue.length; i++){
+              if (queue[i].title.indexOf(rawKeyword) !== -1)
+                queue.splice(i, 1);
+            }
+            var finalQueueLength = initialQueueLength - queue.length;
+            callback(queue, null, "Removed items containing: " + rawKeyword + " **["+finalQueueLength+"]**");
+            break;
+          case "position":
+            var position = parseInt(cmd.arg);
+            var index = position - 1;
+            if (queue.indexOf(index) !== -1) return callback(queue, "Invalid queue position: " + position);
+            var songTitle = queue[index].title;
+            queue.splice(index, 1);
+            return callback(queue, null, position+". "+songTitle+" removed from queue. **[1]**");
+            break;
+          case "user-self":
+            var initialQueueLength = queue.length;
+            for (var i = 0; i < queue.length; i++){
+              if (queue[i].userID == cmd.uID) queue.splice(i, 1);
+            }
+            var finalQueueLength = initialQueueLength - queue.length;
+            return callback(queue, null, "Removed all items requested by: " + cmd.user + " **["+finalQueueLength+"]**");
+            break;
+          case "user-other":
+            var initialQueueLength = queue.length;
+            var users = [];
+
+            for (var i = 0; i < cmd.event.d.mentions.length; i++){
+              users.push(cmd.event.d.mentions[i].id);
+            }
+
+            for (var i = 0; i < queue.length; i++){
+              for (var j = 0; j < users.length; j++){
+                if (queue[i].userID == users[j]) queue.splice(i, 1);
+              }
+            }
+
+            var formatUsernames = "";
+            for (var i = 0; i < cmd.event.d.mentions.length; i++){
+              formatUsernames += (i !== cmd.event.d.mentions.length -1 ) ? (cmd.event.d.mentions[i].username + ', ') : cmd.event.d.mentions[i].username;
+            }
+
+            var finalQueueLength = initialQueueLength - queue.length;
+            callback(queue, null, "Removed all queue items requested by: "+formatUsernames+" **["+finalQueueLength+"]**");
+            break;
+          default:
+            callback(queue, "Could not parse request: " + cmd.arg);
+            return log("ClearQueueMode not recognizd: " + determineClearQueueMode(cmd.arg));
+      } // End of switch.
+    } catch(e) { log("clearQueueHandler: " + e)}
+  },
+
   getEta: function(queue){
     return getEtaGlobal(queue);
   },
@@ -150,6 +225,31 @@ function itemInArray(item, array){
     }
     return false;
   } catch(e){log("Checking if in array: " + e)}
+}
+
+function determineClearQueueMode(arg, event){
+  try {
+    log("DeterminingClearModeFroM: " + arg);
+    if (!arg) return "all";
+
+    if (!isNaN(parseInt(arg))) return "position";
+
+    if ((arg.substring(0,1) == "'" && arg.substring(arg.length-1, arg.length) == "'") || (arg.substring(0,1) == '"' && arg.substring(arg.length-1, arg.length) == '"'))
+      return "keyword";
+
+
+    if (event && event.d && event.d.mentions.length >= 1){
+      // This is a user clear request.
+
+      for (var i = 0; i < event.d.mentions.length; i++){
+        console.log(event.d.mentions[i].id+": " + event.d.author.id);
+        if (event.d.mentions[i].id !== event.d.author.id) return "user-other";
+      }
+
+      if (event.d.mentions[0].id == event.d.author.id) return "user-self";
+    }
+  } catch(e){log("determineClearQueueMode: " + e)}
+
 }
 
 function buildQueueGlobal(queue){

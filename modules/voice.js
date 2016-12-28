@@ -3,6 +3,7 @@
 * sudo ffmpeg -f s16le -ar 48.0k -ac 2 -i test2.pcm fileConv.wav
 */
 
+// Dependencies
 var Messenger = require("../snippets/message.js");
 var fs = require('fs');
 var request = require('request');
@@ -12,6 +13,7 @@ var spawn = require('child_process').spawn;
 var childProc = require('child_process');
 var queueUtility = require('./queue');
 var mkdirp = require('mkdirp');
+var subCommand = require('../commands/subCommands');
 
 function voice(bot, channelID, serverID, userID, callback){
   // Initiate a voice instance for this userID.
@@ -26,8 +28,9 @@ function voice(bot, channelID, serverID, userID, callback){
   if (!voiceIDQuery.result) msg.error("I couldn't get the Voice Channel: " + voiceIDQuery.reason);
 
   var instance = {};
-
-  // Set up instance for the server.
+  // Set up instance for the server. This is to prevent confusion between servers to isolate completely.
+  // I'm not quite sure even though the voice instance is supposed to be isolated per-server there are still
+  // some cases where music may leek or requests / queues get confused between servers.
   instance[serverID] = {
     ffmpeg: null,
     queue: [],
@@ -42,27 +45,8 @@ function voice(bot, channelID, serverID, userID, callback){
     checkEmptyRunning: null
   }
 
-
-  // var ffmpeg;
-  // var queue = {};
-  // queue[serverID] = [];
-  // //var busy = false
-  //
-  // var state = {};
-  // state[serverID] = {
-  //   active: false,
-  //   queue: false
-  // };
-  //
-  // var currentSong = {};
-  // currentSong[serverID] = null;
-
+  // Global variable reference to 'this'
   var self = this;
-
-  // This stream object will be assigned the stream obj once audio context is collected.
-  // When this is not null, audio can be piped to it. Otherwise it cannot be.
-  // var stream = {};
-  // stream[serverID] = null;
 
   // CHECKS
   if (botInVoiceChannel(bot, instance[serverID].voiceID)) return log("Bot already in voice.");
@@ -86,7 +70,7 @@ function voice(bot, channelID, serverID, userID, callback){
     msg.setCID(channelID); // Replaced from cmd.channelID due to implementation of updateState() that should address global variable obseletion.
 
     // Sub command handler. Checks if another subcommand e.g. >queue >shuffle is entered, and handles accordingly.
-    if (validSubCommand(cmd)) return subCommandHandler(buildSubCommandObj(cmd));
+    if (validSubCommand("queue", cmd)) return subCommandHandler("queue", cmd); // Experimental new sub-command handler.
 
     // Checking to see if it is a blank request and if it should be searched for or not.
     if (queueUtility.blankRequest(cmd.arg)) return msg.embed(queueUtility.buildPrintedQueueEmbedObject(instance[serverID].queue));
@@ -210,6 +194,29 @@ function voice(bot, channelID, serverID, userID, callback){
     instance[serverID].queue = queueUtility.shuffleQueue(instance[serverID].queue);
     msg.notify("Queue shuffled.");
     msg.embed(queueUtility.buildPrintedQueueEmbedObject(instance[serverID].queue));
+
+  }
+
+  this.clearQueue = function(cmd){
+
+    // Update State.
+    updateState(cmd);
+
+    // Handle error if no queue or too small
+    if (instance[cmd.sID].queue.length === 0)
+      return msg.error(
+        instance[cmd.sID].queue ?
+        "There is nothing in the queue to be cleared / removed." :
+        "There is no queue."
+      );
+
+
+    queueUtility.clearQueueHandler(cmd, instance[serverID].queue, function(newQueue, error, notification){
+      if (error) return msg.error(error);
+      if (newQueue) instance[cmd.sID].queue = newQueue;
+      if (notification) msg.embedNotify(notification, "Cleared by "+ cmd.user);
+    });
+
   }
 
   this.skip = function(cmd){
@@ -261,27 +268,33 @@ function voice(bot, channelID, serverID, userID, callback){
     // Update global variables for this request.
     updateState(cmd);
 
-    if (!check().result) return check().reason;
+    check(function(status){
 
-    bot.getAudioContext({channelID: instance[serverID].voiceID, maxStreamSize: 50 * 1024}, function(error, stream) {
+      if (!status.result) return msg.error(status.reason);
 
-    var date = new Date();
-    date = date.toString();
+      // Grab new audio context with maxstreamlength for audio recording.
+      bot.getAudioContext({channelID: instance[serverID].voiceID, maxStreamSize: 50 * 1024}, function(error, stream) {
 
-    console.log("Date string: " + date);
-    // Replace spaces in date with underscores.
-    date = date.replace(/\s/g, '_');
+      var date = new Date();
+      date = date.toString();
 
-    console.log("Date string: "+date);
+      console.log("Date string: " + date);
+      // Replace spaces in date with underscores.
+      date = date.replace(/\s/g, '_');
 
-    if (error) console.log(error);
-      instance[serverID].state.active = true;
-      instance[serverID].write = fs.createWriteStream(__parentDir+'/audio/recordings/'+date+".pcm");
-      stream.pipe(write);
+      console.log("Date string: "+date);
 
-    console.log("RECORDING VOICE");
+      if (error) console.log(error);
+        instance[serverID].state.active = true;
+        instance[serverID].write = fs.createWriteStream(__parentDir+'/audio/recordings/'+date+".pcm");
+        stream.pipe(write);
 
-    });
+      console.log("RECORDING VOICE");
+
+      });
+    })
+
+
   }
 
   this.recordStop = function(cmd){
@@ -360,11 +373,6 @@ function voice(bot, channelID, serverID, userID, callback){
       })
     }
   }
-
-  // Check if the voice channel is empty every minute.
-  // If so, leave.
-  // checkEmpty();
-  // setTimeout(checkEmpty, 60000);
 
   // FUNCTIONS THAT REQUIRES SCOPE
   function checkInVoice(callback){
@@ -467,7 +475,6 @@ function voice(bot, channelID, serverID, userID, callback){
       log("No checkEmpty instance. Running now. Current state: " + instance[serverID].checkEmptyRunning);
       checkEmpty();
     }
-
   }
 
   function queueCheck(){
@@ -548,10 +555,10 @@ function voice(bot, channelID, serverID, userID, callback){
     queueCheck();
   }
 
-  function validSubCommand(cmd){
+  function validSubCommand(parent, cmd){
     try {
-      // log("Checking prefix: " + containsPrefix(cmd.arg, cmd.prefix) +" subcomexists: " + subCommandExists(getCmdName(cmd.arg, cmd.prefix)));
-      return containsPrefix(cmd.arg, cmd.prefix) && subCommandExists(getCmdName(cmd.arg, cmd.prefix));
+      // log("Checking prefix: " + containsPrefix(cmd.arg, cmd.prefix) +" subcomexists: " + subCommandExists(parent, getCmdName(cmd.arg, cmd.prefix)));
+      return containsPrefix(cmd.arg, cmd.prefix) && subCommandExists(parent, getCmdName(cmd.arg, cmd.prefix));
     } catch(e){log("Validating sub command: " + e)}
   }
 
@@ -567,46 +574,22 @@ function voice(bot, channelID, serverID, userID, callback){
     } catch(e){ log("Getting command name: " + e)}
   }
 
-  function buildSubCommandObj(cmd){
-
-    // Return built cmd object.
-    return {
-      sID: cmd.sID,
-      message: cmd.arg,
-      name: getCmdName(cmd.arg, cmd.prefix),
-      arg: getCmdArguments(cmd.arg, cmd.prefix), // This will be changed when passed into the and function.
-      user: cmd.user,
-      uID: cmd.uID,
-      channelID: cmd.channelID,
-      cID: cmd.channelID,
-      event: cmd.event,
-      //util: self,
-      // Check if the server has set a prefix, and assign it.
-      prefix: self.prefix
-    }
-  }
-
-  function getCmdArguments(message, prefix){
-    var preCmd = message.substring(0, prefix.length + getCmdName(message, prefix).length + 1);
-    return message.substring(preCmd.length, message.length);
-  }
-
-  function subCommandExists(command){
+  function subCommandExists(parent, command){
     try {
-      if (require('../config/subCommands.json')[command]) return true;
+      log("Checking "+parent+": "+command+" as a valid sub-cmd.");
+      if (require('../config/subCommands.json')[parent][command]) return true;
       return false;
     } catch(e){log("Checking subcommand existance: " + e)}
   }
 
-  function subCommandHandler(cmd){
-    log("Subcommand detected: " + cmd.name);
-    switch(cmd.name){
-      case "shuffle":
-        self.shuffleQueue(cmd);
-        break;
-      default:
-      return log("Sub command not recognized.");
-    }
+  // Runs the subCommand module and handles subcommands.
+  function subCommandHandler(parent, cmd){
+
+    // Runs a check for sub-command existance and clearance for user to use it.
+    subCommand(bot, cmd.sID, parent, function(subCmd){
+      subCmd.execute(cmd, self);
+    });
+
   }
 
   function log(message){
@@ -693,7 +676,6 @@ function decode(pathToFile, filename){
   console.log("Decoder called on: "+ pathToFile+filename+".pcm");
 
 }
-
 
 function getVoiceID(bot, serverID, userID){
   try {

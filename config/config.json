@@ -8,7 +8,7 @@
   },
   "global-dev":{
     "enabled": true,
-    "prefix": ">",
+    "prefix": "<",
     "status": "Testing",
     "nickname": "reCord BETA",
     "token": "MjUxMDEyNzk1ODgwMDQ2NTky.CxdNaA.GEzYCnNw-PaptCAl1To9D6bO_aY"

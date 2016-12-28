@@ -1,9 +1,32 @@
 {
-  "shuffle": {
-    "access": 3,
-    "scope": "none",
-    "desc": "Shuffles the queue.",
-    "usage": "shuffle",
-    "group": "queue"
+  "queue": {
+    "path": "./subCommands/sub_queue.js",
+    "shuffle": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Shuffles the queue.",
+      "usage": "shuffle",
+      "parent": "queue"
+    },
+
+    "clear": {
+      "access": 3,
+      "scope": {
+        "3": "user-self",
+        "4": "user-other keyword position",
+        "5": "all"
+      },
+      "desc": "Clears the queue from all songs, songs with a certain keyword, or songs requested by a certain user.",
+      "usage": "clear <@user> or clear <prefix>all or clear 'sandstorm'",
+      "parent": "queue"
+    },
+
+    "next": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Queue a song up next. Takes in a new request or an item already in queue.",
+      "usage": "next <link / search query / queue item position>",
+      "parent": ""
+    }
   }
 }
