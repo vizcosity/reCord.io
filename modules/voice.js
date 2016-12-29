@@ -419,7 +419,7 @@ function voice(bot, channelID, serverID, userID, callback){
     }
 
     // Call function again recursively to check if there is anyone connected in the voice channel.
-    if (checkEmpty && botInVoiceChannel(bot,instance[serverID].voiceID)){
+    if (instance[serverID].checkEmptyRunning && botInVoiceChannel(bot,instance[serverID].voiceID)){
       return setTimeout(checkEmpty, 300000); // Check every 5 minutes.
     }
 
@@ -472,8 +472,13 @@ function voice(bot, channelID, serverID, userID, callback){
 
     // Instantiate checkempty if it hasn't been already.
     if (!instance[serverID].checkEmptyRunning) {
-      log("No checkEmpty instance. Running now. Current state: " + instance[serverID].checkEmptyRunning);
-      checkEmpty();
+      // Check Empty process wrapped in a delay so that it has to wait a bit after joining the voice channel to see if it is empty or not.
+      // Without this sometimes the check will report that it is empty and leave prematurely causing a fatal error as stream is attempting to be piped.
+      setTimeout(function(){
+        log("No checkEmpty instance. Running now. Current state: " + instance[serverID].checkEmptyRunning);
+        checkEmpty();
+      }, 15000);
+
     }
   }
 

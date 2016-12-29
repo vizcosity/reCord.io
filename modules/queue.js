@@ -114,6 +114,7 @@ module.exports = {
       if (!cmd) return log("clearQueueHandler: no cmd object found.");
       if (!queue) return log("clearQueueHandler: No queue found to clear.");
       var mode = determineClearQueueMode(cmd.arg, cmd.event);
+      if (!mode) return callback(queue, "Invalid format. "+cmd.prefix+"clear subcommand has 4 modes:\n\n**"+cmd.prefix+"q "+cmd.prefix+"clear** (Removes entire queue)\n**"+cmd.prefix+"q "+cmd.prefix+"clear 2** (Clear's position 2 from queue)\n**"+cmd.prefix+"q "+cmd.prefix+"clear @User @User2** (Clears everything requested by mentioned users)\n**"+cmd.prefix+"q "+cmd.prefix+"clear 'sandstorm'** (Removes all items containing sandstorm. Must have quotes!)");
       if (!cmd.permissions.hasSubScope(cmd.uID, "queue", "clear", mode).result)
         return callback(queue, "Insufficient permissions to use this subcommand: "+cmd.permissions.hasSubScope(cmd.uID, "queue", "clear", mode).reason);
 
@@ -229,7 +230,6 @@ function itemInArray(item, array){
 
 function determineClearQueueMode(arg, event){
   try {
-    log("DeterminingClearModeFroM: " + arg);
     if (!arg) return "all";
 
     if (!isNaN(parseInt(arg))) return "position";
@@ -248,6 +248,7 @@ function determineClearQueueMode(arg, event){
 
       if (event.d.mentions[0].id == event.d.author.id) return "user-self";
     }
+
   } catch(e){log("determineClearQueueMode: " + e)}
 
 }
