@@ -1,17 +1,16 @@
-# reCord
+<p align="center"><img src="http://i.imgur.com/Prj1wMO.png"></p>
+<h1 align="center">reCord</h1>
 A discord bot built with [discord.io](https://github.com/izy521/discord.io) API for NodeJS.
 
-The premise of this bot is to do everything that most others can, but with some added unique features, namely, voice record functionality and some other related features, such as upcoming voice control.
+A pretty-looking Discord bot with some nifty playback-oriented features.
+
+[Add reCord to your server](https://discordapp.com/oauth2/authorize?client_id=205391079460044801&scope=bot)
 
 At present the core functionality is still being built (Basic commands, music playback, logging, games & some personality). After this has been implemented, the unique 'reCord' features will be implemented:
-- [x] Persistent music progress bar 
-- [ ] Has attitude toward other bots 
+- [x] Regular Music Playback Features 
 - [ ] Voice control [Upcoming]
 - [ ] Records voice [Upcoming]
 - [ ] Parrots other users [Upcoming]
-- [ ] Plays Google Feud [Upcoming]
 - [ ] Web control panel [Upcoming]
 
-Code is messy and noobish (I'm a beginner with JS). As I get better I'll clean stuff up and make it look more presentable.
 
-On release I plan to add an easy-to-use GUI installer so you can run your own instance of reCord, or add my instance to your server, albeit with more limited functionality.
