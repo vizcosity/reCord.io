@@ -13,42 +13,8 @@
       "usage": "ping",
       "group": "general"
     },
-    "quote": {
-      "access": 2,
-      "scope": "none",
-      "desc": "Quotes a recent message from the mentioned user.",
-      "usage": "quote <@username>",
-      "group": "general"
-    },
-    "anonmsg": {
-      "access": 3,
-      "scope": "none",
-      "desc": "I will DM the mentioned user anonymously with your message.",
-      "usage": "anonmsg <user> <message>",
-      "group": "general"
-    },
-    "nick": {
-      "access": 3,
-      "scope": {
-        "3": "self",
-        "4": "other",
-        "5": "other quiet"
-      },
-      "desc": "Change a user's nickname.",
-      "usage": "nick <user> <new nickname>",
-      "group": "general"
-    },
-    "restart": {
-      "access": 4,
-      "scope": {
-        "4": "soft",
-        "5": "hard"
-      },
-      "desc": "Restarts the bot. Useful in case of issues.",
-      "usage": "restart",
-      "group": "admin"
 
-    },
+
     "audio": {
       "access": 2,
       "scope": "none",
@@ -56,17 +22,8 @@
       "usage": "audio <audiofilename>",
       "group": "playback"
     },
-    "shortcut": {
-      "access": 2,
-      "scope": {
-        "2": "use",
-        "3": "create",
-        "5": "delete"
-      },
-      "desc": "Create custom server-specific shortcuts / mini commands / aliases.",
-      "usage": "shortcut <shortcut name> <command to execute>",
-      "group": "general"
-    },
+
+
     "q": {
       "access": 2,
       "scope": {
@@ -80,6 +37,7 @@
       "group": "playback"
 
     },
+
     "queue": {
       "access": 2,
       "scope": {
@@ -93,6 +51,7 @@
       "group": "playback"
 
     },
+
     "play": {
       "access": 2,
       "scope": {
@@ -104,20 +63,8 @@
       "desc": "[Alias for queue] Streams audio from YouTube. Accepts either links or search queries.",
       "usage": "play <link / search query>",
       "group": "playback"
+    },
 
-    },
-    "playlist": {
-      "access": 2,
-      "scope": {
-        "2": "view personal",
-        "3": "manage personal",
-        "4": "manage server",
-        "5": "manage global"
-      },
-      "desc": "Queue, add and manage saved playlists. Use the command for more info.",
-      "usage": "playlist <q / add / remove> <id / link / id>\nIf you're confused, launch the command. Options are also available there.",
-      "group": "playback"
-    },
     "volume": {
       "access": 3,
       "scope": {
@@ -128,13 +75,6 @@
       "desc": "Change the volume for the active queue.",
       "usage": "volume <0-200>",
       "group": "playback"
-    },
-    "setsurprise": {
-      "access": 5,
-      "scope": "none",
-      "desc": "Joins the voice channel every now and then to play some dank sounds.",
-      "usage": "setsurprise",
-      "group": "general"
     },
     "skip": {
       "access": 1,
@@ -147,23 +87,7 @@
       "usage": "skip",
       "group": "playback"
     },
-    "filter": {
-      "access": 4,
-      "scope": {
-        "4": "add",
-        "5": "manage"
-      },
-      "desc": "Filters out words from chat.",
-      "usage": "filter <add / list / remove>",
-      "group": "admin"
-    },
-    "clean": {
-      "access": 3,
-      "scope": "none",
-      "desc": "Cleans the chat of commands and other gunk.",
-      "usage": "clean",
-      "group": "admin"
-    },
+
     "roll": {
       "access": 0,
       "scope": "none",
@@ -178,126 +102,20 @@
       "usage": "imgur <query / blank>",
       "group": "general"
     },
-    "dc": {
-      "access": 6,
-      "scope": "none",
-      "desc": "Access to the direct-console. (Admin only)",
-      "usage": "dc <JS to evaluate>",
-      "group": "admin"
-    },
-    "dcp": {
-      "access": 6,
-      "scope": "none",
-      "desc": "Player module-level direct-console. (Admin only)",
-      "usage": "dcp <JS to evaluate>",
-      "group": "admin"
-    },
+
     "joinvoice": {
-      "access": 3,
+      "access": 2,
       "scope": "none",
       "desc": "Joins voice channel.",
       "usage": "joinvoice",
       "group": "playback"
     },
     "leavevoice": {
-      "access": 3,
+      "access": 2,
       "scope": "none",
       "desc": "Leaves voice channel.",
       "usage": "leavevoice",
       "group": "playback"
-    },
-    "soundboard": {
-      "access": 2,
-      "scope": "none",
-      "desc": "Joins voice and plays a random dank sound.",
-      "usage": "soundboard",
-      "group": "playback"
-    },
-
-    "purge": {
-      "access": 4,
-      "scope": {
-        "3": "10 self",
-        "4": "20 all",
-        "5": "100 all"
-      },
-      "desc": "Removes specified amount of messages from channel.",
-      "usage": "purge <amount>",
-      "group": "admin"
-    },
-
-    "setprefix": {
-      "access": 5,
-      "scope": {
-        "5": "server",
-        "6": "global"
-      },
-      "desc": "Changes the prefix that I listen to for commands.",
-      "usage": "setprefix <prefix>",
-      "group": "admin"
-    },
-
-    "status": {
-      "access": 4,
-      "scope": "none",
-      "desc": "Changes my 'playing' message.",
-      "usage": "status <new status>",
-      "group": "general"
-    },
-
-    "anonmsg": {
-      "access": 3,
-      "scope": "none",
-      "desc": "Send messages to users anonymously.",
-      "usage": "anonmsg @user <message>",
-      "group": "general"
-    },
-
-    "checkvoice": {
-      "access": 2,
-      "scope": "none",
-      "desc": "Runs a check that typically fixes playback.",
-      "usage": "checkvoice",
-      "group": "playback"
-    },
-
-    "qgetinfo": {
-      "access": 3,
-      "scope": "none",
-      "desc": "Shows info on currently playing song / video.",
-      "usage": "qgetinfo <blank / queue position>",
-      "group": "playback"
-    },
-
-    "youtube": {
-      "access": 3,
-      "scope": "none",
-      "desc": "Searches YouTube and returns the first search result.",
-      "usage": "youtube <search query>",
-      "group": "general"
-    },
-
-    "setusername": {
-      "access": 6,
-      "scope": "none",
-      "desc": "Changes my username. (Not nickname)",
-      "usage": "setusername <username>",
-      "group": "admin"
-    },
-
-    "sitcom": {
-      "access": 3,
-      "scope": "none",
-      "desc": "Everyone in the voice channel suddenly becomes hilarious.",
-      "usage": "sitcom",
-      "group": "general"
-    },
-
-    "googlefeud": {
-      "access": 3,
-      "scope": "none",
-      "desc": "Play googlefeud with friends in the channel!",
-      "usage": "googlefeud <start / stop>",
-      "group": "general"
     }
+
 }
