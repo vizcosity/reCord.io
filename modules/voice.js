@@ -59,7 +59,7 @@ function voice(bot, channelID, serverID, userID, callback){
     })
   });
 
-  this.queue = function(cmd){
+  this.queue = function(cmd, paramObj){
 
     // Update the state so that the module knows who / what / server/ channel to target and respond to.
     updateState(cmd);
@@ -88,30 +88,22 @@ function voice(bot, channelID, serverID, userID, callback){
       queueUtility.getYTDetails(request, function(details){
 
         if (!details.result) return msg.error("Could not queue item. \n" + details.reason);
-        instance[serverID].queue.push( new queueUtility.item( instance[serverID].queue.length, cmd.sID, 'queue', bot.users[cmd.uID].username, cmd.uID, details.title, details.duration, details.url, details.videoID) );
 
-        var lastQueueItem = instance[cmd.sID].queue[ instance[cmd.sID].queue.length - 1 ];
+        // If videoIDs array exists, pass to queuePlaylist handler.
+        if (details.videoIDs) return queuePlaylist({details:details, cmd: cmd, next: ((paramObj && paramObj.next) ? paramObj.next : false)});
 
-        try {
-          // Notify that the item has been successfully queued.
-          msg.embed(queueUtility.buildQueuedNotificationEmbedObject(lastQueueItem, queueUtility.getEta(instance[cmd.sID].queue)), 10000);
-
-          // Download the file.
-          downloadAudioFile(lastQueueItem.url, cmd.sID, lastQueueItem.localFileName, function(){
-
-            // Pop first item from queue, and play it once details are collected.
-            instance[serverID].state.queue = true;
-
-            queueCheck();
-
-          });
-        } catch(e){ log("Could not notify of queued item: " + e)}
-
+        // Queue single item normally with notify and preDownload.
+        queueItem({details: details, notify: true, preDownload: true, cmd: cmd, next: ((paramObj && paramObj.next) ? paramObj.next : false)});
 
       });
     } catch(e){ log("Getting YT Details: " + e)}
 
 
+  }
+
+  this.queueNext = function(cmd){
+    // Need to format cmd like non-subcommand.
+    self.queue(cmd, {next: true});
   }
 
   this.playQueueItem = function(item){
@@ -217,6 +209,19 @@ function voice(bot, channelID, serverID, userID, callback){
       if (notification) msg.embedNotify(notification, "Cleared by "+ cmd.user);
     });
 
+  }
+
+  this.renameQueueItem = function(cmd){
+
+    // Update State
+    updateState(cmd);
+
+    // Rename item handler
+    queueUtility.renameItemHandler(cmd.arg, instance[serverID].queue, function(newQueue, error, notification){
+      if (error) return msg.error(error);
+      if (newQueue) instance[cmd.sID].queue = newQueue;
+      if (notification) msg.embedNotify(notification, "Renamed by "+cmd.user);
+    });
   }
 
   this.skip = function(cmd){
@@ -394,6 +399,7 @@ function voice(bot, channelID, serverID, userID, callback){
         })
       })
     } else if (!instance[serverID].stream){
+      log("Stream not assigned. Attempting to assign now.");
       getStream(instance[serverID].voiceID, function(streamRef){
         instance[serverID].stream = streamRef;
         if (callback) callback();
@@ -405,30 +411,30 @@ function voice(bot, channelID, serverID, userID, callback){
 
   function checkEmpty(){
 
-    log("Checking if empty.");
+     log("Checking if empty.");
 
-    // Assign that check empty is running.
-    instance[serverID].checkEmptyRunning = true;
+     // Assign that check empty is running.
+     instance[serverID].checkEmptyRunning = true;
 
-    instance[serverID].voiceID = updateVoiceID(serverID);
-    // Check if there is anyone in the voice channel.
-    if (botInVoiceChannel(bot, instance[serverID].voiceID) && Object.keys(getUsersInVoiceChannel(bot, instance[serverID].voiceID)).length == 1){
-      // The bot is the only user in the voice channel, leave.
-      msg.notify("Leaving `" + resolveNameFromID(bot, instance[serverID].voiceID) + "` as it is empty.");
-      self.leaveVoice({sID: serverID});
-    }
+     instance[serverID].voiceID = updateVoiceID(serverID);
+     // Check if there is anyone in the voice channel.
+     if (botInVoiceChannel(bot, instance[serverID].voiceID) && Object.keys(getUsersInVoiceChannel(bot, instance[serverID].voiceID)).length == 1){
+       // The bot is the only user in the voice channel, leave.
+       msg.notify("Leaving `" + resolveNameFromID(bot, instance[serverID].voiceID) + "` as it is empty.");
+       self.leaveVoice({sID: serverID});
+     }
 
-    // Call function again recursively to check if there is anyone connected in the voice channel.
-    if (instance[serverID].checkEmptyRunning && botInVoiceChannel(bot,instance[serverID].voiceID)){
-      return setTimeout(checkEmpty, 300000); // Check every 5 minutes.
-    }
+     // Call function again recursively to check if there is anyone connected in the voice channel.
+     if (instance[serverID].checkEmptyRunning && botInVoiceChannel(bot,instance[serverID].voiceID)){
+       return setTimeout(checkEmpty, 300000); // Check every 5 minutes.
+     }
 
-    // Return false if the checkEmpty recursion has finished.
-    instance[serverID].checkEmptyRunning = false;
+     // Return false if the checkEmpty recursion has finished.
+     instance[serverID].checkEmptyRunning = false;
 
-    // Anounce that checkEmpty is no longer runnig.
-    log("CheckEmpty instance closed.");
-  }
+     // Anounce that checkEmpty is no longer runnig.
+     log("CheckEmpty instance closed.");
+   }
 
   function updateVoiceID(serverID){
     var voiceID = false; // Requires to be disproven that it is not in a voice channel.
@@ -480,7 +486,7 @@ function voice(bot, channelID, serverID, userID, callback){
       }, 15000);
 
     }
-  }
+}
 
   function queueCheck(){
     // log("QUEUE: " + state.queue + " ACTIVE: " + state.active);
@@ -491,6 +497,84 @@ function voice(bot, channelID, serverID, userID, callback){
       var queueNotificationEmbedObject = queueUtility.buildEmbedObject(instance[serverID].currentSong);
       msg.embed(queueNotificationEmbedObject, instance[serverID].currentSong.duration * 1000); // Keep message for the length of the song.
     }
+  }
+
+  // This is to be called only after the item details have been gathered.
+  function queueItem(paramObj, callback){
+    // console.log(paramObj);
+    var details = paramObj.details;
+    var cmd = paramObj.cmd;
+    var notify = paramObj.notify;
+    var preDownload = paramObj.preDownload;
+    var type = paramObj.type ? paramObj.type : 'queue';
+    var next = paramObj.next;
+    var silent = paramObj.silent;
+
+    if (next)
+      instance[serverID].queue.unshift( new queueUtility.item( instance[serverID].queue.length, cmd.sID, type, bot.users[cmd.uID].username, cmd.uID, details.title, details.duration, details.url, details.videoID) );
+    else
+      instance[serverID].queue.push( new queueUtility.item( instance[serverID].queue.length, cmd.sID, type, bot.users[cmd.uID].username, cmd.uID, details.title, details.duration, details.url, details.videoID) );
+
+    var lastQueueItem = !next ? instance[cmd.sID].queue[ instance[cmd.sID].queue.length - 1 ] : instance[cmd.sID].queue[0];
+
+    if (notify) msg.embed(queueUtility.buildQueuedNotificationEmbedObject(lastQueueItem, queueUtility.getEta(instance[cmd.sID].queue)), 10000);
+
+    if (preDownload)  // preDownload the audio file on queue.
+      return downloadAudioFile(lastQueueItem.url, cmd.sID, lastQueueItem.localFileName, function(){
+
+                // Pop first item from queue, and play it once details are collected.
+                instance[serverID].state.queue = true;
+
+                if (!silent) queueCheck();
+
+                if (callback) callback();
+
+      });
+
+    // Queue without preDownloading.
+    instance[serverID].state.queue = true;
+
+    if (!silent) queueCheck();
+
+    if (callback) callback();
+  }
+
+  // Recursively adds all playlist items to queue.
+  function queuePlaylist(paramObj){
+    var playlistLength = paramObj.details.videoIDs.length;
+    var details = paramObj.details;
+    var cmd = paramObj.cmd;
+    var next = paramObj.next;
+    details.requester = cmd.user;
+    details.requesterID = cmd.uID;
+    var items = details.videoIDs;
+    msg.setCID(cmd.cID);
+
+    msg.embed(queueUtility.buildQueuedPlaylistNotificationEmbedObject(details, queueUtility.getEta(instance[cmd.sID].queue)), 10000);
+
+    function recursivePlaylistQueue(itemArray, callback){
+      if (itemArray.length == 0) return callback();
+      var item = itemArray.shift();
+      queueUtility.getYTDetails("http://youtube.com/watch?v="+item, function(data){
+        //console.log(data);
+        if (!data.result) {
+          msg.error("Could not queue item.\nhttp://youtube.com/watch?v="+item);
+          return recursivePlaylistQueue(items, callback);
+        }; // Error handling. (Skip if fail).
+
+        // If this is the first video being queued, should not be silent (false). Otherwise be silent (true).
+        var silentBool = (itemArray.length == (playlistLength - 1)) ? false : true;
+        queueItem({details: data, notify: false, preDownload: false, type: 'playlist', cmd: cmd, next: next, silent: silentBool}, function(){
+          recursivePlaylistQueue(items, callback);
+        }); // Silent queue.
+
+      });
+    }
+
+    recursivePlaylistQueue(items, function(){
+      msg.embedNotify("**Playlist:** "+details.title+" **["+playlistLength+"]** successfully queued.", "Requested by "+cmd.user);
+    });
+
   }
 
   function downloadAudioFile(url, serverID, localFileName, callback){
@@ -631,6 +715,8 @@ function getStream(voiceID, callback){
 
 function botInVoiceChannel(bot, voiceID){
   try {
+    // if (!bot.channels[voiceID] || bot.channels[voiceID].members) return false;
+    // return bot.channels[voiceID].members[bot.id];
     return bot._vChannels[voiceID];
   } catch(e){log("e"); return false;}
 }

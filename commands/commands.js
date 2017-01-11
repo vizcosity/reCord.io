@@ -8,11 +8,13 @@ function commandList(bot){
     snippet: {
       messenger: require('../snippets/message.js'),
       permissions: require('../config/permissions.js'),
-      voicerecordings: require("../snippets/voicerecordings.js")
+      voicerecordings: require("../snippets/voicerecordings.js"),
+      hasSubCommands: require('../snippets/hasSubCommands.js')
     },
     config: {
       permissions: require('../config/permissions.json'),
-      config: require('../config/config.json')
+      config: require('../config/config.json'),
+      subCommands: require('../config/subCommands.json')
     },
     module: {
       voice: require('../modules/voice.js'),
@@ -268,7 +270,18 @@ function commandList(bot){
                 icon_url: "http://image.flaticon.com/icons/png/128/25/25400.png"
               },
               color: "1146534"
-            })
+            });
+
+            // log("Has subcommands: " + (external.snippet.hasSubCommands(commandToLookup)));
+            if (external.snippet.hasSubCommands(commandToLookup)){
+              var output = "**Available SubCommands for "+commandToLookup+"**:";
+              for (var key in external.config.subCommands[commandToLookup]){
+                if (key == 'path') continue;
+                output += "\n**"+cmd.prefix+commandToLookup+" "+cmd.prefix+key+"**: "+external.config.subCommands[commandToLookup][key].desc;
+              }
+              msg.embedNotify(output, null, 60000);
+            }
+
           }
 
         }

@@ -93,6 +93,16 @@ module.exports = {
     }
   },
 
+  buildQueuedPlaylistNotificationEmbedObject: function(playlist, eta){
+    return {
+      type: 'rich',
+      color: 1146534,
+      thumbnail:{url:'http://i.imgur.com/JO4b5GH.jpg'},
+      footer: {text:'Requested By '+playlist.requester+' | ETA: '+convertSecondsToMinutesAndSeconds(eta)},
+      description: '**Queueing Playlist**: ' + playlist.title + "\n**Source**: " + "http://youtube.com/playlist?list="+playlist.playlistID
+    }
+  },
+
   shuffleQueue: function(queue){
     // log("Shuffling queue.");
     var shuffledQueue = [];
@@ -125,19 +135,49 @@ module.exports = {
           * Clear all. (No arguments);
       */
 
+      // Generates formatted string of removed queue items based on array passed as an argument.
+      function generateRemovedListString(removedItems){
+        var output = "";
+
+        for (var i = 0; i < removedItems.length; i++){
+          if (output.length >= 1800) {
+            output += "\n...\n**Plus "+(removedItems.length-i)+" more items.**";
+            break;
+          }
+          output += "\n• " + removedItems[i].title;
+        }
+
+        return output;
+      }
+
+      // Returns the difference between the original array, and the changed array.
+      function getDifferentElements(array1, array2){
+        var output = [];
+        for (var i = 0; i < array1.length; i++){
+          // If the current array1 element does not exist in array2, it must have been removed.
+          if (array2.indexOf(array1[i]) == -1 ) output.push(array1[i]);
+        }
+        return output;
+      }
+
       switch (mode){
           case "all":
             callback([], null, "All items in queue cleared. **["+queue.length+"]**"); // Return an empty queue.
             break;
           case "keyword":
             var initialQueueLength = queue.length;
-            var rawKeyword = cmd.arg.substring(1,cmd.arg.length-1);
+            var removedItems = []; // This is to report to the user which items have been removed.
+            var rawKeyword = cmd.arg.substring(1,cmd.arg.length-1).toLowerCase();
             for (var i = 0; i < queue.length; i++){
-              if (queue[i].title.indexOf(rawKeyword) !== -1)
-                queue.splice(i, 1);
+              if (queue[i].title.toLowerCase().indexOf(rawKeyword) !== -1)
+                removedItems.push(queue.splice(i, 1)[0]);
             }
+
+            // Formatting the items that have been removed.
+            var removedItemsString = generateRemovedListString(removedItems);
+
             var finalQueueLength = initialQueueLength - queue.length;
-            callback(queue, null, "Removed items containing: " + rawKeyword + " **["+finalQueueLength+"]**");
+            callback(queue, null, "Removed items containing: " + rawKeyword + " **["+finalQueueLength+"]**:"+removedItemsString);
             break;
           case "position":
             var position = parseInt(cmd.arg);
@@ -149,24 +189,39 @@ module.exports = {
             break;
           case "user-self":
             var initialQueueLength = queue.length;
-            for (var i = 0; i < queue.length; i++){
-              if (queue[i].userID == cmd.uID) queue.splice(i, 1);
+            var initialQueue = queue;
+
+            queue = queue.filter(containsUserID); // Filtered queue.
+
+            var removedItems = getDifferentElements(initialQueue, queue);
+            var removedItemsString = generateRemovedListString(removedItems);
+
+            function containsUserID(arrayItem){
+              return !(arrayItem.userID == cmd.uID);
             }
+
             var finalQueueLength = initialQueueLength - queue.length;
-            return callback(queue, null, "Removed all items requested by: " + cmd.user + " **["+finalQueueLength+"]**");
+            return callback(queue, null, "Removed all items requested by: " + cmd.user + " **["+finalQueueLength+"]**:"+removedItemsString);
             break;
           case "user-other":
             var initialQueueLength = queue.length;
+            var initialQueue = queue;
             var users = [];
 
             for (var i = 0; i < cmd.event.d.mentions.length; i++){
               users.push(cmd.event.d.mentions[i].id);
             }
 
-            for (var i = 0; i < queue.length; i++){
-              for (var j = 0; j < users.length; j++){
-                if (queue[i].userID == users[j]) queue.splice(i, 1);
-              }
+            queue = queue.filter(containsUserIDs);
+
+            var removedItems = getDifferentElements(initialQueue, queue);
+            var removedItemsString = generateRemovedListString(removedItems);
+
+            function containsUserIDs(arrayItem){
+              var idToCompare = arrayItem.userID;
+              for (var i = 0; i < users.length; i++)
+                if (users[i] == idToCompare) return false;
+              return true;
             }
 
             var formatUsernames = "";
@@ -175,13 +230,33 @@ module.exports = {
             }
 
             var finalQueueLength = initialQueueLength - queue.length;
-            callback(queue, null, "Removed all queue items requested by: "+formatUsernames+" **["+finalQueueLength+"]**");
+            callback(queue, null, "Removed all queue items requested by: "+formatUsernames+" **["+finalQueueLength+"]**:"+removedItemsString);
             break;
           default:
             callback(queue, "Could not parse request: " + cmd.arg);
             return log("ClearQueueMode not recognizd: " + determineClearQueueMode(cmd.arg));
       } // End of switch.
     } catch(e) { log("clearQueueHandler: " + e)}
+  },
+
+  renameItemHandler: function(arg, queue, callback){
+    if (!callback) return log("No callback found for renameItemHandler.");
+
+    var queuePosition = parseInt(arg.split(' ')[0]) - 1;
+
+    var newName = arg.substring(queuePosition.toString().length+1, arg.length);
+
+    if (!queue[queuePosition] || !queue[queuePosition].title) return callback(null, "Invalid Queue position selected: "+(queuePosition+1));
+
+    var oldName = "";
+
+    try {
+      oldName = queue[queuePosition].title;
+      queue[queuePosition].title = newName;
+    } catch(e){log("Renaming queue item: " + e)}
+
+    callback(queue, null, "**Queue Item ["+(queuePosition+1)+"] Renamed.**\n**Old**: "+oldName+"\n**New**: "+newName);
+
   },
 
   getEta: function(queue){
@@ -254,19 +329,24 @@ function determineClearQueueMode(arg, event){
 }
 
 function buildQueueGlobal(queue){
-
-  // Return empty list of the queue is empty.
-  if (queue.length == 0) return "**No items in Queue.**";
-
-  var output = "**Items in Queue**:\n";
   try {
-    for (var i = 0; i < queue.length; i++){
-      var queuePosition = i + 1;
-      output += "\n" + queuePosition + ". " + queue[i].title + " **["+queue[i].username+"]**";
-    }
-  } catch(e){ log("Problem building queue: " + e)}
+    // Return empty list of the queue is empty.
+    if (queue.length == 0) return "**No items in Queue.**";
 
-  return output;
+    var output = "**Items in Queue**:\n";
+    try {
+      for (var i = 0; i < queue.length; i++){
+        var queuePosition = i + 1;
+        if (output.length >= 1800) {
+          output += "\n...\n**Plus "+(queue.length-i)+" more items.**";
+          break;
+        }
+        output += "\n" + queuePosition + ". " + queue[i].title + " **["+queue[i].username+"]**"+(queue[i].type == 'playlist' ? " `[Playlist]`" : "");
+      }
+    } catch(e){ log("Problem building queue: " + e)}
+
+    return output;
+  } catch(e){log("Building queue: " + e)}
 }
 
 function getEtaGlobal(queue){

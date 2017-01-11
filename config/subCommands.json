@@ -17,7 +17,7 @@
         "5": "all"
       },
       "desc": "Clears the queue from all songs, songs with a certain keyword, or songs requested by a certain user.",
-      "usage": "clear <@user> or clear <prefix>all or clear 'sandstorm'",
+      "usage": "clear <@user> or <prefix>clear all or <prefix>clear 'sandstorm'",
       "parent": "queue"
     },
 
@@ -26,7 +26,15 @@
       "scope": "none",
       "desc": "Queue a song up next. Takes in a new request or an item already in queue.",
       "usage": "next <link / search query / queue item position>",
-      "parent": ""
+      "parent": "queue"
+    },
+
+    "rename": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Rename a queue item.",
+      "usage": "rename <item position> <new name>",
+      "parent": "queue"
     }
   }
 }

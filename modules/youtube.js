@@ -1,6 +1,7 @@
 // Takes in youtube requests, handles them accordingly.
 var youtubeItemQuery = require('./youtubeItem.js');
 var youtubeSearch = require('./youtubeSearch.js');
+var youtubePlaylist = require('./youtubePlaylist.js');
 function youtube(query, callback){
 
   try {
@@ -25,12 +26,19 @@ function youtube(query, callback){
     query = parseInput(query); // Formats link so that it only has the videoID.
     if (!query) callback({result: false, reason: "Invalid Link. Must be a YouTube URL."});
 
-    // Strictly takes in youtube links.
-    youtubeItemQuery(query, function(data){
-      //data.result = true;
-      data.videoID = query;
-      callback(data);
-    });
+    if (query.type == "video"){
+      // log("Queueing: " + query.id);
+      youtubeItemQuery(query.id, function(data){
+        data.videoID = query.id;
+        callback(data);
+      });
+    }
+    if (query.type == "playlist"){
+      // log("Queueing: "+query.id);
+      youtubePlaylist(query.id, function(data){
+          callback(data);
+      });
+    }
 
   } catch(e) {log(e)};
 
@@ -38,15 +46,40 @@ function youtube(query, callback){
 
 function parseInput(input){
   // Assumes that input has already been validated.
-  // Takes in a link and outputs a video id.
+  // Takes in a link and checks to see if it is valid video or playlist url.
   if (input.indexOf('youtube') != -1){
     // Standard long link format.
-    return input.split('?v=')[1];
+
+    if (input.indexOf('list') != -1)
+      // Is a playlist.
+      return {
+        id: input.split('list=')[1],
+        type: "playlist"
+      }
+
+
+    return {
+      id: input.split('?v=')[1],
+      type: "video"
+    };
   }
 
   if (input.indexOf('youtu.be') != -1){
+
     // Shortform link.
-    return input.split('youtu.be/')[1];
+
+    // Checking if a shortform playlist.
+    if (input.indexOf('list') != -1)
+      // Is a playlist.
+      return {
+        id: input.split('list=')[1],
+        type: "playlist"
+      }
+
+    return {
+      id: input.split('youtu.be/')[1],
+      type: "video"
+    };
   }
 
   return log("Could not parse input from link: " + input);
