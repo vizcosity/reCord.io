@@ -28,6 +28,7 @@ function voice(bot, channelID, serverID, userID, callback){
   if (!voiceIDQuery.result) msg.error("I couldn't get the Voice Channel: " + voiceIDQuery.reason);
 
   var instance = {};
+  
   // Set up instance for the server. This is to prevent confusion between servers to isolate completely.
   // I'm not quite sure even though the voice instance is supposed to be isolated per-server there are still
   // some cases where music may leek or requests / queues get confused between servers.
@@ -147,10 +148,11 @@ function voice(bot, channelID, serverID, userID, callback){
           instance[serverID].stream.send(instance[serverID].ffmpeg.stdout, {end: false});
 
           // Trying out pipe instead of send to stream.
-          // instance[serverID].ffmpeg.pipe(instance[serverID].stream, {end: false});
+          // instance[serverID].ffmpeg.stdout.pipe(instance[serverID].stream, {end: false});
 
           // Testing
           // fs.createReadStream(file).pipe(instance[serverID].stream, {end: false});
+
 
         })
 
@@ -251,6 +253,7 @@ function voice(bot, channelID, serverID, userID, callback){
           instance[serverID].state.active = true;
 
           instance[serverID].stream.playAudioFile(file);
+          // fs.createReadStream(file).pipe(instance[serverID].stream, {end: false});
 
           instance[serverID].stream.once('done', function(){
               // Make module available for other files to play, and possibly leave.
@@ -284,6 +287,7 @@ function voice(bot, channelID, serverID, userID, callback){
       date = date.toString();
 
       console.log("Date string: " + date);
+
       // Replace spaces in date with underscores.
       date = date.replace(/\s/g, '_');
 
@@ -291,13 +295,32 @@ function voice(bot, channelID, serverID, userID, callback){
 
       if (error) console.log(error);
         instance[serverID].state.active = true;
-        instance[serverID].write = fs.createWriteStream(__parentDir+'/audio/recordings/'+date+".pcm");
-        stream.pipe(write);
+
+        // Check if serverID dir for recorings exists, if not create it.
+        mkdirp('./audio/recordings/'+serverID+'/', function(err){
+
+          if (err) return log("Error checking directory for recording: " + err);
+
+          // Instantiate the write stream.
+          // instance[serverID].write = fs.createWriteStream(__parentDir+'/audio/recordings/'+serverID+'/'+date+".pcm");
+          instance[serverID].write = fs.createWriteStream(__parentDir+'/audio/recordings/'+serverID+'/'+date+".wav");
+
+
+          // Once the file has been created, start writing the stream to the file.
+          stream.pipe(instance[serverID].write);
+
+        });
+
+      stream.on('incoming',function(something, somethingelse){
+        if (instance[serverID].write && instance[serverID].state.active)
+          console.log("RECIEVED");
+      });
+
 
       console.log("RECORDING VOICE");
 
       });
-    })
+    });
 
 
   }
@@ -307,12 +330,20 @@ function voice(bot, channelID, serverID, userID, callback){
     // Update global variables to match command origin.
     updateState(cmd);
 
-      write.close(function(){
-        getMostRecentRecording(function(filename){
-          var path = __parentDir+'/audio/recordings/';
-          decode(path, filename);
-        });
-      });
+    if (instance[serverID].write && instance[serverID].state.active){
+
+      instance[serverID].write.close(
+      //   function(){
+      //   getMostRecentRecording(serverID, function(filename){
+      //     var path = __parentDir+'/audio/recordings/'+serverID+'/';
+      //     decode(path, filename);
+      //   });
+      // }
+    );
+
+    } else {
+      return msg.error("No recording taking place.");
+    }
 
       instance[serverID].state.active = false;
       console.log("Recording finished.");
@@ -704,11 +735,13 @@ function getStream(voiceID, callback){
   try {
     // Grab the audio Context.
     log("Attempting to grab audio context.");
-    bot.getAudioContext({channelID: voiceID}, function(error, stream){
+    bot.getAudioContext({channelID: voiceID}, function(err, stream){
       log("Grabbed audio context");
-      if (error) return log(error);
+      if (err) return log(err);
       //streamRef = stream;
-      callback(stream);
+      try {
+        callback(stream);
+      } catch(e){log("getStream callback: " + e)}
     });
   } catch(e){ log("Error Getting audio context: " + e)}
 }
@@ -738,9 +771,9 @@ function getUsersInVoiceChannel(bot, voiceID){
   } catch(e){ log("Getting users in voice: " + e); }
 }
 
-function getMostRecentRecording(callback){
+function getMostRecentRecording(serverID, callback){
   // Get the most recent recording.
-  fs.readdir(__parentDir+'/audio/recordings/', function(err, resp){
+  fs.readdir(__parentDir+'/audio/recordings/'+serverID, function(err, resp){
     if (err) console.log(err);
     // return callback with last position in array.
     console.log("Grabbed newest recording: " + resp[resp.length-1].split('.')[0]);
@@ -762,6 +795,7 @@ function decode(pathToFile, filename){
 
   decoder.stdout.on('error', function(err){
     console.log(err);
+    decoder.kill();
   });
 
   console.log("Decoder called on: "+ pathToFile+filename+".pcm");

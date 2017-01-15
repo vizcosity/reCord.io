@@ -23,6 +23,22 @@
       "group": "playback"
     },
 
+    "simulate": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Simulates a specified mentioned user (or the whole text channel) by using Markov Chains.",
+      "usage": "simulate <blank (simulates whole text channel) / @user>",
+      "group": "general"
+    },
+
+    "stopsimulation": {
+      "access": 3,
+      "scope": "none",
+      "desc": "Stops the simulation in the current text channel (if any).",
+      "usage": "stopsimulation",
+      "group": "general"
+    },
+
 
     "q": {
       "access": 2,
