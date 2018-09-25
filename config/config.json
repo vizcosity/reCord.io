@@ -4,14 +4,14 @@
     "status": "Try !googlefeud start",
     "username": "reCord",
     "nickname": "reCord",
-    "token": "MjA1MzkxMTI2MjkzNzc0MzM2.CpJbog.TH8o86o4pIoHghC6_U2H3xQwJKg"
+    "token": "MjA1MzkxMTI2MjkzNzc0MzM2.DowCnw.wT8Mc35N7lwEag7z16IGsTmirJU"
   },
   "global-dev":{
     "enabled": true,
     "prefix": "<",
     "status": "Testing",
     "nickname": "reCord BETA",
-    "token": "MjUxMDEyNzk1ODgwMDQ2NTky.CxdNaA.GEzYCnNw-PaptCAl1To9D6bO_aY"
+    "token": "MjE4NzcyNzg0MDU3Mjg2NjU2.DowDag.2IXLSY9fJ3X4Cj6cwN8aKX-PmeY"
   },
   "server":{
     "128319520497598464":{

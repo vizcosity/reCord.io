@@ -1,0 +1,35 @@
+{
+  "name": "record.io",
+  "version": "2.0.0",
+  "description": "A Discord bot that actually listens",
+  "main": "run.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node run.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vizcosity/reCord.io.git"
+  },
+  "keywords": [
+    "reCord.io",
+    "node.js",
+    "discord",
+    "discord.io"
+  ],
+  "author": "Aaron Baw",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vizcosity/reCord.io/issues"
+  },
+  "homepage": "https://github.com/Vizcosity/reCord.io#readme",
+  "dependencies": {
+    "base64-stream": "^0.1.3",
+    "discord.io": "github:woor/discord.io#gateway_v6",
+    "forever-monitor": "^1.7.1",
+    "lame": "^1.2.4",
+    "youtube-audio-stream": "^0.2.0",
+    "youtube-node": "^1.3.2",
+    "ytdl-core": "^0.25.2"
+  }
+}

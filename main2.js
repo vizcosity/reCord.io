@@ -12,6 +12,7 @@ var Utility = require('./modules/discord-bot-utility.js');
 
 var shell = true;
 var dev = false;
+
 var token = determineToken(process.argv[2]);
 bot = new Discord.Client({
   token: token,
